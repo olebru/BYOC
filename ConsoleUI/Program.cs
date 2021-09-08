@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using BYOCCore;
 using System.Linq;
+using System.Threading;
 namespace ConsoleUI
 {
     class Program
@@ -9,6 +10,8 @@ namespace ConsoleUI
         static void Main(string[] args)
         {
             var c = new BYOCCore.LowLevelPileOfPartsActingAsAMCU(   "./ExampleFiles/examplerom.csv","./ExampleFiles/examplesrc.asm");
+            Console.WriteLine($"Percent of decoderrom used: {(c.decoderRom.OpCodeAddressSpaceUsedInPercent())}");
+            Console.ReadLine();
             var mem = (RamModule)c.bus.devices.Single(d => d.ID() == "mem");
             var mmu = (MMU)c.bus.devices.Single(d => d.ID() == "mmu");
             foreach (var device in c.bus.devices)
