@@ -17,14 +17,12 @@ namespace BYOCCore
             assemblerDirectives.Add(".BYTE");
             labelLUT = new Dictionary<String, int>();
         }
-      
         public byte[] Assemble(string source)
         {
             //First pass
             using (var sr = new System.IO.StreamReader(source))
             {
                 int address = 0;
-                
                 while (!sr.EndOfStream)
                 {
                     var line = sr.ReadLine();
@@ -77,7 +75,6 @@ namespace BYOCCore
                     }
                 }
             }
-            
             return bytecode.ToArray();
         }
     }

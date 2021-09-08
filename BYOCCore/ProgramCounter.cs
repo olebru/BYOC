@@ -5,7 +5,6 @@ namespace BYOCCore
     {
         public ProgramCounter(string DeviceName, string DeviceID, Bus bus) : base(DeviceName,DeviceID,bus)
         {
-            
         }
         private bool countEnabled = false;
         public new string OperationsOnNextClock()
@@ -51,6 +50,5 @@ namespace BYOCCore
                 Data++;
             }
         }
-       
     }
 }

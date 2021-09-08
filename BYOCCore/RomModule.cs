@@ -11,7 +11,6 @@ namespace BYOCCore
         protected Bus connectedBus;
         private bool loadMAR = false;
         private bool outputMAR = false;
-        
         private bool output = false;
         private string deviceName = "";
         private string deviceID;
@@ -26,12 +25,7 @@ namespace BYOCCore
             deviceName = DeviceName;
             deviceID = DeviceID;
             connectedBus = ConnectedBus;
- 
-         
-       
-           
         }
-      
         public string ID() { return deviceID; }
         public void LoadBytes(Byte[] bytes)
         {
@@ -64,7 +58,6 @@ namespace BYOCCore
             lines.Add("loadmar");
             lines.Add("outputMAR");
             lines.Add("output");
-        
             return lines;
         }
         public void Enable(string function)
@@ -109,7 +102,6 @@ namespace BYOCCore
         {
             string next = "";
             if (output) next = $"{next}output";
-           
             return next;
         }
         public string OperationsOnNextClockMAR()
@@ -119,7 +111,6 @@ namespace BYOCCore
             if (outputMAR) next = $"{next}output";
             return next;
         }
-       
         public bool IsOutputEnabled()
         {
             return output;

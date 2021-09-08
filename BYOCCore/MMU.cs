@@ -76,7 +76,6 @@ namespace BYOCCore
         }
         public bool IsOutputEnabled()
         {
-           
             if (ChipSelectRegister.IsOutputEnabled()) return true;
             foreach (var bank in RamBanks)
             {

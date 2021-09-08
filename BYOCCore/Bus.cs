@@ -48,9 +48,7 @@ namespace BYOCCore
             stopwatch.Start();
             this.Data = 0;
             this.dataWrittenInThisClk = false;
-            
             var outputtingDevice = devices.SingleOrDefault(d => d.IsOutputEnabled());
-       
             if (outputtingDevice != null)
             {
                 outputtingDevice.Clk();

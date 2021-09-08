@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Text;
 namespace BYOCCore
 {
-    
     public class ALU : IBusDevice
     {
         private Register a;
@@ -73,7 +72,6 @@ namespace BYOCCore
                 if (a.Data + b.Data > 255)
                 {
                     setCarry();
-                    
                 }
                 add = false;
                 pushNewStatusToRegister();
@@ -86,7 +84,6 @@ namespace BYOCCore
                 {
                     setZero();
                 }
-                
                 bus.Data = (byte)res;
                 sub = false;
                 pushNewStatusToRegister();
@@ -106,14 +103,12 @@ namespace BYOCCore
                 pushNewStatusToRegister();
             }
        }
-        
         public string OperationsOnNextClock()
         {
             string next = "";
             if (add) next = $"{next}add";
             if (sub) next = $"{next}sub";
             if (cmp) next = $"{next}cmp";
-          
             return $"{next}";
         }
         public List<String> SignalLines()

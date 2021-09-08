@@ -39,13 +39,11 @@ namespace BYOCCore
         }
         private List<MicroInstruction> completeROM;
         //public DecoderRom() : this (Properties.Resources.currentrom){ }
-        
         public DecoderRom(string rom)
         {
             var initialListLine = new List<fileLine>();
             var interMediateListLine = new List<fileLine>();
             var finalListLine = new List<fileLine>();
-   
             using (var sr = new System.IO.StreamReader(rom))
             {
                 int order = -1;
@@ -156,7 +154,6 @@ namespace BYOCCore
                     int offset = 0;
                     foreach (var line in list)
                     {
-                       
                         if (line.clkFlag == "p" && firstFound)
                         {
                             offset++;
@@ -181,7 +178,6 @@ namespace BYOCCore
                 throw new Exception("OpCode AddressSpace is exhausted, optimize...");
             }
         }
-      
         public byte FetchByteCodeFromMnemonic(string Mnemonic)
         {
             var b = completeROM.FirstOrDefault(m => m.Mnemonic == Mnemonic).OPCode;
@@ -195,13 +191,11 @@ namespace BYOCCore
         }
         public List<MicroInstruction> FetchInstruction(Byte StatusRegisterValue, Byte InstructionRegisterValue)
         {
-          
             string strBaseOpCode = Convert.ToString(InstructionRegisterValue, 2).PadLeft(8, '0');
             string status = Convert.ToString(StatusRegisterValue, 2);
             string strfullOpCode = status + strBaseOpCode;
             int fullOpCode = Convert.ToInt32(strfullOpCode, 2);
             return completeROM.Where(m => m.OPCode == fullOpCode).ToList<MicroInstruction>();
         }
-        
     }
 }

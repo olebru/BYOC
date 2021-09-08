@@ -64,7 +64,6 @@ namespace BYOCCore
                     break;
             }
         }
-       
         public override string ToString()
         {
             return deviceName + " Value = " + Data.ToString(connectedBus.NumberFormat) + Environment.NewLine;

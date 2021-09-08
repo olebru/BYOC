@@ -11,7 +11,6 @@ namespace BYOCCore
         public Assembler assembler;
         public byte[] programByteCode;
         public List<MicroInstruction> currentMicroCode;
-        
         public LowLevelPileOfPartsActingAsAMCU(string romPath,string srcPath)
         {
             decoderRom = new DecoderRom(romPath);
@@ -19,7 +18,6 @@ namespace BYOCCore
             bus = new Bus();
             bus.NumberFormat = "X2";
             bus.DecoderROM = decoderRom;
-          
             var rega = new Register("REGA", "rega", bus);
             var regb = new Register("REGB", "regb", bus);
             var regc = new Register("REGC", "regc", bus);
@@ -44,12 +42,9 @@ namespace BYOCCore
             bus.devices.Add(mem);
             bus.devices.Add(mmu);
             bus.devices.Add(clk);
-          
             programByteCode = assembler.Assemble(srcPath);
             mem.LoadBytes(programByteCode);
-               
         }  
-         
             public IEnumerable<int> RunClk()
             {
                 var clk = (Clock)bus.devices.Single(c => c.ID() == "clk");
@@ -61,12 +56,9 @@ namespace BYOCCore
                     var dev = bus.devices.Single(d => d.ID() == microCode.DeviceID);
                     dev.Enable(microCode.Function);
                 }
-                
                 bus.Clk();
-                  
                 yield return clk.cycle;
             }
         }
-                  
     }
 }

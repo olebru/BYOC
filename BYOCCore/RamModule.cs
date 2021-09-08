@@ -16,7 +16,6 @@ namespace BYOCCore
                 load = false;
             }
             base.Clk();
-          
         }
         public new void Enable(string function)
         {

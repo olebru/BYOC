@@ -86,7 +86,6 @@ namespace BYOCCore
                     throw new Exception("Unable to enable the unknown function: " + function);
             }
         }
-      
         public string ToString(int firstColumnPaddedWidth)
         {
             return $"{deviceName}".PadRight(firstColumnPaddedWidth, ' ') + $"= {Data.ToString(connectedBus.NumberFormat)}";
@@ -100,7 +99,6 @@ namespace BYOCCore
             if (inc) next = $"{next}inc"; ;
             if (dec) next = $"{next}dec"; ;
             return $"{next}";
-            
         }
         public bool IsOutputEnabled()
         {

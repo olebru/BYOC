@@ -18,14 +18,11 @@ namespace BYOCCore
            cycle++;
         }
         public string DisplayName() { return name; }
-       
         public bool IsHalted() { return halted; }
         public List<String> SignalLines()
         {
             var lines = new List<String>();
-     
             lines.Add("disable");
-           
             return lines;
         }
         public void Enable(string function)
@@ -47,6 +44,5 @@ namespace BYOCCore
         {
             return false;
         }
-     
     }
 }
