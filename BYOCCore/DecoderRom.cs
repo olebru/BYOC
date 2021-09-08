@@ -44,7 +44,7 @@ namespace BYOCCore
         }
         private List<MicroInstruction> completeROM;
 
-        public DecoderRom() : this (Properties.Resources.currentrom){ }
+        //public DecoderRom() : this (Properties.Resources.currentrom){ }
         
         public DecoderRom(string rom)
         {

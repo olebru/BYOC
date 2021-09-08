@@ -21,6 +21,7 @@ namespace BYOCCore
                 base.memory[memoryAddress] = base.connectedBus.Data;
                 load = false;
             }
+            base.Clk();
           
         }
 

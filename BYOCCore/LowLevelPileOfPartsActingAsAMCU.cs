@@ -1,57 +1,81 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Linq;
 
 namespace BYOCCore
 {
-    class LowLevelPileOfPartsActingAsAMCU
+    public class LowLevelPileOfPartsActingAsAMCU
     {
-        private Bus _bus;
-        private DecoderRom _decoderRom;
-        private Assembler _assembler;
-        private byte[] _programByteCode;
+        public Bus bus;
+        public DecoderRom decoderRom;
+        public Assembler assembler;
+        public byte[] programByteCode;
+        public List<MicroInstruction> currentMicroCode;
+        
 
-        public LowLevelPileOfPartsActingAsAMCU()
+        public LowLevelPileOfPartsActingAsAMCU(string romPath,string srcPath)
         {
 
-            _decoderRom = new DecoderRom(); //Blank constructor loades examplerom... FIXME... Dirty
-            _assembler = new Assembler(_decoderRom);
-            _bus = new Bus();
-            _bus.NumberFormat = "X2";
-            _bus.DecoderROM = _decoderRom;
+            decoderRom = new DecoderRom(romPath);
+            assembler = new Assembler(decoderRom);
+            bus = new Bus();
+            bus.NumberFormat = "X2";
+            bus.DecoderROM = decoderRom;
           
-            var rega = new Register("REGA", "rega", _bus);
-            var regb = new Register("REGB", "regb", _bus);
-            var regc = new Register("REGC", "regc", _bus);
-            var regs = new Register("REGSWAP", "regs", _bus);
-            var regsp = new Register("REGSP", "regsp", _bus, 255);
-            var regsta = new StatusRegister("STATUS", "regsta", _bus);
-            var regi = new InstructionRegister("REGINSTR", "regi", _bus, regsta);
-            var pc = new ProgramCounter("PCOUNT", "pc", _bus);
-            var mem = new RamModule("BASEMEM", "mem", _bus, regsp, pc);
-            var mmu = new MMU("MMU", "mmu", _bus);
+            var rega = new Register("REGA", "rega", bus);
+            var regb = new Register("REGB", "regb", bus);
+            var regc = new Register("REGC", "regc", bus);
+            var regs = new Register("REGSWAP", "regs", bus);
+            var regsp = new Register("REGSP", "regsp", bus, 255);
+            var regsta = new StatusRegister("STATUS", "regsta", bus);
+            var regi = new InstructionRegister("REGINSTR", "regi", bus, regsta);
+            var pc = new ProgramCounter("PCOUNT", "pc", bus);
+            var mem = new RamModule("BASEMEM", "mem", bus, regsp, pc);
+            var mmu = new MMU("MMU", "mmu", bus);
             var clk = new Clock("clk", "Clock");
-            var alu = new ALU("ALU ", "alu", rega, regb, regsta, _bus);
+            var alu = new ALU("ALU ", "alu", rega, regb, regsta, bus);
 
 
-            _bus.devices.Add(regi);
-            _bus.devices.Add(pc);
-            _bus.devices.Add(regsp);
-            _bus.devices.Add(rega);
-            _bus.devices.Add(regb);
-            _bus.devices.Add(regc);
-            _bus.devices.Add(regs);
-            _bus.devices.Add(alu);
-            _bus.devices.Add(regsta);
-            _bus.devices.Add(mem);
-            _bus.devices.Add(mmu);
-            _bus.devices.Add(clk);
+            bus.devices.Add(regi);
+            bus.devices.Add(pc);
+            bus.devices.Add(regsp);
+            bus.devices.Add(rega);
+            bus.devices.Add(regb);
+            bus.devices.Add(regc);
+            bus.devices.Add(regs);
+            bus.devices.Add(alu);
+            bus.devices.Add(regsta);
+            bus.devices.Add(mem);
+            bus.devices.Add(mmu);
+            bus.devices.Add(clk);
 
           
-            _programByteCode = _assembler.Assemble(); //Paramless uses example src... FIXME... Dirty
-            mem.LoadBytes(_programByteCode);
-        }
+            programByteCode = assembler.Assemble(srcPath);
+            mem.LoadBytes(programByteCode);
 
+               
+        }  
+         
+            public IEnumerable<List<MicroInstruction>> RunClk()
+            {
+                var clk = (Clock)bus.devices.Single(c => c.ID() == "clk");
 
+                while(!clk.IsHalted())
+                {
+                currentMicroCode = decoderRom.FetchInstruction(((Register)bus.devices.Single(d => d.ID() == "regsta")).Data,((Register)bus.devices.Single(d => d.ID() == "regi")).Data);
+                foreach (var microCode in currentMicroCode)
+                {
+                    var dev = bus.devices.Single(d => d.ID() == microCode.DeviceID);
+                    dev.Enable(microCode.Function);
+                }
+                
+                bus.Clk();
+                  
+                yield return currentMicroCode;
+}
+
+            }
+                  
     }
 }

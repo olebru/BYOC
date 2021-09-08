@@ -1,4 +1,7 @@
 ﻿using System; 
+using System.Collections.Generic;
+using BYOCCore;
+using System.Linq;
 
 namespace ConsoleUI
 {
@@ -6,7 +9,16 @@ namespace ConsoleUI
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Hello World!");
+   
+      
+            var c = new BYOCCore.LowLevelPileOfPartsActingAsAMCU(   "./ExampleFiles/examplerom.csv","./ExampleFiles/examplesrc.asm");
+
+            foreach (var device in c.bus.devices)
+            {
+
+                Console.WriteLine(device.ID());
+            }
+            
             
         }
     }

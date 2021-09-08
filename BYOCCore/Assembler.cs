@@ -20,12 +20,9 @@ namespace BYOCCore
             labelLUT = new Dictionary<String, int>();
         }
 
-        public byte[] Assemble() { return Assemble(Properties.Resources.examplesrc);}
-
+      
         public byte[] Assemble(string source)
         {
-
-
             //First pass
             using (var sr = new System.IO.StreamReader(source))
             {
