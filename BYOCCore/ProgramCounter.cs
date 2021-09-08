@@ -1,6 +1,4 @@
 ﻿using System;
-
-
 namespace BYOCCore
 {
     public class ProgramCounter : Register, IBusDevice
@@ -9,9 +7,7 @@ namespace BYOCCore
         {
             
         }
-
         private bool countEnabled = false;
-
         public new string OperationsOnNextClock()
         {
             string next = "";
@@ -21,11 +17,8 @@ namespace BYOCCore
             if (inc) next = $"{next}inc";
             if (dec) next = $"{next}dec";
             if (countEnabled) next = $"{next}count";
-
             return $"{next}";
-
         }
-
         public new void Enable(string function)
         {
             switch (function)
@@ -37,9 +30,7 @@ namespace BYOCCore
                     base.Enable(function);
                     break;
             }
-
         }
-
         public new void Clk()
         {
             if (countEnabled)
@@ -47,10 +38,8 @@ namespace BYOCCore
                 increment();
                 countEnabled = false;
             }
-
             base.Clk();
         }
-
         private void increment()
         {
             if (Data == byte.MaxValue)
@@ -62,7 +51,6 @@ namespace BYOCCore
                 Data++;
             }
         }
-
        
     }
 }

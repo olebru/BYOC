@@ -3,12 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
 namespace BYOCCore
 {
    public  class Register : IBusDevice
     {
-
         protected  bool outputEnabled = false;
         protected bool loadEnabled = false;
         protected bool reset = false;
@@ -18,9 +16,7 @@ namespace BYOCCore
         protected Bus connectedBus;
         protected string deviceName = "";
         protected string deviceID = "";
-
         public string DisplayName() { return deviceName; }
-
         public Register(string DeviceName, string DeviceID, Bus ConnectedBus, byte InitialValue = 0)
         {
             deviceName = DeviceName;
@@ -28,9 +24,7 @@ namespace BYOCCore
             connectedBus = ConnectedBus;
             Data = InitialValue;
         }
-
         public string ID() { return deviceID; }
-
         public void Clk()
         {
             if (loadEnabled)
@@ -62,18 +56,13 @@ namespace BYOCCore
         public List<String> SignalLines()
         {
             var lines = new List<String>();
-
-
             lines.Add("output");
             lines.Add("load");
             lines.Add("reset");
             lines.Add("inc");
             lines.Add("dec");
-
             return lines;
-
         }
-
         public void Enable(string function)
         {
             switch (function)
@@ -97,7 +86,6 @@ namespace BYOCCore
                     throw new Exception("Unable to enable the unknown function: " + function);
             }
         }
-
       
         public string ToString(int firstColumnPaddedWidth)
         {

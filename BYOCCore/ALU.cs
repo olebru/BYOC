@@ -1,11 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-
-
 namespace BYOCCore
 {
-
     
     public class ALU : IBusDevice
     {
@@ -18,8 +15,6 @@ namespace BYOCCore
         private Bus bus;
         private string deviceName;
         private string deviceID;
-
-
         public ALU(string DeviceName, string DeviceID, Register rega, Register regb, Register regsta, Bus Bus)
         {
             deviceID = DeviceID;
@@ -29,10 +24,8 @@ namespace BYOCCore
             bus = Bus;
             deviceName = DeviceName;
         }
-
         public string DisplayName() { return deviceName; }
         public string ID() { return deviceID; }
-
         private string newStatus = "00000000";
         char bit = '1';
         private void setZero()
@@ -67,7 +60,6 @@ namespace BYOCCore
         {
             this.sta.Data = Convert.ToByte(newStatus, 2);
         }
-
         public void Clk()
         {
             if (add)
@@ -84,7 +76,6 @@ namespace BYOCCore
                     
                 }
                 add = false;
-
                 pushNewStatusToRegister();
             }
             if (sub)
@@ -98,7 +89,6 @@ namespace BYOCCore
                 
                 bus.Data = (byte)res;
                 sub = false;
-
                 pushNewStatusToRegister();
             }
             if (cmp)
@@ -116,9 +106,7 @@ namespace BYOCCore
                 pushNewStatusToRegister();
             }
        }
-
         
-
         public string OperationsOnNextClock()
         {
             string next = "";
@@ -127,23 +115,15 @@ namespace BYOCCore
             if (cmp) next = $"{next}cmp";
           
             return $"{next}";
-
         }
-
         public List<String> SignalLines()
         {
             var lines = new List<String>();
-
             lines.Add("add");
             lines.Add("sub");
             lines.Add("cmp");
-
-
             return lines;
-
         }
-
-
         public void Enable(string function)
         {
             switch (function)
@@ -165,7 +145,6 @@ namespace BYOCCore
         {
             return add || sub ;
         }
-
         public string ToString()
         {
             return deviceName;

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Text;
-
 namespace BYOCCore
 {
    public  class MicroInstruction
@@ -20,11 +19,9 @@ namespace BYOCCore
         public string Mnemonic { get; set; }
         public bool IsASMEntryPoint { get; set; }
         public bool IsMCEntryPoint { get; set; }
-
         public override string ToString()
         {
             var sb = new StringBuilder();
-
             if (IsASMEntryPoint)
             {
                 sb.Append("---");
@@ -46,7 +43,6 @@ namespace BYOCCore
         }
         public string ToSingleLineString()
         {
-
             return Mnemonic + "\t" + OPCode + "\t" + DeviceID + "\t" + Function;
         }
     }

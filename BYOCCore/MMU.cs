@@ -1,18 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-
-
 namespace BYOCCore
 {
     public class MMU : IBusDevice
     {
         private string id;
         private string deviceName;
-
         public Register ChipSelectRegister;
         private Bus bus;
-        private RamModule[] ramIshModules;
+        public RamModule[] RamBanks;
         private bool asciiMode;
         public bool ASCIIMode
         {
@@ -23,11 +20,10 @@ namespace BYOCCore
             set
             {
                 asciiMode = value;
-                foreach (var ramModule in ramIshModules)
+                foreach (var ramModule in RamBanks)
                 {
                     ramModule.ASCIIMode = asciiMode;
                 }
-
             }
         }
         public string DisplayName() { return deviceName; }
@@ -37,35 +33,25 @@ namespace BYOCCore
             ChipSelectRegister = new Register("CS  ", "cs", this.bus);
             id = DeviceID;
             deviceName = DeviceName;
-            ramIshModules = new RamModule[256];
+            RamBanks = new RamModule[256];
             for (int i = 0; i < 256; i++)
             {
-                ramIshModules[i] = new RamModule($"Bank {i}", i.ToString(), this.bus, null, null);
+                RamBanks[i] = new RamModule($"Bank {i}", i.ToString(), this.bus);
             }
         }
         public void Clk()
         {
             this.ChipSelectRegister.Clk();
-            this.ramIshModules[ChipSelectRegister.Data].Clk();
-
+            this.RamBanks[ChipSelectRegister.Data].Clk();
         }
-
-
-
         public List<String> SignalLines()
         {
-            var lines = this.ramIshModules.FirstOrDefault().SignalLines();
-
-
+            var lines = this.RamBanks.FirstOrDefault().SignalLines();
             lines.Add("loadcs");
             lines.Add("outputcs");
             lines.Add("select0stack");
-
-
             return lines;
-
         }
-
         public void Enable(string function)
         {
             switch (function)
@@ -80,26 +66,23 @@ namespace BYOCCore
                     ChipSelectRegister.Enable("output");
                     break;
                 default:
-                    this.ramIshModules[ChipSelectRegister.Data].Enable(function);
+                    this.RamBanks[ChipSelectRegister.Data].Enable(function);
                     break;
             }
         }
-
         public string ID()
         {
             return id;
         }
-
         public bool IsOutputEnabled()
         {
            
             if (ChipSelectRegister.IsOutputEnabled()) return true;
-            foreach (var bank in ramIshModules)
+            foreach (var bank in RamBanks)
             {
                 if (bank != null && bank.IsOutputEnabled()) return true;
             }
             return false;
-
         }
     }
 }

@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-
-
 namespace BYOCCore
 {
     public class DecoderRom
@@ -27,13 +25,10 @@ namespace BYOCCore
                 get
                 {
                     int fioc = 0;
-
                     fioc = Convert.ToInt32($"{status}{opCodeAsString}", 2);
-
                     return fioc;
                 }
             }
-
             public string status { get { return $"{negative}{overflow}{carry}{zero}"; } }
             public int statusAsInt { get { return Convert.ToInt32(status, 2); } }
             public string opCodeAsString { get { return Convert.ToString(opCode, 2).PadLeft(8, '0'); } }
@@ -43,7 +38,6 @@ namespace BYOCCore
             }
         }
         private List<MicroInstruction> completeROM;
-
         //public DecoderRom() : this (Properties.Resources.currentrom){ }
         
         public DecoderRom(string rom)
@@ -51,21 +45,17 @@ namespace BYOCCore
             var initialListLine = new List<fileLine>();
             var interMediateListLine = new List<fileLine>();
             var finalListLine = new List<fileLine>();
-
    
-
             using (var sr = new System.IO.StreamReader(rom))
             {
                 int order = -1;
                 while (!sr.EndOfStream)
                 {
                     order++;
-
                     var csvLine = sr.ReadLine();
                     var line = new fileLine();
                     var tokens = csvLine.Split('\t');
                     line.readOrder = order;
-
                     line.clkFlag = tokens[0];
                     line.deviceID = tokens[1];
                     line.function = tokens[2];
@@ -77,18 +67,14 @@ namespace BYOCCore
                     initialListLine.Add(line);
                 }
             }
-
             foreach (var line in initialListLine)
             {
                 List<String> possiblities = new List<string>();
                 List<String> validBitCombinations = new List<string>();
-
-
                 for (int i = 0; i < 16; i++)
                 {
                     possiblities.Add(Convert.ToString(i, 2).PadLeft(4, '0'));
                 }
-
                 foreach (var possibilty in possiblities)
                 {
                     var cand = new StringBuilder(string.Empty.PadLeft(4, '0'));
@@ -100,7 +86,6 @@ namespace BYOCCore
                     if (validBitCombinations.Count(v => v == cand.ToString()) == 0)
                         validBitCombinations.Add(cand.ToString());
                 }
-
                 foreach (var validCombination in validBitCombinations)
                 {
                     var newLine = new fileLine();
@@ -111,20 +96,14 @@ namespace BYOCCore
                     newLine.mnemonic = line.mnemonic;
                     newLine.mnemonicSeq = line.mnemonicSeq;
                     newLine.instructionBaseAddress = line.instructionBaseAddress;
-
                     newLine.negative = validCombination[0].ToString();
                     newLine.overflow = validCombination[1].ToString();
                     newLine.carry = validCombination[2].ToString();
                     newLine.zero = validCombination[3].ToString();
                     interMediateListLine.Add(newLine);
-
                 }
-
             }
-
-
             var listMnemonics = new List<string>();
-
             foreach (var line in interMediateListLine)
             {
                 if (listMnemonics.Count(l => l == line.mnemonic) == 0)
@@ -135,13 +114,11 @@ namespace BYOCCore
             int addr = 0;
             foreach (var mnemonic in listMnemonics)
             {
-
                 var listOfList = new List<List<fileLine>>();
                 for (int i = 0; i < 16; i++)
                 {
                     listOfList.Add(new List<fileLine>());
                 }
-
                 foreach (var instr in interMediateListLine.Where(l => l.mnemonic == mnemonic).OrderBy(l => l.readOrder))
                 {
                     listOfList[instr.statusAsInt].Add(instr);
@@ -156,29 +133,23 @@ namespace BYOCCore
                         listWithHighestCount = listOfList.IndexOf(list);
                     }
                 }
-
                 foreach (var lineItem in interMediateListLine.Where(l => l.mnemonic == mnemonic))
                 {
                     lineItem.instructionBaseAddress = addr;
                 }
                 addr = addr + countOfListWithHigestCount;
             }
-
             foreach (var mnemonic in listMnemonics)
             {
-
                 var listOfList = new List<List<fileLine>>();
                 for (int i = 0; i < 16; i++)
                 {
                     listOfList.Add(new List<fileLine>());
                 }
-
                 foreach (var instr in interMediateListLine.Where(l => l.mnemonic == mnemonic))
                 {
                     listOfList[instr.statusAsInt].Add(instr);
                 }
-
-
                 foreach (var list in listOfList)
                 {
                     bool firstFound = false;
@@ -205,33 +176,23 @@ namespace BYOCCore
                 var mc = new MicroInstruction(line.completeOpCode, line.deviceID, line.function, line.mnemonic, false, (line.instructionBaseAddress == line.completeOpCode && line.status == "0000"));
                 completeROM.Add(mc);
             }
-
             if (this.OpCodeAddressSpaceUsedInPercent() > 99 )
             {
                 throw new Exception("OpCode AddressSpace is exhausted, optimize...");
             }
-
         }
       
         public byte FetchByteCodeFromMnemonic(string Mnemonic)
         {
             var b = completeROM.FirstOrDefault(m => m.Mnemonic == Mnemonic).OPCode;
-
             return (byte)b;
-
         }
-
         public double OpCodeAddressSpaceUsedInPercent()
         {
             var opCodesBelow256 = completeROM.Where(o => o.OPCode < 256);
-
             var lastOpcode = opCodesBelow256.OrderBy(o => o.OPCode).Select(o => o.OPCode).Max();
-
             return Math.Round(((double)lastOpcode / 256d * 100d), 1);
-
         }
-
-
         public List<MicroInstruction> FetchInstruction(Byte StatusRegisterValue, Byte InstructionRegisterValue)
         {
           
@@ -241,7 +202,6 @@ namespace BYOCCore
             int fullOpCode = Convert.ToInt32(strfullOpCode, 2);
             return completeROM.Where(m => m.OPCode == fullOpCode).ToList<MicroInstruction>();
         }
-
         
     }
 }

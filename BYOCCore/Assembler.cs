@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-
-
 namespace BYOCCore
 {
     public class Assembler
@@ -19,7 +17,6 @@ namespace BYOCCore
             assemblerDirectives.Add(".BYTE");
             labelLUT = new Dictionary<String, int>();
         }
-
       
         public byte[] Assemble(string source)
         {
@@ -32,19 +29,13 @@ namespace BYOCCore
                 {
                     var line = sr.ReadLine();
                     var tokens = line.Split('\t');
-
                     if (tokens[0].Length > 0 && tokens[0].Last() == ':')
                     {
                         labelLUT.Add(tokens[0].Replace(":", string.Empty), address);
                     }
-
                     if (tokens[1].First() != '.') address++;
-
                     int numberOfOperands = 0;
                     if (tokens.Length > 2) numberOfOperands = 1;
-
-
-
                     if (tokens.Length > 2 && tokens[2].Contains(','))
                     {
                         var operandTokens = tokens[2].Split(',');
@@ -53,7 +44,6 @@ namespace BYOCCore
                     address += numberOfOperands;
                 }
             }
-
             //Second pass
             using (var sr = new System.IO.StreamReader(source))
             {
@@ -61,19 +51,15 @@ namespace BYOCCore
                 {
                     string line = sr.ReadLine();
                     var tokens = line.Split('\t');
-
                     string mnemonic = tokens[1];
-
                     if (mnemonic.First() != '.')
                     {
                         var opcode = completeDecoderRom.FetchByteCodeFromMnemonic(mnemonic);
                         bytecode.Add(opcode);
                     }
-
                     if (tokens.Length == 3) //Operand
                     {
                         var operandTokens = tokens[2].Split(',');
-
                         foreach (var operandToken in operandTokens)
                         {
                             switch (operandToken.First())
@@ -87,14 +73,11 @@ namespace BYOCCore
                                         );
                                     break;
                             }
-
                         }
-
                     }
                 }
             }
             
-
             return bytecode.ToArray();
         }
     }
