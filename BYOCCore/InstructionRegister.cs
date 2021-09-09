@@ -8,7 +8,6 @@ namespace BYOCCore
    public  class InstructionRegister : Register, IBusDevice
     {
         public string Instruction = "N/A";
-        private Register regsta; 
         public InstructionRegister(string DeviceName, string DeviceID, Bus bus) : base(DeviceName, DeviceID, bus)
         {   
         }

@@ -140,7 +140,7 @@ namespace BYOCCore
         {
             return add || sub ;
         }
-        public string ToString()
+        public new string ToString()
         {
             return deviceName;
         }

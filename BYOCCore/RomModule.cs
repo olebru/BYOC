@@ -17,8 +17,6 @@ namespace BYOCCore
         public bool ASCIIMode = false;
         public bool INSTRMode = false;
         public bool ShowRAMValues = true;
-        private bool hasSP = false;
-        private bool hasPC = false;
         public string DisplayName() { return deviceName; }
         public RomModule(string DeviceName, string DeviceID, Bus ConnectedBus)
         {
