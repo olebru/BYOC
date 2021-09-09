@@ -5,12 +5,24 @@ namespace BYOCCore
 {
     public class MMU : IBusDevice
     {
-        private string id;
-        private string deviceName;
         public Register ChipSelectRegister;
-        private Bus bus;
         public RamModule[] RamBanks;
         private bool asciiMode;
+        private Bus bus;
+        private string deviceName;
+        private string id;
+        public MMU(string DeviceName, string DeviceID, Bus bus)
+        {
+            this.bus = bus;
+            ChipSelectRegister = new Register("CS  ", "cs", this.bus);
+            id = DeviceID;
+            deviceName = DeviceName;
+            RamBanks = new RamModule[256];
+            for (int i = 0; i < 256; i++)
+            {
+                RamBanks[i] = new RamModule($"Bank {i}", i.ToString(), this.bus);
+            }
+        }
         public bool ASCIIMode
         {
             get
@@ -26,32 +38,12 @@ namespace BYOCCore
                 }
             }
         }
-        public string DisplayName() { return deviceName; }
-        public MMU(string DeviceName, string DeviceID, Bus bus)
-        {
-            this.bus = bus;
-            ChipSelectRegister = new Register("CS  ", "cs", this.bus);
-            id = DeviceID;
-            deviceName = DeviceName;
-            RamBanks = new RamModule[256];
-            for (int i = 0; i < 256; i++)
-            {
-                RamBanks[i] = new RamModule($"Bank {i}", i.ToString(), this.bus);
-            }
-        }
         public void Clk()
         {
             this.ChipSelectRegister.Clk();
             this.RamBanks[ChipSelectRegister.Data].Clk();
         }
-        public List<String> SignalLines()
-        {
-            var lines = this.RamBanks.FirstOrDefault().SignalLines();
-            lines.Add("loadcs");
-            lines.Add("outputcs");
-            lines.Add("select0stack");
-            return lines;
-        }
+        public string DisplayName() { return deviceName; }
         public void Enable(string function)
         {
             switch (function)
@@ -82,6 +74,14 @@ namespace BYOCCore
                 if (bank != null && bank.IsOutputEnabled()) return true;
             }
             return false;
+        }
+        public List<String> SignalLines()
+        {
+            var lines = this.RamBanks.FirstOrDefault().SignalLines();
+            lines.Add("loadcs");
+            lines.Add("outputcs");
+            lines.Add("select0stack");
+            return lines;
         }
     }
 }

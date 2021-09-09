@@ -5,10 +5,10 @@ namespace BYOCCore
 {
     public class Assembler
     {
-        private DecoderRom completeDecoderRom;
+        public Dictionary<String, int> labelLUT;
         private List<String> assemblerDirectives;
         private List<byte> bytecode;
-        public Dictionary<String, int> labelLUT;
+        private DecoderRom completeDecoderRom;
         public Assembler(DecoderRom completeDecoderRom)
         {
             this.completeDecoderRom = completeDecoderRom;

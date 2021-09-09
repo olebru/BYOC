@@ -3,20 +3,18 @@ namespace BYOCCore
 {
     public class ProgramCounter : Register, IBusDevice
     {
+        private bool countEnabled = false;
         public ProgramCounter(string DeviceName, string DeviceID, Bus bus) : base(DeviceName,DeviceID,bus)
         {
         }
-        private bool countEnabled = false;
-        public new string OperationsOnNextClock()
+        public new void Clk()
         {
-            string next = "";
-            if (loadEnabled) next = $"{next}load";
-            if (outputEnabled) next = $"{next}output";
-            if (reset) next = $"{next}reset";
-            if (inc) next = $"{next}inc";
-            if (dec) next = $"{next}dec";
-            if (countEnabled) next = $"{next}count";
-            return $"{next}";
+            if (countEnabled)
+            {
+                increment();
+                countEnabled = false;
+            }
+            base.Clk();
         }
         public new void Enable(string function)
         {
@@ -30,14 +28,16 @@ namespace BYOCCore
                     break;
             }
         }
-        public new void Clk()
+        public new string OperationsOnNextClock()
         {
-            if (countEnabled)
-            {
-                increment();
-                countEnabled = false;
-            }
-            base.Clk();
+            string next = "";
+            if (loadEnabled) next = $"{next}load";
+            if (outputEnabled) next = $"{next}output";
+            if (reset) next = $"{next}reset";
+            if (inc) next = $"{next}inc";
+            if (dec) next = $"{next}dec";
+            if (countEnabled) next = $"{next}count";
+            return $"{next}";
         }
         private void increment()
         {

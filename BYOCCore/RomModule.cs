@@ -6,31 +6,22 @@ namespace BYOCCore
 {
     public class RomModule : IBusDevice
     {
-        protected byte memoryAddress = 0;
-        protected byte[] memory = new byte[256];
-        protected Bus connectedBus;
-        private bool loadMAR = false;
-        private bool outputMAR = false;
-        private bool output = false;
-        private string deviceName = "";
-        private string deviceID;
         public bool ASCIIMode = false;
         public bool INSTRMode = false;
         public bool ShowRAMValues = true;
-        public string DisplayName() { return deviceName; }
+        protected Bus connectedBus;
+        protected byte[] memory = new byte[256];
+        protected byte memoryAddress = 0;
+        private string deviceID;
+        private string deviceName = "";
+        private bool loadMAR = false;
+        private bool output = false;
+        private bool outputMAR = false;
         public RomModule(string DeviceName, string DeviceID, Bus ConnectedBus)
         {
             deviceName = DeviceName;
             deviceID = DeviceID;
             connectedBus = ConnectedBus;
-        }
-        public string ID() { return deviceID; }
-        public void LoadBytes(Byte[] bytes)
-        {
-            for (int i = 0; i < bytes.Length; i++)
-            {
-                memory[i] = bytes[i];
-            }
         }
         public void Clk()
         {
@@ -50,14 +41,7 @@ namespace BYOCCore
                 outputMAR = false;
             }
         }
-        public List<String> SignalLines()
-        {
-            var lines = new List<String>();
-            lines.Add("loadmar");
-            lines.Add("outputMAR");
-            lines.Add("output");
-            return lines;
-        }
+        public string DisplayName() { return deviceName; }
         public void Enable(string function)
         {
             switch (function)
@@ -74,6 +58,39 @@ namespace BYOCCore
                 default:
                     throw new Exception("Unable to enable the unknown function: " + function);
             }
+        }
+        public string ID() { return deviceID; }
+        public bool IsOutputEnabled()
+        {
+            return output;
+        }
+        public void LoadBytes(Byte[] bytes)
+        {
+            for (int i = 0; i < bytes.Length; i++)
+            {
+                memory[i] = bytes[i];
+            }
+        }
+        public string OperationsOnNextClockMAR()
+        {
+            string next = "";
+            if (loadMAR) next = $"{next}load";
+            if (outputMAR) next = $"{next}output";
+            return next;
+        }
+        public string OperationsOnNextClockRAM()
+        {
+            string next = "";
+            if (output) next = $"{next}output";
+            return next;
+        }
+        public List<String> SignalLines()
+        {
+            var lines = new List<String>();
+            lines.Add("loadmar");
+            lines.Add("outputMAR");
+            lines.Add("output");
+            return lines;
         }
         public override string ToString()
         {
@@ -95,23 +112,6 @@ namespace BYOCCore
                 output.Append(Environment.NewLine);
             }
             return output.ToString();
-        }
-        public string OperationsOnNextClockRAM()
-        {
-            string next = "";
-            if (output) next = $"{next}output";
-            return next;
-        }
-        public string OperationsOnNextClockMAR()
-        {
-            string next = "";
-            if (loadMAR) next = $"{next}load";
-            if (outputMAR) next = $"{next}output";
-            return next;
-        }
-        public bool IsOutputEnabled()
-        {
-            return output;
         }
     }
 }

@@ -1,8 +1,8 @@
-﻿using System; 
+﻿using System;
 using System.Collections.Generic;
-using BYOCCore;
 using System.Linq;
 using System.Threading;
+using BYOCCore;
 namespace ConsoleUI
 {
     class Program

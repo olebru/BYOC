@@ -13,12 +13,16 @@ namespace BYOCCore
             this.IsMCEntryPoint = IsMCEntryPoint;
             this.IsASMEntryPoint = IsASMEntryPoint;
         }
-        public int OPCode { get; set; }
         public string DeviceID { get; set; }
         public string Function { get; set; }
-        public string Mnemonic { get; set; }
         public bool IsASMEntryPoint { get; set; }
         public bool IsMCEntryPoint { get; set; }
+        public string Mnemonic { get; set; }
+        public int OPCode { get; set; }
+        public string ToSingleLineString()
+        {
+            return Mnemonic + "\t" + OPCode + "\t" + DeviceID + "\t" + Function;
+        }
         public override string ToString()
         {
             var sb = new StringBuilder();
@@ -40,10 +44,6 @@ namespace BYOCCore
             sb.Append(OPCode);
             sb.Append(Environment.NewLine);
             return sb.ToString();
-        }
-        public string ToSingleLineString()
-        {
-            return Mnemonic + "\t" + OPCode + "\t" + DeviceID + "\t" + Function;
         }
     }
 }

@@ -6,37 +6,6 @@ namespace BYOCCore
 {
     public class DecoderRom
     {
-        private class fileLine
-        {
-            public int readOrder = 0;
-            private int opCode { get { return instructionBaseAddress + mnemonicSeq; } }
-            public int mnemonicSeq = 0;
-            public string clkFlag = string.Empty;
-            public string deviceID = string.Empty;
-            public string function = string.Empty;
-            public string mnemonic = string.Empty;
-            public string negative = string.Empty;
-            public string overflow = string.Empty;
-            public string carry = string.Empty;
-            public string zero = string.Empty;
-            public int instructionBaseAddress = 0;
-            public int completeOpCode
-            {
-                get
-                {
-                    int fioc = 0;
-                    fioc = Convert.ToInt32($"{status}{opCodeAsString}", 2);
-                    return fioc;
-                }
-            }
-            public string status { get { return $"{negative}{overflow}{carry}{zero}"; } }
-            public int statusAsInt { get { return Convert.ToInt32(status, 2); } }
-            public string opCodeAsString { get { return Convert.ToString(opCode, 2).PadLeft(8, '0'); } }
-            public override string ToString()
-            {
-                return $"{mnemonic},CO{completeOpCode},O{opCode},B{instructionBaseAddress},{clkFlag},{deviceID},{function},{status}";
-            }
-        }
         private List<MicroInstruction> completeROM;
         public DecoderRom(string rom)
         {
@@ -182,12 +151,6 @@ namespace BYOCCore
             var b = completeROM.FirstOrDefault(m => m.Mnemonic == Mnemonic).OPCode;
             return (byte)b;
         }
-        public double OpCodeAddressSpaceUsedInPercent()
-        {
-            var opCodesBelow256 = completeROM.Where(o => o.OPCode < 256);
-            var lastOpcode = opCodesBelow256.OrderBy(o => o.OPCode).Select(o => o.OPCode).Max();
-            return Math.Round(((double)lastOpcode / 256d * 100d), 1);
-        }
         public List<MicroInstruction> FetchInstruction(Byte StatusRegisterValue, Byte InstructionRegisterValue)
         {
             string strBaseOpCode = Convert.ToString(InstructionRegisterValue, 2).PadLeft(8, '0');
@@ -195,6 +158,43 @@ namespace BYOCCore
             string strfullOpCode = status + strBaseOpCode;
             int fullOpCode = Convert.ToInt32(strfullOpCode, 2);
             return completeROM.Where(m => m.OPCode == fullOpCode).ToList<MicroInstruction>();
+        }
+        public double OpCodeAddressSpaceUsedInPercent()
+        {
+            var opCodesBelow256 = completeROM.Where(o => o.OPCode < 256);
+            var lastOpcode = opCodesBelow256.OrderBy(o => o.OPCode).Select(o => o.OPCode).Max();
+            return Math.Round(((double)lastOpcode / 256d * 100d), 1);
+        }
+        private class fileLine
+        {
+            public string carry = string.Empty;
+            public string clkFlag = string.Empty;
+            public string deviceID = string.Empty;
+            public string function = string.Empty;
+            public int instructionBaseAddress = 0;
+            public string mnemonic = string.Empty;
+            public int mnemonicSeq = 0;
+            public string negative = string.Empty;
+            public string overflow = string.Empty;
+            public int readOrder = 0;
+            public string zero = string.Empty;
+            public int completeOpCode
+            {
+                get
+                {
+                    int fioc = 0;
+                    fioc = Convert.ToInt32($"{status}{opCodeAsString}", 2);
+                    return fioc;
+                }
+            }
+            public string opCodeAsString { get { return Convert.ToString(opCode, 2).PadLeft(8, '0'); } }
+            public string status { get { return $"{negative}{overflow}{carry}{zero}"; } }
+            public int statusAsInt { get { return Convert.ToInt32(status, 2); } }
+            private int opCode { get { return instructionBaseAddress + mnemonicSeq; } }
+            public override string ToString()
+            {
+                return $"{mnemonic},CO{completeOpCode},O{opCode},B{instructionBaseAddress},{clkFlag},{deviceID},{function},{status}";
+            }
         }
     }
 }

@@ -1,5 +1,5 @@
-﻿using System.Collections.Generic;
-using System;
+﻿using System;
+using System.Collections.Generic;
 namespace BYOCCore
 {
     public class RamModule : RomModule
@@ -29,17 +29,17 @@ namespace BYOCCore
                     break;
             }
         }
-        public new List<String> SignalLines()
-        {
-            var baseList = base.SignalLines();
-            baseList.Add("load");
-            return baseList;
-        }
         public new string OperationsOnNextClockRAM()
         {
             string next = base.OperationsOnNextClockRAM();
             if (load) next = $"{next}load";
             return next;
+        }
+        public new List<String> SignalLines()
+        {
+            var baseList = base.SignalLines();
+            baseList.Add("load");
+            return baseList;
         }
     }
 }

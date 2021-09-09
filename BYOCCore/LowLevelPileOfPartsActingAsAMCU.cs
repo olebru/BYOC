@@ -1,16 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Linq;
+using System.Text;
 namespace BYOCCore
 {
     public class LowLevelPileOfPartsActingAsAMCU
     {
-        public Bus bus;
-        public DecoderRom decoderRom;
         public Assembler assembler;
-        public byte[] programByteCode;
+        public Bus bus;
         public List<MicroInstruction> currentMicroCode;
+        public DecoderRom decoderRom;
+        public byte[] programByteCode;
         public LowLevelPileOfPartsActingAsAMCU(string romPath,string srcPath)
         {
             decoderRom = new DecoderRom(romPath);
@@ -44,7 +44,7 @@ namespace BYOCCore
             bus.devices.Add(clk);
             programByteCode = assembler.Assemble(srcPath);
             mem.LoadBytes(programByteCode);
-        }  
+        }
             public IEnumerable<int> RunClk()
             {
                 var clk = (Clock)bus.devices.Single(c => c.ID() == "clk");

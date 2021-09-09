@@ -4,10 +4,10 @@ namespace BYOCCore
 {
     public  class  Clock : IBusDevice
     {
-        private bool halted = false;
-        private string deviceID;
-        private string name;
         public int cycle = 0;
+        private string deviceID;
+        private bool halted = false;
+        private string name;
         public Clock(string Name, string DeviceID)
         {
             deviceID = DeviceID;
@@ -18,13 +18,6 @@ namespace BYOCCore
            cycle++;
         }
         public string DisplayName() { return name; }
-        public bool IsHalted() { return halted; }
-        public List<String> SignalLines()
-        {
-            var lines = new List<String>();
-            lines.Add("disable");
-            return lines;
-        }
         public void Enable(string function)
         {
             if (function == "disable")
@@ -40,9 +33,16 @@ namespace BYOCCore
         {
             return deviceID;
         }
+        public bool IsHalted() { return halted; }
         public bool IsOutputEnabled()
         {
             return false;
+        }
+        public List<String> SignalLines()
+        {
+            var lines = new List<String>();
+            lines.Add("disable");
+            return lines;
         }
     }
 }

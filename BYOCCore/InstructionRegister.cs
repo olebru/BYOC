@@ -9,23 +9,12 @@ namespace BYOCCore
     {
         public string Instruction = "N/A";
         public InstructionRegister(string DeviceName, string DeviceID, Bus bus) : base(DeviceName, DeviceID, bus)
-        {   
+        {
         }
         public new void Clk()
-        {    
-            increment();    
-            base.Clk();
-        }
-        private void increment()
         {
-            if (Data == byte.MaxValue)
-            {
-                Data = 0;
-            }
-            else
-            {
-                Data++;
-            }
+            increment();
+            base.Clk();
         }
         public new string OperationsOnNextClock()
         {
@@ -38,8 +27,19 @@ namespace BYOCCore
             return $"{next}";
         }
         public new string ToString(int firstColumnPaddedWidth)
-        {     
+        {
             return $"{base.deviceName} Value".PadRight(firstColumnPaddedWidth, ' ') + $"= {Data.ToString(base.connectedBus.NumberFormat)}";
+        }
+        private void increment()
+        {
+            if (Data == byte.MaxValue)
+            {
+                Data = 0;
+            }
+            else
+            {
+                Data++;
+            }
         }
     }
 }

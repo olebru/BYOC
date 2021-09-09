@@ -5,21 +5,20 @@ namespace BYOCCore
 {
     public class Bus
     {
+        public int Cycles = 0;
+        public DecoderRom DecoderROM;
         public string NumberFormat = "X2";
+        public List<IBusDevice> devices;
+        private byte data;
+        private bool dataWrittenInThisClk = false;
         private double hz = 0;
         private System.Diagnostics.Stopwatch stopwatch;
-        public List<IBusDevice> devices;
-        public DecoderRom DecoderROM;
         public Bus()
         {
             devices = new List<IBusDevice>();
             Data = new byte();
             stopwatch = new System.Diagnostics.Stopwatch();
         }
-        private byte data;
-        private bool dataWrittenInThisClk = false;
-        public int Cycles = 0;
-        public double ObservedClockSpeed { get { return hz; } }
         public byte Data
         {
             get
@@ -36,6 +35,7 @@ namespace BYOCCore
                 dataWrittenInThisClk = true;
             }
         }
+        public double ObservedClockSpeed { get { return hz; } }
         public void Clk()
         {
             stopwatch.Stop();

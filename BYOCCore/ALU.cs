@@ -6,14 +6,16 @@ namespace BYOCCore
     public class ALU : IBusDevice
     {
         private Register a;
-        private Register b;
-        private Register sta;
         private bool add;
-        private bool sub;
-        private bool cmp;
+        private Register b;
         private Bus bus;
-        private string deviceName;
+        private bool cmp;
         private string deviceID;
+        private string deviceName;
+        private string newStatus = "00000000";
+        private Register sta;
+        private bool sub;
+        char bit = '1';
         public ALU(string DeviceName, string DeviceID, Register rega, Register regb, Register regsta, Bus Bus)
         {
             deviceID = DeviceID;
@@ -22,42 +24,6 @@ namespace BYOCCore
             sta = regsta;
             bus = Bus;
             deviceName = DeviceName;
-        }
-        public string DisplayName() { return deviceName; }
-        public string ID() { return deviceID; }
-        private string newStatus = "00000000";
-        char bit = '1';
-        private void setZero()
-        {
-            StringBuilder sb = new StringBuilder(newStatus);
-            sb[7] = bit;
-            newStatus = sb.ToString();
-        }
-        private void setCarry()
-        {
-            StringBuilder sb = new StringBuilder(newStatus);
-            sb[6] = bit;
-            newStatus = sb.ToString();
-        }
-        private void setOverFlow()
-        {
-            StringBuilder sb = new StringBuilder(newStatus);
-            sb[5] = bit;
-            newStatus = sb.ToString();
-        }
-        private void setNegative()
-        {
-            StringBuilder sb = new StringBuilder(newStatus);
-            sb[4] = bit;
-            newStatus = sb.ToString();
-        }
-        private void clearNewStatus()
-        {
-            newStatus = "00000000";
-        }
-        private void pushNewStatusToRegister()
-        {
-            this.sta.Data = Convert.ToByte(newStatus, 2);
         }
         public void Clk()
         {
@@ -103,22 +69,7 @@ namespace BYOCCore
                 pushNewStatusToRegister();
             }
        }
-        public string OperationsOnNextClock()
-        {
-            string next = "";
-            if (add) next = $"{next}add";
-            if (sub) next = $"{next}sub";
-            if (cmp) next = $"{next}cmp";
-            return $"{next}";
-        }
-        public List<String> SignalLines()
-        {
-            var lines = new List<String>();
-            lines.Add("add");
-            lines.Add("sub");
-            lines.Add("cmp");
-            return lines;
-        }
+        public string DisplayName() { return deviceName; }
         public void Enable(string function)
         {
             switch (function)
@@ -136,13 +87,62 @@ namespace BYOCCore
                     throw new Exception("Unable to enable the unknown function: " + function);
             }
         }
+        public string ID() { return deviceID; }
         public bool IsOutputEnabled()
         {
             return add || sub ;
         }
+        public string OperationsOnNextClock()
+        {
+            string next = "";
+            if (add) next = $"{next}add";
+            if (sub) next = $"{next}sub";
+            if (cmp) next = $"{next}cmp";
+            return $"{next}";
+        }
+        public List<String> SignalLines()
+        {
+            var lines = new List<String>();
+            lines.Add("add");
+            lines.Add("sub");
+            lines.Add("cmp");
+            return lines;
+        }
         public new string ToString()
         {
             return deviceName;
+        }
+        private void clearNewStatus()
+        {
+            newStatus = "00000000";
+        }
+        private void pushNewStatusToRegister()
+        {
+            this.sta.Data = Convert.ToByte(newStatus, 2);
+        }
+        private void setCarry()
+        {
+            StringBuilder sb = new StringBuilder(newStatus);
+            sb[6] = bit;
+            newStatus = sb.ToString();
+        }
+        private void setNegative()
+        {
+            StringBuilder sb = new StringBuilder(newStatus);
+            sb[4] = bit;
+            newStatus = sb.ToString();
+        }
+        private void setOverFlow()
+        {
+            StringBuilder sb = new StringBuilder(newStatus);
+            sb[5] = bit;
+            newStatus = sb.ToString();
+        }
+        private void setZero()
+        {
+            StringBuilder sb = new StringBuilder(newStatus);
+            sb[7] = bit;
+            newStatus = sb.ToString();
         }
     }
 }

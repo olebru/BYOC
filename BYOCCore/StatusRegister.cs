@@ -3,14 +3,10 @@ namespace BYOCCore
 {
    public  class StatusRegister : Register, IBusDevice
     {
-        public bool Zero1
+        public bool EnableDecoderOffset = false;
+        private bool enableDecoderOffset = false;
+        public StatusRegister(string DeviceName, string DeviceID, Bus ConnectedBus) : base(DeviceName, DeviceID, ConnectedBus)
         {
-            get
-            {
-                string binaryString = Convert.ToString(base.Data, 2);
-                binaryString = binaryString.PadLeft(8, '0');
-                return (binaryString[7] == '1');
-            }
         }
         public bool Carry2
         {
@@ -19,15 +15,6 @@ namespace BYOCCore
                 var binaryString = Convert.ToString(base.Data, 2);
                binaryString = binaryString.PadLeft(8, '0');
                 return (binaryString[6] == '1');
-            }
-        }
-        public bool Overflow4
-        {
-            get
-            {
-                var binaryString = Convert.ToString(base.Data, 2);
-                binaryString = binaryString.PadLeft(8, '0');
-                return (binaryString[5] == '1');
             }
         }
         public bool Negative8
@@ -39,10 +26,23 @@ namespace BYOCCore
                 return (binaryString[4] == '1');
             }
         }
-        private bool enableDecoderOffset = false;
-        public bool EnableDecoderOffset = false;
-        public StatusRegister(string DeviceName, string DeviceID, Bus ConnectedBus) : base(DeviceName, DeviceID, ConnectedBus)
+        public bool Overflow4
         {
+            get
+            {
+                var binaryString = Convert.ToString(base.Data, 2);
+                binaryString = binaryString.PadLeft(8, '0');
+                return (binaryString[5] == '1');
+            }
+        }
+        public bool Zero1
+        {
+            get
+            {
+                string binaryString = Convert.ToString(base.Data, 2);
+                binaryString = binaryString.PadLeft(8, '0');
+                return (binaryString[7] == '1');
+            }
         }
         public new void Clk()
         {

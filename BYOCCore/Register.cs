@@ -7,16 +7,15 @@ namespace BYOCCore
 {
    public  class Register : IBusDevice
     {
-        protected  bool outputEnabled = false;
-        protected bool loadEnabled = false;
-        protected bool reset = false;
-        protected bool inc = false;
-        protected bool dec = false;
         public byte Data = 0;
         protected Bus connectedBus;
-        protected string deviceName = "";
+        protected bool dec = false;
         protected string deviceID = "";
-        public string DisplayName() { return deviceName; }
+        protected string deviceName = "";
+        protected bool inc = false;
+        protected bool loadEnabled = false;
+        protected  bool outputEnabled = false;
+        protected bool reset = false;
         public Register(string DeviceName, string DeviceID, Bus ConnectedBus, byte InitialValue = 0)
         {
             deviceName = DeviceName;
@@ -24,7 +23,6 @@ namespace BYOCCore
             connectedBus = ConnectedBus;
             Data = InitialValue;
         }
-        public string ID() { return deviceID; }
         public void Clk()
         {
             if (loadEnabled)
@@ -53,16 +51,7 @@ namespace BYOCCore
                 dec = false;
             }
         }
-        public List<String> SignalLines()
-        {
-            var lines = new List<String>();
-            lines.Add("output");
-            lines.Add("load");
-            lines.Add("reset");
-            lines.Add("inc");
-            lines.Add("dec");
-            return lines;
-        }
+        public string DisplayName() { return deviceName; }
         public void Enable(string function)
         {
             switch (function)
@@ -86,9 +75,10 @@ namespace BYOCCore
                     throw new Exception("Unable to enable the unknown function: " + function);
             }
         }
-        public string ToString(int firstColumnPaddedWidth)
+        public string ID() { return deviceID; }
+        public bool IsOutputEnabled()
         {
-            return $"{deviceName}".PadRight(firstColumnPaddedWidth, ' ') + $"= {Data.ToString(connectedBus.NumberFormat)}";
+            return outputEnabled;
         }
         public string OperationsOnNextClock()
         {
@@ -100,9 +90,19 @@ namespace BYOCCore
             if (dec) next = $"{next}dec"; ;
             return $"{next}";
         }
-        public bool IsOutputEnabled()
+        public List<String> SignalLines()
         {
-            return outputEnabled;
+            var lines = new List<String>();
+            lines.Add("output");
+            lines.Add("load");
+            lines.Add("reset");
+            lines.Add("inc");
+            lines.Add("dec");
+            return lines;
+        }
+        public string ToString(int firstColumnPaddedWidth)
+        {
+            return $"{deviceName}".PadRight(firstColumnPaddedWidth, ' ') + $"= {Data.ToString(connectedBus.NumberFormat)}";
         }
     }
 }
