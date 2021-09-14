@@ -9,6 +9,7 @@ namespace BYOCCore
         private List<String> assemblerDirectives;
         private List<byte> bytecode;
         private DecoderRom completeDecoderRom;
+
         public Assembler(DecoderRom completeDecoderRom)
         {
             this.completeDecoderRom = completeDecoderRom;
@@ -16,38 +17,35 @@ namespace BYOCCore
             assemblerDirectives = new List<string>();
             assemblerDirectives.Add(".BYTE");
             labelLUT = new Dictionary<String, int>();
-        }
+        } 
+
         public byte[] Assemble(string source)
         {
             //First pass
-            using (var sr = new System.IO.StreamReader(source))
-            {
-                int address = 0;
-                while (!sr.EndOfStream)
+    
+            int address = 0;
+           foreach(var line in source.Split(Environment.NewLine)) 
+           {
+                var tokens = line.Split('\t');
+                if (tokens[0].Length > 0 && tokens[0].Last() == ':')
                 {
-                    var line = sr.ReadLine();
-                    var tokens = line.Split('\t');
-                    if (tokens[0].Length > 0 && tokens[0].Last() == ':')
-                    {
-                        labelLUT.Add(tokens[0].Replace(":", string.Empty), address);
-                    }
-                    if (tokens[1].First() != '.') address++;
-                    int numberOfOperands = 0;
-                    if (tokens.Length > 2) numberOfOperands = 1;
-                    if (tokens.Length > 2 && tokens[2].Contains(','))
-                    {
-                        var operandTokens = tokens[2].Split(',');
-                        numberOfOperands = operandTokens.Count();
-                    }
-                    address += numberOfOperands;
+                    labelLUT.Add(tokens[0].Replace(":", string.Empty), address);
                 }
-            }
-            //Second pass
-            using (var sr = new System.IO.StreamReader(source))
-            {
-                while (!sr.EndOfStream)
+                if (tokens[1].First() != '.') address++;
+                int numberOfOperands = 0;
+                if (tokens.Length > 2) numberOfOperands = 1;
+                if (tokens.Length > 2 && tokens[2].Contains(','))
                 {
-                    string line = sr.ReadLine();
+                    var operandTokens = tokens[2].Split(',');
+                    numberOfOperands = operandTokens.Count();
+                }
+                address += numberOfOperands;
+                
+          
+           }
+            //Second pass
+             foreach(var line in source.Split(Environment.NewLine)) 
+             {
                     var tokens = line.Split('\t');
                     string mnemonic = tokens[1];
                     if (mnemonic.First() != '.')
@@ -73,8 +71,8 @@ namespace BYOCCore
                             }
                         }
                     }
-                }
-            }
+                
+             }
             return bytecode.ToArray();
         }
     }

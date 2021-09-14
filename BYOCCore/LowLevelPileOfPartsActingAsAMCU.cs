@@ -11,10 +11,15 @@ namespace BYOCCore
         public List<MicroInstruction> currentMicroCode;
         public DecoderRom decoderRom;
         public byte[] programByteCode;
-        public LowLevelPileOfPartsActingAsAMCU(string romPath,string srcPath)
+
+        public LowLevelPileOfPartsActingAsAMCU(string rom,string src)
         {
-            decoderRom = new DecoderRom(romPath);
+         
+
+
+            decoderRom = new DecoderRom(rom);
             assembler = new Assembler(decoderRom);
+
             bus = new Bus();
             bus.NumberFormat = "X2";
             bus.DecoderROM = decoderRom;
@@ -42,7 +47,7 @@ namespace BYOCCore
             bus.devices.Add(mem);
             bus.devices.Add(mmu);
             bus.devices.Add(clk);
-            programByteCode = assembler.Assemble(srcPath);
+            programByteCode = assembler.Assemble(src);
             mem.LoadBytes(programByteCode);
         }
             public IEnumerable<int> RunClk()

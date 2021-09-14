@@ -1,4 +1,10 @@
-p	pc	output	FTC	x	x	x	x
+using System;
+
+namespace BYOCCore 
+{
+    public class ExampleData 
+    {
+        public const string ROMDATA = @"p	pc	output	FTC	x	x	x	x
 s	mem	loadmar	FTC	x	x	x	x
 p	mem	output	FTC	x	x	x	x
 s	regi	load	FTC	x	x	x	x
@@ -232,3 +238,19 @@ p	mem	output	SWB	x	x	x	x
 s	mmu	loadcs	SWB	x	x	x	x
 s	regi	reset	SWB	x	x	x	x
 s	pc	count	SWB	x	x	x	x
+";
+        public const string SRC = @"	LAI	#15
+	PSA
+	PSA
+	LRA	letter
+	LRB	one
+	PSA
+loop:	ADD
+	PSA
+letter:	.BYTE	#65
+one:	.BYTE	#1
+";
+    }
+}
+
+

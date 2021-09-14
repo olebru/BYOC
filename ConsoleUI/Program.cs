@@ -9,7 +9,7 @@ namespace ConsoleUI
     {
         static void Main(string[] args)
         {
-            var c = new BYOCCore.LowLevelPileOfPartsActingAsAMCU(   "./ExampleFiles/examplerom.csv","./ExampleFiles/examplesrc.asm");
+            var c = new BYOCCore.LowLevelPileOfPartsActingAsAMCU(BYOCCore.ExampleData.ROMDATA,BYOCCore.ExampleData.SRC);
             Console.WriteLine($"Percent of decoderrom used: {(c.decoderRom.OpCodeAddressSpaceUsedInPercent())}");
             Console.ReadLine();
             var mem = (RamModule)c.bus.devices.Single(d => d.ID() == "mem");
@@ -27,6 +27,8 @@ namespace ConsoleUI
                 Console.WriteLine("---");
             if(cyclenum == 40) break;
             Console.WriteLine(mmu.RamBanks[0].ToString());
+
+            
             }
         }
     }

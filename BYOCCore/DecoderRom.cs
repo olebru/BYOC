@@ -7,18 +7,22 @@ namespace BYOCCore
     public class DecoderRom
     {
         private List<MicroInstruction> completeROM;
-        public DecoderRom(string rom)
+
+
+
+
+        public DecoderRom(string romfilecontent)
         {
+            
             var initialListLine = new List<fileLine>();
             var interMediateListLine = new List<fileLine>();
             var finalListLine = new List<fileLine>();
-            using (var sr = new System.IO.StreamReader(rom))
-            {
+          
                 int order = -1;
-                while (!sr.EndOfStream)
-                {
+            foreach (var csvLine in romfilecontent.Split(Environment.NewLine))
+	        {
                     order++;
-                    var csvLine = sr.ReadLine();
+                
                     var line = new fileLine();
                     var tokens = csvLine.Split('\t');
                     line.readOrder = order;
@@ -30,9 +34,10 @@ namespace BYOCCore
                     line.overflow = tokens[5];
                     line.carry = tokens[6];
                     line.zero = tokens[7];
-                    initialListLine.Add(line);
-                }
-            }
+                    initialListLine.Add(line);               
+	        }
+              
+            
             foreach (var line in initialListLine)
             {
                 List<String> possiblities = new List<string>();

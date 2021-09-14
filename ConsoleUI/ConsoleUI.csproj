@@ -5,10 +5,5 @@
   </PropertyGroup>
   <ItemGroup>
   <ProjectReference Include="../BYOCCore/BYOCCore.csproj" />
-  </ItemGroup>
-<ItemGroup>
-   <Content Include="ExampleFiles\*.*">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-   </Content>
-</ItemGroup>  
+  </ItemGroup> 
 </Project>
