@@ -4,7 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using BYOCCore;
 
-namespace WebUI.Pages
+namespace BYOC.WebUI.Pages
 {
     public partial class ComputerSIM
     {
