@@ -15,8 +15,6 @@ namespace BYOCCore
         public LowLevelPileOfPartsActingAsAMCU(string rom,string src)
         {
          
-
-
             decoderRom = new DecoderRom(rom);
             assembler = new Assembler(decoderRom);
 
@@ -52,20 +50,39 @@ namespace BYOCCore
             programByteCode = assembler.Assemble(src);
             mem.LoadBytes(programByteCode);
         }
-            public IEnumerable<int> RunClk()
+
+        public void SingleStepClk()
+        {
+            var clk = (Clock)bus.devices.Single(c => c.ID() == "clk");
+            if(!clk.IsHalted())
             {
-                var clk = (Clock)bus.devices.Single(c => c.ID() == "clk");
-                while(!clk.IsHalted())
-                {
-                currentMicroCode = decoderRom.FetchInstruction(((Register)bus.devices.Single(d => d.ID() == "regsta")).Data,((Register)bus.devices.Single(d => d.ID() == "regi")).Data);
+            currentMicroCode = decoderRom.FetchInstruction(((Register)bus.devices.Single(d => d.ID() == "regsta")).Data,((Register)bus.devices.Single(d => d.ID() == "regi")).Data);
                 foreach (var microCode in currentMicroCode)
                 {
                     var dev = bus.devices.Single(d => d.ID() == microCode.DeviceID);
                     dev.Enable(microCode.Function);
                 }
-                bus.Clk();
-                yield return clk.cycle;
+            bus.Clk();
             }
+            //return clk.cycle;
+        
         }
+        public IEnumerable<int> RunClk()
+        {
+            var clk = (Clock)bus.devices.Single(c => c.ID() == "clk");
+            while(!clk.IsHalted())
+            {
+            currentMicroCode = decoderRom.FetchInstruction(((Register)bus.devices.Single(d => d.ID() == "regsta")).Data,((Register)bus.devices.Single(d => d.ID() == "regi")).Data);
+            foreach (var microCode in currentMicroCode)
+            {
+                var dev = bus.devices.Single(d => d.ID() == microCode.DeviceID);
+                dev.Enable(microCode.Function);
+            }
+            bus.Clk();
+            yield return clk.cycle;
+            }
+        }     
+       
     }
+    
 }

@@ -12,39 +12,27 @@ namespace WebUI.Pages
         public string TextTest 
         { get; set; }
 
+        BYOCCore.LowLevelPileOfPartsActingAsAMCU C;
+
+    
+    public ComputerSIM()
+    {
+
+        C = new BYOCCore.LowLevelPileOfPartsActingAsAMCU(BYOCCore.ExampleData.ROMDATA,BYOCCore.ExampleData.SRC);
+    
+
+    }
         public void Run()
         {
+            C.SingleStepClk();
 
-            try
-            {
-                var c = new BYOCCore.LowLevelPileOfPartsActingAsAMCU(BYOCCore.ExampleData.ROMDATA,BYOCCore.ExampleData.SRC);
-                // Console.WriteLine($"Percent of decoderrom used: {(c.decoderRom.OpCodeAddressSpaceUsedInPercent())}");
-                //   Console.ReadLine();
-                var mem = (RamModule)c.bus.devices.Single(d => d.ID() == "mem");
-                var mmu = (MMU)c.bus.devices.Single(d => d.ID() == "mmu");
-                foreach (var device in c.bus.devices)
-                {
-                    //     Console.WriteLine(device.ID());
-                }
-                foreach (int cyclenum in c.RunClk())
-                {
-                    foreach (var mi in c.currentMicroCode)
+                    foreach (var mi in C.currentMicroCode)
                     {
                         //       Console.WriteLine($"{cyclenum}\t {mi.ToSingleLineString()}");
-                        TextTest = c.currentMicroCode.ToString();
+                        TextTest = mi.ToString();
                     }
-                    //Console.WriteLine("---");
-                    if (cyclenum == 40) break;
-                    //Console.WriteLine(mmu.RamBanks[0].ToString()); }
-
-                }
-            }
-            catch (Exception e)
-            {
-
-                throw e;
-            }
-
+                    
+            
         }
     }
 }
