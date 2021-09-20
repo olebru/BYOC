@@ -27,14 +27,16 @@ namespace BYOCCore
             var regb = new Register("REGB", "regb", bus);
             var regc = new Register("REGC", "regc", bus);
             var regs = new Register("REGSWAP", "regs", bus);
+            var regsta = new StatusRegister("STATUS","regsta",bus);
             var regsp = new Register("REGSP", "regsp", bus, 255);
-            var regsta = new StatusRegister("STATUS", "regsta", bus);
             var regi = new InstructionRegister("REGINSTR", "regi", bus);
             var pc = new ProgramCounter("PCOUNT", "pc", bus);
             var mem = new RamModule("BASEMEM", "mem", bus);
             var mmu = new MMU("MMU", "mmu", bus);
             var clk = new Clock("Clock", "clk");
+
             var alu = new ALU("ALU ", "alu", rega, regb,regsta, bus);
+
             bus.devices.Add(regi);
             bus.devices.Add(pc);
             bus.devices.Add(regsp);
