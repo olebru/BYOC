@@ -1,0 +1,11 @@
+<div class="card-deck">
+    @foreach (var register in Registers)
+    {
+        <RegisterComponent Register=@register></RegisterComponent>
+    }
+</div>
+@code 
+{
+    [Parameter]
+    public IEnumerable<Register> Registers {get; set;}
+}

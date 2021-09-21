@@ -1,6 +1,15 @@
-﻿@page "/byocmain"
+﻿@page "/"
 
 <button class="btn btn-primary" @onclick="Run" >Start</button>
-<h3>@TextTest</h3>
+
+<RegisterListComponent Registers=@RegistersFromBus></RegisterListComponent>
+<MMUComponent MMU=@MMUFromBus></MMUComponent>
+<RAMComponent RamModule=@RamModuleFromBus></RAMComponent>
+<div>
+    @foreach(var mi in C.currentMicroCode)
+    {
+        <p>@mi.ToSingleLineString()</p>   
+    }
+</div>
 
 

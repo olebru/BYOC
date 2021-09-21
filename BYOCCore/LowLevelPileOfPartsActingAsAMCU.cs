@@ -49,6 +49,8 @@ namespace BYOCCore
             bus.devices.Add(clk);
             programByteCode = assembler.Assemble(src);
             mem.LoadBytes(programByteCode);
+            currentMicroCode = decoderRom.FetchInstruction(((Register)bus.devices.Single(d => d.ID() == "regsta")).Data,((Register)bus.devices.Single(d => d.ID() == "regi")).Data);
+            
         }
 
         public void SingleStepClk()
