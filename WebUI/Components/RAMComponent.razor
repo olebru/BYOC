@@ -11,7 +11,14 @@
             {<tr>
                 @for (int y = 0; y < 16; y++)
                 {
-                <td>@RamModule.memory[(x*16)+y]</td>
+                    @if((x*16)+y != RamModule.memoryAddress)
+                    {
+                        <td>@RamModule.memory[(x*16)+y]</td>
+                    }
+                    @if((x*16)+y == RamModule.memoryAddress)
+                    {
+                        <td bgcolor="yellow">@RamModule.memory[(x*16)+y]</td>
+                    }
                 }  
             </tr>
             }

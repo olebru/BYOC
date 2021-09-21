@@ -3,8 +3,9 @@
 <button class="btn btn-primary" @onclick="Run" >Start</button>
 
 <RegisterListComponent Registers=@RegistersFromBus></RegisterListComponent>
-<MMUComponent MMU=@MMUFromBus></MMUComponent>
 <RAMComponent RamModule=@RamModuleFromBus></RAMComponent>
+<MMUComponent MMU=@MMUFromBus></MMUComponent>
+
 <div>
     @foreach(var mi in C.currentMicroCode)
     {
