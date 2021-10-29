@@ -237,8 +237,7 @@ s	mem	loadmar	SWB	x	x	x	x
 p	mem	output	SWB	x	x	x	x
 s	mmu	loadcs	SWB	x	x	x	x
 s	regi	reset	SWB	x	x	x	x
-s	pc	count	SWB	x	x	x	x
-";
+s	pc	count	SWB	x	x	x	x";
         public const string SRC = @"	LAI	#15
 	PSA
 	PSA
@@ -248,8 +247,7 @@ s	pc	count	SWB	x	x	x	x
 loop:	ADD
 	PSA
 letter:	.BYTE	#65
-one:	.BYTE	#1
-";
+one:	.BYTE	#1";
     }
 }
 

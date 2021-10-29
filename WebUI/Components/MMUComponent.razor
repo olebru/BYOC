@@ -1,0 +1,10 @@
+<div>
+ 
+        <RegisterComponent Register=@MMU.ChipSelectRegister></RegisterComponent>
+        <RAMComponent RamModule=@MMU.RamBanks[MMU.ChipSelectRegister.Data]></RAMComponent>
+</div>
+@code 
+{
+    [Parameter]
+    public MMU MMU {get; set;}
+}

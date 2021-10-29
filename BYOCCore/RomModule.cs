@@ -10,8 +10,8 @@ namespace BYOCCore
         public bool INSTRMode = false;
         public bool ShowRAMValues = true;
         protected Bus connectedBus;
-        protected byte[] memory = new byte[256];
-        protected byte memoryAddress = 0;
+        public byte[] memory = new byte[256];
+        public byte memoryAddress = 0;
         private string deviceID;
         private string deviceName = "";
         private bool loadMAR = false;

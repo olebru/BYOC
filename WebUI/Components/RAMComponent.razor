@@ -1,0 +1,32 @@
+<div>
+      <div>
+                <h3>@RamModule.DisplayName()</h3>
+      </div>
+            <div>
+                <div>MAR: @RamModule.memoryAddress</div>
+            </div>
+            <table id="Data" class="table" cellspacing="0">
+
+            @for (int x = 0; x < 16; x++)
+            {<tr>
+                @for (int y = 0; y < 16; y++)
+                {
+                    @if((x*16)+y != RamModule.memoryAddress)
+                    {
+                        <td>@RamModule.memory[(x*16)+y]</td>
+                    }
+                    @if((x*16)+y == RamModule.memoryAddress)
+                    {
+                        <td bgcolor="yellow">MAR --> @RamModule.memory[(x*16)+y]</td>
+                    }
+                }  
+            </tr>
+            }
+        </table>    
+       
+</div>
+@code 
+{
+    [Parameter]
+    public RamModule RamModule {get; set;}
+}
