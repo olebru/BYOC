@@ -1,0 +1,290 @@
+@if (Definition != null)
+{
+<div class="editor @(drag != null ? "dragging" : "")" @onpointermove="OnPointerMove" @onpointerup="OnPointerUp" @onpointerleave="OnPointerLeave">
+
+    <div class="toolbar">
+        <button class="tool" title="Undo (Ctrl+Z)" disabled="@(undo.Count == 0)" @onclick="Undo">Undo</button>
+        <button class="tool" title="Redo (Ctrl+Shift+Z)" disabled="@(redo.Count == 0)" @onclick="Redo">Redo</button>
+        <span class="sep"></span>
+        <button class="tool" @onclick="AddBus">＋ Bus</button>
+        <button class="tool" title="Arrange all devices around their buses" @onclick="AutoLayout">Auto layout</button>
+        <span class="sep"></span>
+        <button class="tool" title="Zoom out" @onclick="() => Zoom(1 / 1.15)">−</button>
+        <span class="zoom">@((int)Math.Round(zoom * 100))%</span>
+        <button class="tool" title="Zoom in" @onclick="() => Zoom(1.15)">＋</button>
+        <span class="sep"></span>
+        <button class="tool" title="Download the definition as JSON" @onclick="Download">Download JSON</button>
+        <span class="grow"></span>
+        @if (Errors.Count == 0)
+        {
+            <span class="status ok">✓ Machine is valid</span>
+        }
+        else
+        {
+            <button class="status bad" @onclick="() => showProblems = !showProblems">⚠ @Errors.Count problem@(Errors.Count == 1 ? "" : "s")</button>
+        }
+    </div>
+
+    @if (showProblems && Errors.Count > 0)
+    {
+        <div class="problems">
+            @foreach (var error in Errors)
+            {
+                var target = ProblemTarget(error);
+                <div class="problem @(target != null ? "linked" : "")" @onclick="() => { if (target != null) Select(target); }">@error</div>
+            }
+        </div>
+    }
+
+    <div class="body">
+        <div class="palette">
+            <div class="palette-title">Devices</div>
+            <div class="palette-hint">Drag onto the canvas, or click to add</div>
+            @foreach (var category in Registry.TypeInfos.GroupBy(i => i.Category))
+            {
+                <div class="palette-group">@category.Key</div>
+                @foreach (var info in category)
+                {
+                    <div class="palette-item" title="@info.Description" @onpointerdown="e => StartNewDevice(e, info.Type)">
+                        <span class="dot" style="background:@CategoryColor(info)"></span>
+                        <span>@info.Type</span>
+                    </div>
+                }
+            }
+            <div class="palette-group">Buses</div>
+            <div class="palette-item" @onclick="AddBus"><span class="dot bus-dot"></span><span>bus</span></div>
+        </div>
+
+        <div class="canvas-scroller" tabindex="0" @ref="canvasScroller" @onkeydown="OnKeyDown">
+            <div class="canvas-sizer" style="width:@Px(CanvasWidth * zoom); height:@Px(CanvasHeight * zoom)">
+                <div class="canvas" @ref="canvasElement" style="width:@Px(CanvasWidth); height:@Px(CanvasHeight); transform:scale(@N(zoom))"
+                     @onpointerdown="ClearSelection">
+                    <svg class="wires" width="@N(CanvasWidth)" height="@N(CanvasHeight)">
+                        <defs>
+                            <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                                <path d="M 0 0 L 10 5 L 0 10 z" fill="#8a94a6" />
+                            </marker>
+                        </defs>
+
+                        @foreach (var bus in Definition.Buses.Where(b => b.Layout != null))
+                        {
+                            var color = BusColor(bus.Id);
+                            var hot = drag?.Kind == DragKind.WirePort && BusNear(drag.Y) == bus;
+                            <g class="bus @(selectedBus == bus.Id ? "selected" : "") @(hot ? "hot" : "")" @onpointerdown="e => StartMoveBus(e, bus)" @onpointerdown:stopPropagation>
+                                <rect class="bus-hit" x="10" y="@N(bus.Layout.Y - 14)" width="@N(CanvasWidth - 20)" height="28" />
+                                <rect class="bus-bar" x="16" y="@N(bus.Layout.Y - 5)" width="@N(CanvasWidth - 32)" height="10" rx="5" fill="@color" />
+                                <text class="bus-label" x="24" y="@N(bus.Layout.Y - 12)" fill="@color">@bus.Id · @bus.Width bit</text>
+                            </g>
+                        }
+
+                        @foreach (var device in Definition.Devices.Where(d => d.Layout != null))
+                        {
+                            foreach (var port in device.Ports())
+                            {
+                                if (Definition.FindBus(port.Value)?.Layout == null) continue;
+                                var anchor = PortAnchor(device, port.Key);
+                                <line class="port-wire" x1="@N(anchor.X)" y1="@N(anchor.Y)" x2="@N(anchor.X)" y2="@N(BusY(port.Value))" stroke="@BusColor(port.Value)" />
+                                <circle cx="@N(anchor.X)" cy="@N(BusY(port.Value))" r="4" fill="@BusColor(port.Value)" />
+                            }
+                            var connections = Info(device).Connections;
+                            for (int i = 0; i < connections.Count; i++)
+                            {
+                                if (!device.Connections.TryGetValue(connections[i].Name, out var targetId)) continue;
+                                var target = Definition.FindDevice(targetId);
+                                if (target?.Layout == null) continue;
+                                <path class="connection-wire" d="@ConnectionPath(device, i, target)" marker-end="url(#arrow)" />
+                            }
+                        }
+
+                        @if (drag?.Kind == DragKind.WirePort && drag.Moved)
+                        {
+                            var device = Definition.FindDevice(drag.DeviceId);
+                            var anchor = PortAnchor(device, drag.Port);
+                            <line class="rubber-band" x1="@N(anchor.X)" y1="@N(anchor.Y)" x2="@N(drag.X)" y2="@N(drag.Y)" />
+                        }
+                        @if (drag?.Kind == DragKind.WireConnection && drag.Moved)
+                        {
+                            var device = Definition.FindDevice(drag.DeviceId);
+                            var index = Info(device).Connections.FindIndex(c => c.Name == drag.Connection);
+                            <path class="rubber-band" d="@CurveTo(device.Layout.X + CardWidth, device.Layout.Y + ConnectionRowY(index), drag.X, drag.Y)" />
+                        }
+                    </svg>
+
+                    @foreach (var device in Definition.Devices.Where(d => d.Layout != null))
+                    {
+                        var info = Info(device);
+                        var height = CardHeight(device);
+                        var isTarget = drag?.Kind == DragKind.WireConnection && drag.Moved && DeviceAt(drag.X, drag.Y) == device && device.Id != drag.DeviceId;
+                        <div class="card-device @(selectedDevice == device.Id ? "selected" : "") @(HasProblem(device.Id) ? "problem" : "") @(isTarget ? "drop-target" : "")"
+                             style="left:@Px(device.Layout.X); top:@Px(device.Layout.Y); width:@Px(CardWidth); height:@Px(height); border-top-color:@CategoryColor(info)"
+                             @onpointerdown="e => StartMoveDevice(e, device)" @onpointerdown:stopPropagation>
+                            <div class="card-id">@device.Id</div>
+                            <div class="card-type">@device.Type@(device.Name != null && device.Name != device.Id ? $" · {device.Name}" : "")</div>
+                            @if (Preview?.Device(device.Id) is Register register)
+                            {
+                                <div class="card-value" title="Value">@register.Data.ToString("X2")</div>
+                            }
+                            @for (int i = 0; i < info.Connections.Count; i++)
+                            {
+                                var connection = info.Connections[i];
+                                device.Connections.TryGetValue(connection.Name, out var targetId);
+                                <div class="socket-row" style="top:@Px(ConnectionRowY(i) - ConnectionRowHeight / 2)" title="@connection.Description">
+                                    <span class="socket-name">@connection.Name</span>
+                                    <span class="socket-target @(targetId == null ? "missing" : "")">@(targetId ?? "drag to a device")</span>
+                                    <span class="socket" @onpointerdown="e => StartWireConnection(e, device, connection.Name)" @onpointerdown:stopPropagation></span>
+                                </div>
+                            }
+                            @foreach (var port in info.Ports)
+                            {
+                                var anchor = PortAnchor(device, port);
+                                var busId = device.GetPortBus(port);
+                                <span class="port @(busId == null ? "unconnected" : "")"
+                                      style="left:@Px(anchor.X - device.Layout.X - 7); top:@Px(anchor.Y - device.Layout.Y - 7); background:@(busId == null ? "#fff" : BusColor(busId))"
+                                      title="Port '@port': @(busId == null ? "drag to a bus" : $"on bus {busId}")"
+                                      @onpointerdown="e => StartWirePort(e, device, port)" @onpointerdown:stopPropagation></span>
+                                @if (info.Ports.Count > 1)
+                                {
+                                    <span class="port-label" style="left:@Px(anchor.X - device.Layout.X - 7); top:@Px(anchor.Bottom ? height - 22 : 8)">@port</span>
+                                }
+                            }
+                        </div>
+                    }
+
+                    @if (drag?.Kind == DragKind.NewDevice && drag.Moved)
+                    {
+                        <div class="card-device ghost" style="left:@Px(drag.X - CardWidth / 2); top:@Px(drag.Y - 20); width:@Px(CardWidth); height:@Px(CardBaseHeight)">
+                            <div class="card-id">@drag.NewType</div>
+                            <div class="card-type">drop to add</div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="inspector">
+            @{
+                var selected = selectedDevice == null ? null : Definition.FindDevice(selectedDevice);
+                var selectedBusDefinition = selectedBus == null ? null : Definition.FindBus(selectedBus);
+            }
+            @if (selected != null)
+            {
+                var info = Info(selected);
+                <div class="inspector-title"><span class="dot" style="background:@CategoryColor(info)"></span>@selected.Type</div>
+                <div class="inspector-description">@info.Description</div>
+
+                <label>ID</label>
+                <input class="form-control form-control-sm @(renameError != null ? "is-invalid" : "")" value="@selected.Id" @onchange="e => RenameSelectedDevice((string)e.Value)" />
+                @if (renameError != null) { <div class="invalid-feedback d-block">@renameError</div> }
+
+                <label>Display name</label>
+                <input class="form-control form-control-sm" placeholder="@selected.Id" value="@selected.Name" @onchange="e => Mutate(() => selected.Name = Blank((string)e.Value))" />
+
+                @if (info.Ports.Count > 0)
+                {
+                    <div class="section">Bus ports</div>
+                    @foreach (var port in info.Ports)
+                    {
+                        <label>@port</label>
+                        <select class="form-control form-control-sm" value="@(selected.GetPortBus(port) ?? "")" @onchange="e => SetPort(selected, port, (string)e.Value)">
+                            <option value="">— not connected —</option>
+                            @foreach (var bus in Definition.Buses) { <option value="@bus.Id">@bus.Id</option> }
+                        </select>
+                    }
+                }
+                @if (info.Connections.Count > 0)
+                {
+                    <div class="section">Connections</div>
+                    @foreach (var connection in info.Connections)
+                    {
+                        <label title="@connection.Description">@connection.Name <span class="muted">@connection.Description</span></label>
+                        <select class="form-control form-control-sm" value="@(selected.Connections.GetValueOrDefault(connection.Name) ?? "")" @onchange="e => SetConnection(selected, connection.Name, (string)e.Value)">
+                            <option value="">— not connected —</option>
+                            @foreach (var other in Definition.Devices.Where(d => d != selected)) { <option value="@other.Id">@other.Id (@other.Type)</option> }
+                        </select>
+                    }
+                }
+                @if (info.Parameters.Count > 0)
+                {
+                    <div class="section">Parameters</div>
+                    @foreach (var parameter in info.Parameters)
+                    {
+                        <label title="@parameter.Description">@parameter.Name <span class="muted">@parameter.Min–@parameter.Max</span></label>
+                        <input type="number" class="form-control form-control-sm" min="@parameter.Min" max="@parameter.Max" placeholder="@parameter.Default"
+                               value="@ParameterText(selected, parameter)" @onchange="e => SetParameter(selected, parameter, (string)e.Value)" />
+                    }
+                }
+                @if (Preview?.Device(selected.Id) is IBusDevice built)
+                {
+                    <div class="section">Control lines <span class="muted">for microcode</span></div>
+                    <div class="chips">@foreach (var line in built.SignalLines()) { <span class="chip">@line</span> }</div>
+                }
+                var problems = Errors.Where(e => e.Contains($"'{selected.Id}'")).ToList();
+                @if (problems.Count > 0)
+                {
+                    <div class="section">Problems</div>
+                    @foreach (var problem in problems) { <div class="inspector-problem">@problem</div> }
+                }
+                <div class="inspector-actions">
+                    <button class="btn btn-sm btn-outline-secondary" title="Ctrl+D" @onclick="DuplicateSelected">Duplicate</button>
+                    <button class="btn btn-sm btn-outline-danger" title="Delete" @onclick="DeleteSelected">Delete</button>
+                </div>
+            }
+            else if (selectedBusDefinition != null)
+            {
+                <div class="inspector-title"><span class="dot" style="background:@BusColor(selectedBusDefinition.Id)"></span>bus</div>
+                <div class="inspector-description">Shared 8 bit data path. Only one device may drive it per tick.</div>
+                <label>ID</label>
+                <input class="form-control form-control-sm @(renameError != null ? "is-invalid" : "")" value="@selectedBusDefinition.Id" @onchange="e => RenameSelectedBus((string)e.Value)" />
+                @if (renameError != null) { <div class="invalid-feedback d-block">@renameError</div> }
+                <div class="section">Attached devices</div>
+                <div class="chips">
+                    @foreach (var device in Definition.Devices.Where(d => d.Ports().Any(p => p.Value == selectedBusDefinition.Id)))
+                    {
+                        <span class="chip link" @onclick="() => Select(device.Id)">@device.Id</span>
+                    }
+                </div>
+                <div class="inspector-actions">
+                    <button class="btn btn-sm btn-outline-danger" @onclick="DeleteSelected">Delete bus</button>
+                </div>
+            }
+            else
+            {
+                <div class="inspector-title">Machine</div>
+                <div class="inspector-description">Select a device or bus to edit it. Drag ports onto buses and connection sockets onto devices.</div>
+                <label>Name</label>
+                <input class="form-control form-control-sm" value="@Definition.Name" @onchange="e => Mutate(() => Definition.Name = Blank((string)e.Value))" />
+
+                <div class="section">Decoder</div>
+                <label>Status register <span class="muted">selects flag variants</span></label>
+                <select class="form-control form-control-sm" value="@(Definition.Decoder?.Status ?? "")" @onchange="e => SetDecoder(d => d.Status = Blank((string)e.Value))">
+                    <option value="">— none —</option>
+                    @foreach (var device in Definition.Devices) { <option value="@device.Id">@device.Id (@device.Type)</option> }
+                </select>
+                <label>Micro step register</label>
+                <select class="form-control form-control-sm" value="@(Definition.Decoder?.Instruction ?? "")" @onchange="e => SetDecoder(d => d.Instruction = Blank((string)e.Value))">
+                    <option value="">— none —</option>
+                    @foreach (var device in Definition.Devices) { <option value="@device.Id">@device.Id (@device.Type)</option> }
+                </select>
+
+                <div class="section">Program</div>
+                <label>Program memory</label>
+                <select class="form-control form-control-sm" value="@(Definition.ProgramMemory ?? "")" @onchange="e => Mutate(() => Definition.ProgramMemory = Blank((string)e.Value))">
+                    <option value="">— none —</option>
+                    @foreach (var device in Definition.Devices.Where(d => d.Type == "ram" || d.Type == "rom")) { <option value="@device.Id">@device.Id</option> }
+                </select>
+                <label>Halt clock</label>
+                <select class="form-control form-control-sm" value="@(Definition.Halt ?? "")" @onchange="e => Mutate(() => Definition.Halt = Blank((string)e.Value))">
+                    <option value="">— none —</option>
+                    @foreach (var device in Definition.Devices.Where(d => d.Type == "clock")) { <option value="@device.Id">@device.Id</option> }
+                </select>
+
+                <div class="section">Summary</div>
+                <div class="muted">@Definition.Devices.Count devices on @Definition.Buses.Count bus@(Definition.Buses.Count == 1 ? "" : "es")</div>
+
+                <div class="section">Shortcuts</div>
+                <div class="muted shortcuts">Del delete · Ctrl+D duplicate · Ctrl+Z undo · Ctrl+Shift+Z redo · Esc deselect</div>
+            }
+        </div>
+    </div>
+</div>
+}

@@ -1,0 +1,15 @@
+@if (Errors?.Count > 0)
+{
+    <div class="alert alert-danger">
+        @foreach (var error in Errors)
+        {
+            <div>@error</div>
+        }
+    </div>
+}
+
+@code
+{
+    [Parameter]
+    public IReadOnlyList<string> Errors { get; set; }
+}

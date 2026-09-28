@@ -6,37 +6,92 @@ namespace BYOCCore
 {
     public delegate IBusDevice DeviceFactory(DeviceBuildContext context);
 
+    // Describes a device type for tools such as the machine editor: what it is, its bus ports,
+    // the devices it must be connected to and the parameters it accepts.
+    public class DeviceTypeInfo
+    {
+        public string Type { get; set; }
+        public string Category { get; set; } = "Other";
+        public string Description { get; set; } = "";
+        public List<string> Ports { get; set; } = new List<string> { DeviceBuildContext.DefaultPort };
+        public List<ConnectionInfo> Connections { get; set; } = new List<ConnectionInfo>();
+        public List<ParameterInfo> Parameters { get; set; } = new List<ParameterInfo>();
+    }
+    public class ConnectionInfo
+    {
+        public string Name { get; set; }
+        public string Description { get; set; } = "";
+    }
+    public class ParameterInfo
+    {
+        public string Name { get; set; }
+        public string Description { get; set; } = "";
+        public int Min { get; set; } = 0;
+        public int Max { get; set; } = 255;
+        public int Default { get; set; } = 0;
+    }
+
     // Maps the "type" of a device definition to the code that builds it. Register your own device types
     // here to use them from a machine definition.
     public class DeviceRegistry
     {
         private readonly Dictionary<string, DeviceFactory> factories = new Dictionary<string, DeviceFactory>();
+        private readonly Dictionary<string, DeviceTypeInfo> infos = new Dictionary<string, DeviceTypeInfo>();
 
         public static DeviceRegistry CreateDefault()
         {
+            var initialValue = new ParameterInfo { Name = "initialValue", Description = "Value after power on" };
             var registry = new DeviceRegistry();
-            registry.Register("register", c => new Register(c.Name, c.Id, c.Bus(), c.ByteParameter("initialValue")));
-            registry.Register("statusRegister", c => new StatusRegister(c.Name, c.Id, c.Bus()));
-            registry.Register("instructionRegister", c => new InstructionRegister(c.Name, c.Id, c.Bus()));
-            registry.Register("programCounter", c => new ProgramCounter(c.Name, c.Id, c.Bus()));
-            registry.Register("dualPortRegister", c => new DualPortRegister(c.Name, c.Id, c.Bus("a"), c.Bus("b"), c.ByteParameter("initialValue")));
-            registry.Register("alu", c => new ALU(c.Name, c.Id, c.Connection<Register>("a"), c.Connection<Register>("b"), c.Connection<Register>("status"), c.Bus()));
-            registry.Register("rom", c => new RomModule(c.Name, c.Id, c.Bus()));
-            registry.Register("ram", c => new RamModule(c.Name, c.Id, c.Bus()));
-            registry.Register("mmu", c => new MMU(c.Name, c.Id, c.Bus()));
-            registry.Register("clock", c => new Clock(c.Name, c.Id));
+            registry.Register("register", c => new Register(c.Name, c.Id, c.Bus(), c.ByteParameter("initialValue")),
+                new DeviceTypeInfo { Category = "Registers", Description = "8 bit register: output, load, reset, inc, dec", Parameters = { initialValue } });
+            registry.Register("statusRegister", c => new StatusRegister(c.Name, c.Id, c.Bus()),
+                new DeviceTypeInfo { Category = "Registers", Description = "Holds the NVCZ flags written by the ALU" });
+            registry.Register("dualPortRegister", c => new DualPortRegister(c.Name, c.Id, c.Bus("a"), c.Bus("b"), c.ByteParameter("initialValue")),
+                new DeviceTypeInfo { Category = "Registers", Description = "Register on two buses, moves values between them", Ports = new List<string> { "a", "b" }, Parameters = { initialValue } });
+            registry.Register("instructionRegister", c => new InstructionRegister(c.Name, c.Id, c.Bus()),
+                new DeviceTypeInfo { Category = "Control", Description = "Micro step counter, advances every tick unless loaded or reset" });
+            registry.Register("programCounter", c => new ProgramCounter(c.Name, c.Id, c.Bus()),
+                new DeviceTypeInfo { Category = "Control", Description = "Register with count, points at the next program byte" });
+            registry.Register("clock", c => new Clock(c.Name, c.Id),
+                new DeviceTypeInfo { Category = "Control", Description = "Counts cycles, its disable line halts the machine", Ports = new List<string>() });
+            registry.Register("alu", c => new ALU(c.Name, c.Id, c.Connection<Register>("a"), c.Connection<Register>("b"), c.Connection<Register>("status"), c.Bus()),
+                new DeviceTypeInfo
+                {
+                    Category = "Arithmetic",
+                    Description = "add, sub and cmp on two registers, writes flags to a status register",
+                    Connections =
+                    {
+                        new ConnectionInfo { Name = "a", Description = "First operand register" },
+                        new ConnectionInfo { Name = "b", Description = "Second operand register" },
+                        new ConnectionInfo { Name = "status", Description = "Register that receives the flags" },
+                    }
+                });
+            registry.Register("rom", c => new RomModule(c.Name, c.Id, c.Bus()),
+                new DeviceTypeInfo { Category = "Memory", Description = "256 bytes read only memory with address register" });
+            registry.Register("ram", c => new RamModule(c.Name, c.Id, c.Bus()),
+                new DeviceTypeInfo { Category = "Memory", Description = "256 bytes memory with address register" });
+            registry.Register("mmu", c => new MMU(c.Name, c.Id, c.Bus()),
+                new DeviceTypeInfo { Category = "Memory", Description = "256 banks of 256 bytes, selected by a chip select register" });
             return registry;
         }
 
-        public void Register(string type, DeviceFactory factory)
+        public void Register(string type, DeviceFactory factory, DeviceTypeInfo info = null)
         {
+            info ??= new DeviceTypeInfo();
+            info.Type = type;
             factories[type] = factory;
+            infos[type] = info;
         }
         public bool IsRegistered(string type)
         {
             return type != null && factories.ContainsKey(type);
         }
         public IEnumerable<string> Types { get { return factories.Keys; } }
+        public IEnumerable<DeviceTypeInfo> TypeInfos { get { return infos.Values; } }
+        public DeviceTypeInfo Info(string type)
+        {
+            return type != null && infos.TryGetValue(type, out var info) ? info : null;
+        }
         internal DeviceFactory Factory(string type)
         {
             return factories[type];

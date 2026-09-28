@@ -33,10 +33,17 @@ namespace BYOCCore
             return JsonSerializer.Serialize(this, MachineDefinitionJsonContext.Default.MachineDefinition);
         }
     }
+    // Where an editor drew an element. Has no effect on the machine.
+    public class Position
+    {
+        public double X { get; set; }
+        public double Y { get; set; }
+    }
     public class BusDefinition
     {
         public string Id { get; set; }
         public int Width { get; set; } = 8;
+        public Position Layout { get; set; }
     }
     public class DeviceDefinition
     {
@@ -47,15 +54,50 @@ namespace BYOCCore
         // Shorthand for a device with a single bus connection: connects port "data" to this bus.
         public string Bus { get; set; }
         // Port name to bus ID, for devices with more than one bus connection.
+        [JsonIgnore]
         public Dictionary<string, string> Buses { get; set; } = new Dictionary<string, string>();
         // Named references to other devices, for example the ALU operand registers.
+        [JsonIgnore]
         public Dictionary<string, string> Connections { get; set; } = new Dictionary<string, string>();
+        [JsonIgnore]
         public Dictionary<string, JsonElement> Parameters { get; set; } = new Dictionary<string, JsonElement>();
+        [JsonPropertyOrder(4)]
+        public Position Layout { get; set; }
+
+        // Serialized forms of the collections above, left out of the JSON when empty.
+        [JsonPropertyName("buses"), JsonPropertyOrder(1)]
+        public Dictionary<string, string> BusesJson { get => Buses.Count == 0 ? null : Buses; set => Buses = value ?? new Dictionary<string, string>(); }
+        [JsonPropertyName("connections"), JsonPropertyOrder(2)]
+        public Dictionary<string, string> ConnectionsJson { get => Connections.Count == 0 ? null : Connections; set => Connections = value ?? new Dictionary<string, string>(); }
+        [JsonPropertyName("parameters"), JsonPropertyOrder(3)]
+        public Dictionary<string, JsonElement> ParametersJson { get => Parameters.Count == 0 ? null : Parameters; set => Parameters = value ?? new Dictionary<string, JsonElement>(); }
 
         public IEnumerable<KeyValuePair<string, string>> Ports()
         {
             if (!string.IsNullOrEmpty(Bus)) yield return new KeyValuePair<string, string>(DeviceBuildContext.DefaultPort, Bus);
             foreach (var port in Buses) yield return port;
+        }
+        public string GetPortBus(string port)
+        {
+            if (port == DeviceBuildContext.DefaultPort && !string.IsNullOrEmpty(Bus)) return Bus;
+            return Buses.TryGetValue(port, out var busId) ? busId : null;
+        }
+        // Connects a port to a bus, or disconnects it when busId is null. Port "data" uses the "bus" shorthand.
+        public void SetPortBus(string port, string busId)
+        {
+            if (port == DeviceBuildContext.DefaultPort)
+            {
+                Bus = busId;
+                Buses.Remove(port);
+            }
+            else if (busId == null)
+            {
+                Buses.Remove(port);
+            }
+            else
+            {
+                Buses[port] = busId;
+            }
         }
     }
     public class DecoderDefinition

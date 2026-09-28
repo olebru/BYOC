@@ -8,8 +8,11 @@ namespace WebUI.Pages
     public partial class ComputerSIM
     {
         private const int MaxRunCycles = 10000;
+        private static readonly string[] Tabs = { "Design", "Microcode", "Program", "JSON", "Run" };
 
+        private string ActiveTab = "Design";
         private Machine C;
+        private MachineDefinition Definition;
         private string DefinitionJson;
         private string Microcode;
         private string Program;
@@ -30,18 +33,54 @@ namespace WebUI.Pages
 
         private void ResetToDefault()
         {
-            DefinitionJson = ExampleData.MACHINE;
+            Definition = MachineDefinition.FromJson(ExampleData.MACHINE);
+            DefinitionJson = Definition.ToJson();
             Microcode = ExampleData.ROMDATA;
             Program = ExampleData.SRC;
-            Build();
+            Rebuild();
         }
 
-        private void Build()
+        private void OnDesignChanged(MachineDefinition definition)
+        {
+            Definition = definition;
+            DefinitionJson = definition.ToJson();
+            Rebuild();
+        }
+
+        private void OnJsonChanged(string json)
+        {
+            DefinitionJson = json;
+            try
+            {
+                Definition = MachineDefinition.FromJson(json);
+                Rebuild();
+            }
+            catch (MachineDefinitionException e)
+            {
+                C = null;
+                Errors = e.Errors.ToList();
+            }
+        }
+
+        private void OnMicrocodeChanged(string microcode)
+        {
+            Microcode = microcode;
+            Rebuild();
+        }
+
+        private void OnProgramChanged(string program)
+        {
+            Program = program;
+            Rebuild();
+        }
+
+        // Builds a fresh machine from a copy of the definition, so the designer can keep editing its own.
+        private void Rebuild()
         {
             Errors = new List<string>();
             try
             {
-                C = Machine.FromJson(DefinitionJson, Microcode, Program);
+                C = new Machine(Definition.Clone(), Microcode, Program);
             }
             catch (MachineDefinitionException e)
             {

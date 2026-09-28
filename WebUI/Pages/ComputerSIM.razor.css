@@ -1,0 +1,14 @@
+.workspace-header {
+    display: flex;
+    align-items: flex-end;
+    margin-bottom: 10px;
+}
+
+    .workspace-header .nav-tabs {
+        flex: 1;
+    }
+
+.workspace-actions {
+    border-bottom: 1px solid #dee2e6;
+    padding-bottom: 6px;
+}

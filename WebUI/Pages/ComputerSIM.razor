@@ -1,71 +1,84 @@
 @page "/"
 
-<details class="mb-3" open="@(C == null)">
-    <summary><strong>Machine definition</strong> — load your own architecture or use the default</summary>
-    <div class="row mt-2">
-        <div class="col-lg-4">
-            <SourceEditorComponent Label="Machine definition (JSON)" @bind-Value="DefinitionJson" Rows="20" />
-        </div>
-        <div class="col-lg-5">
-            <SourceEditorComponent Label="Microcode (tab separated)" @bind-Value="Microcode" Rows="20" />
-        </div>
-        <div class="col-lg-3">
-            <SourceEditorComponent Label="Program (assembly)" @bind-Value="Program" Rows="20" />
-        </div>
-    </div>
-    <button class="btn btn-primary" @onclick="Build">Build machine</button>
-    <button class="btn btn-outline-secondary" @onclick="ResetToDefault">Reset to default</button>
-</details>
-
-@if (Errors.Count > 0)
-{
-    <div class="alert alert-danger">
-        @foreach (var error in Errors)
+<div class="workspace-header">
+    <ul class="nav nav-tabs">
+        @foreach (var tab in Tabs)
         {
-            <div>@error</div>
+            <li class="nav-item">
+                <a class="nav-link @(ActiveTab == tab ? "active" : "")" href="" @onclick="() => ActiveTab = tab" @onclick:preventDefault>
+                    @tab
+                    @if (tab == "Design" && Errors.Count > 0) { <span class="badge badge-danger ml-1">@Errors.Count</span> }
+                </a>
+            </li>
         }
+    </ul>
+    <div class="workspace-actions">
+        <button class="btn btn-sm btn-outline-secondary" @onclick="ResetToDefault">Reset to default</button>
     </div>
+</div>
+
+@if (ActiveTab == "Design")
+{
+    <MachineEditor Definition="Definition" DefinitionChanged="OnDesignChanged" Errors="Errors" Preview="C" />
 }
-
-@if (C != null)
+else if (ActiveTab == "Microcode")
 {
-    <h3>@(C.Definition.Name ?? "Unnamed machine")</h3>
-    <div class="mb-2">
-        <button class="btn btn-primary" @onclick="Step" disabled="@C.IsHalted">Step</button>
-        <button class="btn btn-primary" @onclick="() => StepMany(10)" disabled="@C.IsHalted">Step 10</button>
-        <button class="btn btn-primary" @onclick="() => StepMany(MaxRunCycles)" disabled="@C.IsHalted">Run to halt</button>
-        <button class="btn btn-outline-secondary" @onclick="Build">Restart</button>
-        <span class="ml-3">Cycle @C.Cycles @(C.IsHalted ? "(halted)" : "")</span>
-    </div>
-
-    <div class="mb-2">
-        @foreach (var bus in C.Buses.Values)
-        {
-            <div><strong>Bus @bus.ID</strong>: @string.Join(", ", bus.devices.Select(d => d.ID()))</div>
-        }
-    </div>
-
-    <div>
-        @foreach (var mi in C.CurrentMicroCode)
-        {
-            <div><code>@mi.ToSingleLineString()</code></div>
-        }
-    </div>
-
-    <RegisterListComponent Registers="@(C.Devices.OfType<Register>())"></RegisterListComponent>
-    @foreach (var dualPort in C.Devices.OfType<DualPortRegister>())
+    <SourceEditorComponent Label="Microcode (tab separated: clock flag, device, control line, mnemonic, N, V, C, Z)" Value="@Microcode" ValueChanged="OnMicrocodeChanged" Rows="30" />
+    <ErrorList Errors="Errors" />
+}
+else if (ActiveTab == "Program")
+{
+    <SourceEditorComponent Label="Program (assembly)" Value="@Program" ValueChanged="OnProgramChanged" Rows="30" />
+    <ErrorList Errors="Errors" />
+}
+else if (ActiveTab == "JSON")
+{
+    <SourceEditorComponent Label="Machine definition (JSON), kept in sync with the designer" Value="@DefinitionJson" ValueChanged="OnJsonChanged" Rows="30" />
+    <ErrorList Errors="Errors" />
+}
+else if (ActiveTab == "Run")
+{
+    <ErrorList Errors="Errors" />
+    @if (C != null)
     {
-        <div class="card m-3" style="min-width: 18rem; max-width:30.5%;">
-            <div class="card-header"><h3>@dualPort.DisplayName()</h3></div>
-            <div class="card-footer text-center">@dualPort.Data</div>
+        <h3>@(C.Definition.Name ?? "Unnamed machine")</h3>
+        <div class="mb-2">
+            <button class="btn btn-primary" @onclick="Step" disabled="@C.IsHalted">Step</button>
+            <button class="btn btn-primary" @onclick="() => StepMany(10)" disabled="@C.IsHalted">Step 10</button>
+            <button class="btn btn-primary" @onclick="() => StepMany(MaxRunCycles)" disabled="@C.IsHalted">Run to halt</button>
+            <button class="btn btn-outline-secondary" @onclick="Rebuild">Restart</button>
+            <span class="ml-3">Cycle @C.Cycles @(C.IsHalted ? "(halted)" : "")</span>
         </div>
-    }
-    @if (ProgramMemory != null)
-    {
-        <RAMComponent RamModule=@ProgramMemory></RAMComponent>
-    }
-    @foreach (var mmu in C.Devices.OfType<MMU>())
-    {
-        <MMUComponent MMU=@mmu></MMUComponent>
+
+        <div class="mb-2">
+            @foreach (var bus in C.Buses.Values)
+            {
+                <div><strong>Bus @bus.ID</strong>: @string.Join(", ", bus.devices.Select(d => d.ID()))</div>
+            }
+        </div>
+
+        <div>
+            @foreach (var mi in C.CurrentMicroCode)
+            {
+                <div><code>@mi.ToSingleLineString()</code></div>
+            }
+        </div>
+
+        <RegisterListComponent Registers="@(C.Devices.OfType<Register>())"></RegisterListComponent>
+        @foreach (var dualPort in C.Devices.OfType<DualPortRegister>())
+        {
+            <div class="card m-3" style="min-width: 18rem; max-width:30.5%;">
+                <div class="card-header"><h3>@dualPort.DisplayName()</h3></div>
+                <div class="card-footer text-center">@dualPort.Data</div>
+            </div>
+        }
+        @if (ProgramMemory != null)
+        {
+            <RAMComponent RamModule=@ProgramMemory></RAMComponent>
+        }
+        @foreach (var mmu in C.Devices.OfType<MMU>())
+        {
+            <MMUComponent MMU=@mmu></MMUComponent>
+        }
     }
 }
