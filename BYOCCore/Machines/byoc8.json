@@ -18,7 +18,8 @@
     { "id": "regsta", "type": "statusRegister", "name": "STATUS", "bus": "main" },
     { "id": "mem", "type": "ram", "name": "BASEMEM", "bus": "main" },
     { "id": "mmu", "type": "mmu", "name": "MMU", "bus": "main" },
-    { "id": "clk", "type": "clock", "name": "Clock" }
+    { "id": "clk", "type": "clock", "name": "Clock" },
+    { "id": "lcd", "type": "display", "name": "LCD", "bus": "main", "parameters": { "columns": 16, "rows": 4 } }
   ],
   "decoder": { "status": "regsta", "instruction": "regi" },
   "halt": "clk",

@@ -124,7 +124,7 @@
                             <span class="dev-id">@device.Id</span>
                             <span class="dev-type">@(device.Name ?? device.Type)</span>
                         </div>
-                        <div class="dev-body @(built is RomModule || built is MMU || built is Clock || built is ALU ? "stacked" : "") @(Changed(device.Id) ? "changed" : "")" @key="(Changed(device.Id) ? Last.Cycle : 0)">
+                        <div class="dev-body @(built is RomModule || built is MMU || built is Clock || built is ALU || built is CharacterDisplay ? "stacked" : "") @(Changed(device.Id) ? "changed" : "")" @key="(Changed(device.Id) ? Last.Cycle : 0)">
                             @switch (built)
                             {
                                 case StatusRegister status:
@@ -161,6 +161,11 @@
                                     <span class="mem">@(clock.IsHalted() ? "HALTED" : "running")</span>
                                     <span class="sub">@clock.cycle cycles</span>
                                     break;
+                                case CharacterDisplay lcd:
+                                    var lastChar = lcd.Cursor > 0 ? lcd.Cells[Math.Min(lcd.Cursor, lcd.Cells.Length) - 1] : (byte)0x20;
+                                    <span class="mem">cursor <strong>@lcd.Cursor</strong></span>
+                                    <span class="sub">@lcd.Columns×@lcd.Rows · last '@CharacterDisplay.ToChar(lastChar)'</span>
+                                    break;
                                 case ALU:
                                     var op = SignalsOf(device.Id).FirstOrDefault();
                                     <span class="mem">@(op ?? "idle")</span>
@@ -180,6 +185,13 @@
 
         <!-- Side panel -->
         <div class="side">
+            @foreach (var display in Machine.Devices.OfType<CharacterDisplay>())
+            {
+                var write = Last?.Writes.FirstOrDefault(w => w.Device == display.ID());
+                <div class="panel display-panel">
+                    <CharacterDisplayView Display="display" LastWritten="@(write?.Address ?? -1)" Cycle="@(Last?.Cycle ?? 0)" />
+                </div>
+            }
             <div class="panel now">
                 <div class="panel-title">Now executing</div>
                 @if (current != null)

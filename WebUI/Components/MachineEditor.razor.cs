@@ -29,6 +29,7 @@ namespace WebUI.Components
             ["Control"] = "#9b51e0",
             ["Arithmetic"] = "#f2994a",
             ["Memory"] = "#27ae60",
+            ["I/O"] = "#d6336c",
         };
 
         [Inject] private IJSRuntime JS { get; set; }

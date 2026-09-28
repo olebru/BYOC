@@ -12,3 +12,17 @@
     border-bottom: 1px solid #dee2e6;
     padding-bottom: 6px;
 }
+
+.examples {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 10px;
+}
+
+.examples-label {
+    font-size: 0.8rem;
+    color: #7a8599;
+    margin-right: 4px;
+}

@@ -522,6 +522,72 @@
           "signals": ["mem.output", "mmu.loadcs", "regi.reset", "pc.count"]
         }
       ]
+    },
+    {
+      "mnemonic": "INA",
+      "description": "A = A \u002B 1, flags unchanged",
+      "operands": 0,
+      "steps": [
+        {
+          "signals": ["rega.inc", "regi.reset", "pc.count"]
+        }
+      ]
+    },
+    {
+      "mnemonic": "INB",
+      "description": "B = B \u002B 1, flags unchanged",
+      "operands": 0,
+      "steps": [
+        {
+          "signals": ["regb.inc", "regi.reset", "pc.count"]
+        }
+      ]
+    },
+    {
+      "mnemonic": "DCL",
+      "description": "Clear the display",
+      "operands": 0,
+      "steps": [
+        {
+          "signals": ["lcd.clear", "regi.reset", "pc.count"]
+        }
+      ]
+    },
+    {
+      "mnemonic": "DWA",
+      "description": "Print A on the display",
+      "operands": 0,
+      "steps": [
+        {
+          "signals": ["rega.output", "lcd.load", "regi.reset", "pc.count"]
+        }
+      ]
+    },
+    {
+      "mnemonic": "DWB",
+      "description": "Print B on the display",
+      "operands": 0,
+      "steps": [
+        {
+          "signals": ["regb.output", "lcd.load", "regi.reset", "pc.count"]
+        }
+      ]
+    },
+    {
+      "mnemonic": "DWI",
+      "description": "Print the operand character on the display",
+      "operands": 1,
+      "steps": [
+        {
+          "signals": ["pc.count"]
+        },
+        {
+          "signals": ["pc.output", "mem.loadmar"]
+        },
+        {
+          "signals": ["mem.output", "lcd.load", "regi.reset", "pc.count"]
+        }
+      ]
     }
   ]
 }

@@ -473,7 +473,12 @@
 
 .now {
     overflow: auto;
-    max-height: 55%;
+    max-height: 45%;
+}
+
+.display-panel {
+    padding: 10px;
+    background: #f4f6fa;
 }
 
 .now-instr {

@@ -59,8 +59,9 @@ public class MicrocodeTests
     {
         var legacy = MicrocodeDefinition.FromTsv(ExampleData.ROMDATA);
         var json = DefaultMicrocode();
-        Assert.Equal(legacy.AllInstructions.Select(i => i.Mnemonic), json.AllInstructions.Select(i => i.Mnemonic));
-        foreach (var instruction in json.AllInstructions)
+        // The JSON keeps the legacy instructions in the same order and adds new ones after them.
+        Assert.Equal(legacy.AllInstructions.Select(i => i.Mnemonic), json.AllInstructions.Take(legacy.AllInstructions.Count()).Select(i => i.Mnemonic));
+        foreach (var instruction in json.AllInstructions.Take(legacy.AllInstructions.Count()))
         {
             var original = legacy.FindInstruction(instruction.Mnemonic);
             if (instruction.Mnemonic == "CMP")

@@ -145,6 +145,22 @@ namespace BYOCCore
             mmuLines.Add(ControlLineInfo.Internal("select0stack", "Select bank 0, the stack bank"));
             registry.Register("mmu", c => new MMU(c.Name, c.Id, c.Bus()),
                 new DeviceTypeInfo { Category = "Memory", Description = "256 banks of 256 bytes, selected by a chip select register", ControlLines = mmuLines });
+            registry.Register("display", c => new CharacterDisplay(c.Name, c.Id, c.Bus(), c.ByteParameter("columns", 16), c.ByteParameter("rows", 4)),
+                new DeviceTypeInfo
+                {
+                    Category = "I/O",
+                    Description = "Character display, 8 bit Latin-1 (ISO-8859-1). load prints the bus value at the cursor, clear blanks it",
+                    Parameters =
+                    {
+                        new ParameterInfo { Name = "columns", Description = "Characters per row", Min = 1, Max = 64, Default = 16 },
+                        new ParameterInfo { Name = "rows", Description = "Rows of characters", Min = 1, Max = 16, Default = 4 },
+                    },
+                    ControlLines =
+                    {
+                        ControlLineInfo.Input("load", "Print the character on the bus at the cursor"),
+                        ControlLineInfo.Internal("clear", "Blank the display and move the cursor home"),
+                    }
+                });
             return registry;
         }
 

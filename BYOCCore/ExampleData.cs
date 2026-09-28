@@ -8,6 +8,108 @@ namespace BYOCCore
         public static string MACHINE { get { return ReadResource("BYOCCore.Machines.byoc8.json"); } }
         // The BYOC-8 microcode as JSON. ROMDATA below is the same microcode in the legacy tab separated format.
         public static string MICROCODE { get { return ReadResource("BYOCCore.Machines.byoc8.microcode.json"); } }
+        // Prints "HELLO, WORLD!" by looping over a string in memory (B is the index), then a line feed and
+        // Norwegian letters from the Latin-1 range.
+        public const string HELLO =
+            "\tDCL\n" +
+            "\tLBI\t#0\n" +
+            "loop:\tLNA\tmsg\n" +
+            "\tDWA\n" +
+            "\tINB\n" +
+            "\tLAI\t#13\n" +
+            "\tCMP\n" +
+            "\tJNE\tloop\n" +
+            "\tDWI\t#10\n" +
+            "\tDWI\t#198\n" +
+            "\tDWI\t#216\n" +
+            "\tDWI\t#197\n" +
+            "\tDWI\t#32\n" +
+            "\tDWI\t#230\n" +
+            "\tDWI\t#248\n" +
+            "\tDWI\t#229\n" +
+            "\tHLT\n" +
+            "msg:\t.BYTE\t#72,#69,#76,#76,#79,#44,#32,#87,#79,#82,#76,#68,#33";
+
+        // Prints the Fibonacci numbers that fit in 8 bits in decimal on the display: 1 1 2 3 5 8 ... 233.
+        // Variables live in the selected MMU bank: a at 0, b at 1, next at 2, the value being printed at 3,
+        // the digit being counted at 4 and "a digit was printed" at 5. There is no divide, so each digit is
+        // found by subtracting 100 (or 10) until SUB borrows, which sets carry for JC.
+        public static readonly string FIBONACCI = string.Join("\n", new[]
+        {
+            "\tDCL",
+            "\tLAI\t#0",
+            "\tSTA\t#0",
+            "\tLAI\t#1",
+            "\tSTA\t#1",
+            "next:\tLDA\t#1",
+            "\tSTA\t#3",
+            "\tLAI\t#0",
+            "\tSTA\t#5",
+            "\tLAI\t#48",
+            "\tSTA\t#4",
+            "hund:\tLDA\t#3",
+            "\tLBI\t#100",
+            "\tSUB",
+            "\tJC\thdone",
+            "\tSTA\t#3",
+            "\tLDA\t#4",
+            "\tINA",
+            "\tSTA\t#4",
+            "\tJMP\thund",
+            "hdone:\tLDA\t#4",
+            "\tLBI\t#48",
+            "\tCMP",
+            "\tJEQ\ttens0",
+            "\tDWA",
+            "\tLAI\t#1",
+            "\tSTA\t#5",
+            "tens0:\tLAI\t#48",
+            "\tSTA\t#4",
+            "tens:\tLDA\t#3",
+            "\tLBI\t#10",
+            "\tSUB",
+            "\tJC\ttdone",
+            "\tSTA\t#3",
+            "\tLDA\t#4",
+            "\tINA",
+            "\tSTA\t#4",
+            "\tJMP\ttens",
+            "tdone:\tLDA\t#4",
+            "\tLBI\t#48",
+            "\tCMP",
+            "\tJNE\ttprint",
+            "\tLDA\t#5",
+            "\tLBI\t#1",
+            "\tCMP",
+            "\tJNE\tunits",
+            "tprint:\tLDA\t#4",
+            "\tDWA",
+            "units:\tLDA\t#3",
+            "\tLBI\t#48",
+            "\tADD",
+            "\tDWA",
+            "\tDWI\t#32",
+            "\tLDA\t#0",
+            "\tLDB\t#1",
+            "\tADD",
+            "\tJC\tdone",
+            "\tSTA\t#2",
+            "\tLDA\t#1",
+            "\tSTA\t#0",
+            "\tLDA\t#2",
+            "\tSTA\t#1",
+            "\tJMP\tnext",
+            "done:\tHLT",
+        });
+
+        // Example programs for the default machine, by name. The first is loaded by default.
+        public static readonly (string Name, string Source)[] Programs =
+        {
+            ("Stack and memory", SRC),
+            ("Hello, world on the LCD", HELLO),
+            ("Fibonacci on the LCD", FIBONACCI),
+        };
+
         private static string ReadResource(string name)
         {
             using var stream = typeof(ExampleData).Assembly.GetManifestResourceStream(name)

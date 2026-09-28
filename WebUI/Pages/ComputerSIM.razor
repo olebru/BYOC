@@ -31,7 +31,14 @@ else if (ActiveTab == "Microcode")
 }
 else if (ActiveTab == "Program")
 {
-    <SourceEditorComponent Label="Program (assembly)" Value="@Program" ValueChanged="OnProgramChanged" Rows="30" />
+    <div class="examples">
+        <span class="examples-label">Example programs for the default machine</span>
+        @foreach (var example in ExampleData.Programs)
+        {
+            <button class="btn btn-sm @(Program == example.Source ? "btn-primary" : "btn-outline-primary")" @onclick="() => LoadExample(example.Source)">@example.Name</button>
+        }
+    </div>
+    <SourceEditorComponent Label="Program (assembly): label TAB mnemonic TAB operands" Value="@Program" ValueChanged="OnProgramChanged" Rows="30" />
     <ErrorList Errors="ProgramErrors" />
 }
 else if (ActiveTab == "JSON")

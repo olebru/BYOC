@@ -188,7 +188,7 @@ namespace BYOCCore
             {
                 if (module.WriteCount != count)
                 {
-                    record.Writes.Add(new MemoryWrite { Device = deviceId, Bank = bank, Address = module.LastWriteAddress, Value = module.memory[module.LastWriteAddress] });
+                    record.Writes.Add(new MemoryWrite { Device = deviceId, Bank = bank, Address = module.LastWriteAddress, Value = module.ValueAt(module.LastWriteAddress) });
                 }
             }
             if (record.Signals.Contains($"{Definition.Decoder.Instruction}.load") && programMemory != null)
@@ -226,6 +226,7 @@ namespace BYOCCore
                     case Register register: values[device.ID()] = register.Data; break;
                     case DualPortRegister dualPort: values[device.ID()] = dualPort.Data; break;
                     case RomModule memory: values[device.ID() + ".mar"] = memory.memoryAddress; break;
+                    case CharacterDisplay display: values[device.ID() + ".cursor"] = display.Cursor; break;
                     case MMU mmu:
                         values[device.ID() + ".cs"] = mmu.ChipSelectRegister.Data;
                         values[device.ID() + ".mar"] = mmu.RamBanks[mmu.ChipSelectRegister.Data].memoryAddress;
@@ -234,12 +235,12 @@ namespace BYOCCore
             }
             return values;
         }
-        private List<(string Device, int Bank, RamModule Module, long Count)> SnapshotWrites()
+        private List<(string Device, int Bank, IWriteTracked Module, long Count)> SnapshotWrites()
         {
-            var writes = new List<(string, int, RamModule, long)>();
+            var writes = new List<(string, int, IWriteTracked, long)>();
             foreach (var device in Devices)
             {
-                if (device is RamModule ram) writes.Add((device.ID(), -1, ram, ram.WriteCount));
+                if (device is IWriteTracked tracked) writes.Add((device.ID(), -1, tracked, tracked.WriteCount));
                 if (device is MMU mmu)
                 {
                     for (int bank = 0; bank < mmu.RamBanks.Length; bank++) writes.Add((device.ID(), bank, mmu.RamBanks[bank], mmu.RamBanks[bank].WriteCount));

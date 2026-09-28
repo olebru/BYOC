@@ -88,6 +88,12 @@ namespace WebUI.Pages
             Rebuild();
         }
 
+        private void LoadExample(string source)
+        {
+            Program = source;
+            Rebuild();
+        }
+
         private void OnProgramChanged(string program)
         {
             Program = program;
