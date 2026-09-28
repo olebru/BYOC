@@ -6,15 +6,19 @@ namespace ConsoleUI
 {
     class Program
     {
-        // Usage: ConsoleUI [machine.json microcode.json program.asm], microcode may also be a legacy tab separated ROM
+        // Usage: ConsoleUI [machine.json program.asm] or [machine.json microcode.json program.asm]. The machine
+        // carries its microcode in decoder.microcode; a separate microcode file (JSON or legacy tab separated) overrides it.
         static int Main(string[] args)
         {
             Machine c;
             try
             {
-                c = args.Length == 3
-                    ? Machine.FromJson(File.ReadAllText(args[0]), File.ReadAllText(args[1]), File.ReadAllText(args[2]))
-                    : Machine.CreateDefault();
+                c = args.Length switch
+                {
+                    2 => Machine.FromJson(File.ReadAllText(args[0]), File.ReadAllText(args[1])),
+                    3 => Machine.FromJson(File.ReadAllText(args[0]), File.ReadAllText(args[1]), File.ReadAllText(args[2])),
+                    _ => Machine.CreateDefault(),
+                };
             }
             catch (Exception e) when (e is MachineDefinitionException || e is FormatException)
             {

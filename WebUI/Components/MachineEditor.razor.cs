@@ -39,11 +39,18 @@ namespace WebUI.Components
         [Parameter] public IReadOnlyList<string> Errors { get; set; } = Array.Empty<string>();
         [Parameter] public Machine Preview { get; set; }
         [Parameter] public DeviceRegistry Registry { get; set; } = DeviceRegistry.CreateDefault();
+        // Undo history shared with the microcode editor.
+        [Parameter] public EditHistory History { get; set; }
+        // Asks the page to show an instruction step in the microcode editor.
+        [Parameter] public EventCallback<(string Mnemonic, int Step)> OnOpenMicrocode { get; set; }
+        // Selects this device when FocusVersion changes, so other views can point at a device.
+        [Parameter] public string FocusDevice { get; set; }
+        [Parameter] public int FocusVersion { get; set; }
 
         private ElementReference canvasElement;
         private ElementReference canvasScroller;
-        private readonly Stack<string> undo = new Stack<string>();
-        private readonly Stack<string> redo = new Stack<string>();
+        private (string Id, List<(InstructionDefinition Instruction, int Step, string Signal)> Usages)? pendingDelete;
+        private int focusVersionSeen;
         private MachineDefinition laidOut;
         private string selectedDevice;
         private string selectedBus;
@@ -87,6 +94,11 @@ namespace WebUI.Components
                 if (Definition != null) EnsureLayout();
                 if (selectedDevice != null && Definition?.FindDevice(selectedDevice) == null) selectedDevice = null;
                 if (selectedBus != null && Definition?.FindBus(selectedBus) == null) selectedBus = null;
+            }
+            if (FocusVersion != focusVersionSeen)
+            {
+                focusVersionSeen = FocusVersion;
+                if (FocusDevice != null && Definition?.FindDevice(FocusDevice) != null) Select(FocusDevice);
             }
         }
 
@@ -202,34 +214,16 @@ namespace WebUI.Components
 
         private async Task Mutate(Action change)
         {
-            PushUndo(Definition.ToJson());
+            History?.Record();
             change();
             await DefinitionChanged.InvokeAsync(Definition);
         }
         private void PushUndo(string snapshot)
         {
-            undo.Push(snapshot);
-            redo.Clear();
-            while (undo.Count > 100) TrimOldest(undo);
+            History?.Push(snapshot);
         }
-        private static void TrimOldest(Stack<string> stack)
-        {
-            var items = stack.ToArray();
-            stack.Clear();
-            foreach (var item in items.Take(items.Length - 1).Reverse()) stack.Push(item);
-        }
-        private async Task Undo()
-        {
-            if (undo.Count == 0) return;
-            redo.Push(Definition.ToJson());
-            await Replace(MachineDefinition.FromJson(undo.Pop()));
-        }
-        private async Task Redo()
-        {
-            if (redo.Count == 0) return;
-            undo.Push(Definition.ToJson());
-            await Replace(MachineDefinition.FromJson(redo.Pop()));
-        }
+        private Task Undo() { return History?.Undo() ?? Task.CompletedTask; }
+        private Task Redo() { return History?.Redo() ?? Task.CompletedTask; }
         private async Task Replace(MachineDefinition definition)
         {
             laidOut = definition;
@@ -275,10 +269,17 @@ namespace WebUI.Components
             await Mutate(() => Definition.Buses.Add(new BusDefinition { Id = id, Layout = new Position { Y = Snap(y) } }));
             SelectBus(id);
         }
+        // A device the microcode uses is only deleted after asking what to do with its signals.
         private async Task DeleteSelected()
         {
             if (selectedDevice != null)
             {
+                var usages = Definition.SignalUsages(selectedDevice);
+                if (usages.Count > 0)
+                {
+                    pendingDelete = (selectedDevice, usages);
+                    return;
+                }
                 var id = selectedDevice;
                 selectedDevice = null;
                 await Mutate(() => Definition.RemoveDevice(id));
@@ -290,6 +291,30 @@ namespace WebUI.Components
                 await Mutate(() => Definition.RemoveBus(id));
             }
         }
+        private async Task ConfirmDelete(bool removeSignals)
+        {
+            if (pendingDelete == null) return;
+            var id = pendingDelete.Value.Id;
+            pendingDelete = null;
+            selectedDevice = null;
+            await Mutate(() =>
+            {
+                Definition.RemoveDevice(id);
+                if (removeSignals) Definition.RemoveSignalsOf(id);
+            });
+        }
+        private void CancelDelete()
+        {
+            pendingDelete = null;
+        }
+        private List<(string Mnemonic, List<(int Step, string Line)> Steps)> UsageSummary(string deviceId)
+        {
+            return Definition.SignalUsages(deviceId)
+                .GroupBy(u => u.Instruction.Mnemonic)
+                .Select(g => (g.Key, g.Select(u => (u.Step, u.Signal.Substring(deviceId.Length + 1))).ToList()))
+                .ToList();
+        }
+
         private async Task DuplicateSelected()
         {
             var source = Definition.FindDevice(selectedDevice);
@@ -335,7 +360,7 @@ namespace WebUI.Components
             var oldId = selectedDevice;
             try
             {
-                PushUndo(Definition.ToJson());
+                History?.Record();
                 Definition.RenameDevice(oldId, newId?.Trim());
                 selectedDevice = newId.Trim();
                 renameError = null;
@@ -343,7 +368,7 @@ namespace WebUI.Components
             }
             catch (ArgumentException e)
             {
-                undo.Pop();
+                History?.Discard();
                 renameError = e.Message;
             }
         }
@@ -352,7 +377,7 @@ namespace WebUI.Components
             var oldId = selectedBus;
             try
             {
-                PushUndo(Definition.ToJson());
+                History?.Record();
                 Definition.RenameBus(oldId, newId?.Trim());
                 selectedBus = newId.Trim();
                 renameError = null;
@@ -360,7 +385,7 @@ namespace WebUI.Components
             }
             catch (ArgumentException e)
             {
-                undo.Pop();
+                History?.Discard();
                 renameError = e.Message;
             }
         }
@@ -523,7 +548,7 @@ namespace WebUI.Components
             else if (command && (e.Key.ToLowerInvariant() == "y" || (e.Key.ToLowerInvariant() == "z" && e.ShiftKey))) await Redo();
             else if (command && e.Key.ToLowerInvariant() == "d") await DuplicateSelected();
             else if (e.Key == "Delete" || e.Key == "Backspace") await DeleteSelected();
-            else if (e.Key == "Escape") { drag = null; ClearSelection(); }
+            else if (e.Key == "Escape") { drag = null; pendingDelete = null; ClearSelection(); }
         }
 
         private void Zoom(double factor)

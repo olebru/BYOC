@@ -32,6 +32,13 @@ namespace BYOCCore
         {
         }
 
+        // Builds the machine with the microcode stored in its definition (decoder.microcode).
+        public Machine(MachineDefinition definition, string source, DeviceRegistry registry = null)
+            : this(definition, (MicrocodeDefinition)null, source, registry)
+        {
+        }
+
+        // microcode overrides the definition's own decoder.microcode when given.
         public Machine(MachineDefinition definition, MicrocodeDefinition microcode, string source, DeviceRegistry registry = null)
         {
             registry ??= DeviceRegistry.CreateDefault();
@@ -55,6 +62,8 @@ namespace BYOCCore
             if (definition.Halt != null) halt = Device<Clock>(definition.Halt, "halt");
             if (definition.ProgramMemory != null) programMemory = Device<RomModule>(definition.ProgramMemory, "programMemory");
 
+            microcode ??= definition.Decoder.Microcode
+                ?? throw new MachineDefinitionException("\"decoder.microcode\" is required: the fetch routine and instructions for this machine.");
             var diagnostics = MicrocodeValidator.Validate(microcode, definition, registry, this);
             var errors = diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).Select(d => d.ToString()).ToList();
             if (errors.Count > 0) throw new MachineDefinitionException(errors);
@@ -78,9 +87,13 @@ namespace BYOCCore
         {
             return new Machine(MachineDefinition.FromJson(definitionJson), microcode, source, registry);
         }
+        public static Machine FromJson(string definitionJson, string source, DeviceRegistry registry = null)
+        {
+            return new Machine(MachineDefinition.FromJson(definitionJson), source, registry);
+        }
         public static Machine CreateDefault()
         {
-            return FromJson(ExampleData.MACHINE, ExampleData.MICROCODE, ExampleData.SRC);
+            return FromJson(ExampleData.MACHINE, ExampleData.SRC);
         }
 
         // Checks a definition on its own, without microcode or a program. Returns the problems found.

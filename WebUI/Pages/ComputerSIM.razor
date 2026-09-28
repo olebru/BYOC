@@ -23,11 +23,23 @@
 
 @if (ActiveTab == "Design")
 {
-    <MachineEditor Definition="Definition" DefinitionChanged="OnDesignChanged" Errors="DefinitionErrors" Preview="C" Registry="Registry" />
+    <MachineEditor Definition="Definition" DefinitionChanged="OnDesignChanged" Errors="DefinitionErrors" Preview="C" Registry="Registry"
+                   History="History" OnOpenMicrocode="OpenMicrocode" FocusDevice="@focusDevice" FocusVersion="focusVersion" />
 }
 else if (ActiveTab == "Microcode")
 {
-    <MicrocodeEditor Microcode="Microcode" MicrocodeChanged="OnMicrocodeChanged" Machine="Definition" Diagnostics="MicrocodeDiagnostics" Registry="Registry" />
+    @if (Definition.Decoder?.Microcode == null)
+    {
+        <div class="alert alert-warning">
+            This machine has no microcode yet.
+            <button class="btn btn-sm btn-primary ml-2" @onclick="StartMicrocode">Start with an empty fetch routine</button>
+        </div>
+    }
+    else
+    {
+        <MicrocodeEditor Microcode="Definition.Decoder.Microcode" MicrocodeChanged="OnMicrocodeChanged" Machine="Definition" Diagnostics="MicrocodeDiagnostics" Registry="Registry"
+                         History="History" OnOpenDevice="OpenDevice" FocusMnemonic="@focusMnemonic" FocusStep="focusStep" FocusVersion="focusVersion" />
+    }
 }
 else if (ActiveTab == "Program")
 {
@@ -44,14 +56,7 @@ else if (ActiveTab == "Program")
 else if (ActiveTab == "JSON")
 {
     <ErrorList Errors="ParseErrors" />
-    <div class="row">
-        <div class="col-lg-6">
-            <SourceEditorComponent Label="Machine definition (JSON), kept in sync with the designer" Value="@DefinitionJson" ValueChanged="OnJsonChanged" Rows="30" />
-        </div>
-        <div class="col-lg-6">
-            <SourceEditorComponent Label="Microcode (JSON, or a legacy tab separated ROM), kept in sync with the microcode editor" Value="@MicrocodeJson" ValueChanged="OnMicrocodeJsonChanged" Rows="30" />
-        </div>
-    </div>
+    <SourceEditorComponent Label="Machine definition (JSON) with its microcode in decoder.microcode, kept in sync with both editors" Value="@DefinitionJson" ValueChanged="OnJsonChanged" Rows="34" />
 }
 else if (ActiveTab == "Run")
 {

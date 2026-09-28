@@ -106,6 +106,8 @@ namespace BYOCCore
         public string Status { get; set; }
         // Register holding the current micro instruction address.
         public string Instruction { get; set; }
+        // The decoder ROM contents: the fetch routine and the instruction set, driving this machine's control lines.
+        public MicrocodeDefinition Microcode { get; set; }
     }
     public class MachineDefinitionException : Exception
     {

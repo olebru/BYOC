@@ -3,8 +3,8 @@
 <div class="editor @(drag != null ? "dragging" : "")" @onpointermove="OnPointerMove" @onpointerup="OnPointerUp" @onpointerleave="OnPointerLeave">
 
     <div class="toolbar">
-        <button class="tool" title="Undo (Ctrl+Z)" disabled="@(undo.Count == 0)" @onclick="Undo">Undo</button>
-        <button class="tool" title="Redo (Ctrl+Shift+Z)" disabled="@(redo.Count == 0)" @onclick="Redo">Redo</button>
+        <button class="tool" title="Undo (Ctrl+Z), shared with the microcode editor" disabled="@(History?.CanUndo != true)" @onclick="Undo">Undo</button>
+        <button class="tool" title="Redo (Ctrl+Shift+Z)" disabled="@(History?.CanRedo != true)" @onclick="Redo">Redo</button>
         <span class="sep"></span>
         <button class="tool" @onclick="AddBus">＋ Bus</button>
         <button class="tool" title="Arrange all devices around their buses" @onclick="AutoLayout">Auto layout</button>
@@ -122,7 +122,7 @@
                             <div class="card-type">@device.Type@(device.Name != null && device.Name != device.Id ? $" · {device.Name}" : "")</div>
                             @if (Preview?.Device(device.Id) is Register register)
                             {
-                                <div class="card-value" title="Value">@register.Data.ToString("X2")</div>
+                                <div class="card-value" title="Value">@register.Data.ToString("X4")</div>
                             }
                             @for (int i = 0; i < info.Connections.Count; i++)
                             {
@@ -213,6 +213,20 @@
                                value="@ParameterText(selected, parameter)" @onchange="e => SetParameter(selected, parameter, (string)e.Value)" />
                     }
                 }
+                var usedBy = UsageSummary(selected.Id);
+                <div class="section">Used by microcode <span class="muted">@(usedBy.Count == 0 ? "not used" : $"{usedBy.Sum(u => u.Steps.Count)} signals in {usedBy.Count} instructions")</span></div>
+                @if (usedBy.Count > 0)
+                {
+                    <div class="chips">
+                        @foreach (var usage in usedBy)
+                        {
+                            var mnemonic = usage.Mnemonic;
+                            var firstStep = usage.Steps[0].Step;
+                            <span class="chip link" title="@string.Join(", ", usage.Steps.Select(s => $"step {s.Step + 1}: {s.Line}"))"
+                                  @onclick="() => OnOpenMicrocode.InvokeAsync((mnemonic, firstStep))">@mnemonic</span>
+                        }
+                    </div>
+                }
                 @if (Preview?.Device(selected.Id) is IBusDevice built)
                 {
                     <div class="section">Control lines <span class="muted">for microcode</span></div>
@@ -286,5 +300,26 @@
             }
         </div>
     </div>
+
+    @if (pendingDelete != null)
+    {
+        var pending = pendingDelete.Value;
+        var instructions = pending.Usages.Select(u => u.Instruction.Mnemonic).Distinct().ToList();
+        <div class="modal-backdrop-local" @onclick="CancelDelete">
+            <div class="confirm" @onclick:stopPropagation>
+                <div class="confirm-title">Delete '@pending.Id'?</div>
+                <p>
+                    The microcode uses '@pending.Id' in @pending.Usages.Count signal@(pending.Usages.Count == 1 ? "" : "s")
+                    across @instructions.Count instruction@(instructions.Count == 1 ? "" : "s"):
+                    <span class="confirm-list">@string.Join(", ", instructions)</span>
+                </p>
+                <div class="confirm-actions">
+                    <button class="btn btn-sm btn-danger" @onclick="() => ConfirmDelete(true)">Delete device and its signals</button>
+                    <button class="btn btn-sm btn-outline-danger" title="The signals stay in the microcode and show up as errors to fix" @onclick="() => ConfirmDelete(false)">Delete device, keep signals</button>
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="CancelDelete">Cancel</button>
+                </div>
+            </div>
+        </div>
+    }
 </div>
 }

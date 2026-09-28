@@ -6,8 +6,9 @@ namespace BYOCCore
     {
         // The default machine definition, BYOC-16: 16 bit buses, registers and memory.
         public static string MACHINE { get { return ReadResource("BYOCCore.Machines.byoc16.json"); } }
-        // The BYOC-16 microcode as JSON. ROMDATA below is the same microcode in the legacy tab separated format.
-        public static string MICROCODE { get { return ReadResource("BYOCCore.Machines.byoc16.microcode.json"); } }
+        // The default machine's microcode (its decoder.microcode) on its own. ROMDATA below is the same
+        // microcode in the legacy tab separated format.
+        public static string MICROCODE { get { return MachineDefinition.FromJson(MACHINE).Decoder.Microcode.ToJson(); } }
         // Prints "HELLO, WORLD!" by looping over a string in memory (B is the index), then a line feed and
         // Norwegian letters from the Latin-1 range.
         public const string HELLO =

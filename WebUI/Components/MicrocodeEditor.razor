@@ -2,8 +2,8 @@
 {
 <div class="mc-editor">
     <div class="toolbar">
-        <button class="tool" title="Undo" disabled="@(undo.Count == 0)" @onclick="Undo">Undo</button>
-        <button class="tool" title="Redo" disabled="@(redo.Count == 0)" @onclick="Redo">Redo</button>
+        <button class="tool" title="Undo, shared with the machine editor" disabled="@(History?.CanUndo != true)" @onclick="Undo">Undo</button>
+        <button class="tool" title="Redo" disabled="@(History?.CanRedo != true)" @onclick="Redo">Redo</button>
         <span class="sep"></span>
         <button class="tool" @onclick="AddInstruction">＋ Instruction</button>
         <label class="tool import" title="Import microcode JSON or a legacy tab separated ROM">
@@ -158,7 +158,8 @@
                                 {
                                     var line = LineFor(signal);
                                     <span class="signal @(SignalHasProblem(instruction, stepIndex, signal) ? "bad" : "")" draggable="true" title="@SignalTitle(signal)"
-                                          style="border-left-color:@SignalColor(signal)" @ondragstart="() => DragSignal(stepIndex, signal)" @ondragstart:stopPropagation>
+                                          style="border-left-color:@SignalColor(signal)" @ondragstart="() => DragSignal(stepIndex, signal)" @ondragstart:stopPropagation
+                                          @ondblclick="() => OpenDevice(signal)" @ondblclick:stopPropagation>
                                         <span class="dir">@DirectionMark(line)</span>@signal
                                         <button class="remove" title="Remove" @onclick="() => RemoveSignal(stepIndex, signal)" @onclick:stopPropagation>×</button>
                                     </span>
@@ -211,7 +212,7 @@
         <!-- Signal palette -->
         <div class="palette">
             <div class="palette-title">Control lines</div>
-            <div class="palette-hint">Drag onto a step, or click to add to step @(activeStep + 1). ▲ drives a bus, ▼ reads a bus.</div>
+            <div class="palette-hint">Drag onto a step, or click to add to step @(activeStep + 1). ▲ drives a bus, ▼ reads a bus. Double-click a signal in a step to show its device.</div>
             <input class="form-control form-control-sm mb-2" placeholder="Filter" @bind="paletteFilter" @bind:event="oninput" />
             @if (Machine != null)
             {
@@ -229,7 +230,7 @@
                         @foreach (var line in lines)
                         {
                             var signal = $"{device.Id}.{line.Name}";
-                            <span class="palette-line" draggable="true" title="@SignalTitle(signal)" @ondragstart="() => DragPaletteSignal(signal)" @onclick="() => PaletteClick(signal)">
+                            <span class="palette-line" draggable="true" title="@(LineFor(signal) is ControlLineInfo paletteLine ? SignalDescription(signal, paletteLine) : signal)" @ondragstart="() => DragPaletteSignal(signal)" @onclick="() => PaletteClick(signal)">
                                 <span class="dir">@DirectionMark(line)</span>@line.Name
                             </span>
                         }

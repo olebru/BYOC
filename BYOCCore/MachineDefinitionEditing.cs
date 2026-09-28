@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 namespace BYOCCore
 {
@@ -45,8 +46,56 @@ namespace BYOCCore
             }
             if (definition.Halt == oldId) definition.Halt = newId;
             if (definition.ProgramMemory == oldId) definition.ProgramMemory = newId;
+            foreach (var step in MicroSteps(definition))
+            {
+                for (int i = 0; i < step.Signals.Count; i++)
+                {
+                    if (Signal.TryParse(step.Signals[i], out var signal) && signal.Device == oldId)
+                    {
+                        step.Signals[i] = $"{newId}.{signal.Line}";
+                    }
+                }
+            }
         }
 
+        // Every place the microcode enables a control line of the device: instruction, step index and signal.
+        public static List<(InstructionDefinition Instruction, int Step, string Signal)> SignalUsages(this MachineDefinition definition, string deviceId)
+        {
+            var usages = new List<(InstructionDefinition, int, string)>();
+            var microcode = definition.Decoder?.Microcode;
+            if (microcode == null) return usages;
+            foreach (var instruction in microcode.AllInstructions)
+            {
+                for (int step = 0; step < instruction.Steps.Count; step++)
+                {
+                    foreach (var text in instruction.Steps[step].Signals)
+                    {
+                        if (Signal.TryParse(text, out var signal) && signal.Device == deviceId) usages.Add((instruction, step, text));
+                    }
+                }
+            }
+            return usages;
+        }
+
+        // Removes the device's signals from the microcode. Steps left empty stay, so step numbering is kept.
+        public static int RemoveSignalsOf(this MachineDefinition definition, string deviceId)
+        {
+            int removed = 0;
+            foreach (var step in MicroSteps(definition))
+            {
+                removed += step.Signals.RemoveAll(text => Signal.TryParse(text, out var signal) && signal.Device == deviceId);
+            }
+            return removed;
+        }
+
+        private static IEnumerable<MicroStep> MicroSteps(MachineDefinition definition)
+        {
+            var microcode = definition.Decoder?.Microcode;
+            return microcode == null ? Enumerable.Empty<MicroStep>() : microcode.AllInstructions.SelectMany(i => i.Steps);
+        }
+
+        // Removes the device and every reference to it, except its microcode signals: those become errors
+        // unless RemoveSignalsOf is called as well.
         public static void RemoveDevice(this MachineDefinition definition, string id)
         {
             definition.Devices.RemoveAll(d => d.Id == id);

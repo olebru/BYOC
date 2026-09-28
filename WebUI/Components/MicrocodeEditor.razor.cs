@@ -32,9 +32,16 @@ namespace WebUI.Components
         [Parameter] public MachineDefinition Machine { get; set; }
         [Parameter] public IReadOnlyList<MicrocodeDiagnostic> Diagnostics { get; set; } = Array.Empty<MicrocodeDiagnostic>();
         [Parameter] public DeviceRegistry Registry { get; set; } = DeviceRegistry.CreateDefault();
+        // Undo history shared with the machine editor.
+        [Parameter] public EditHistory History { get; set; }
+        // Asks the page to show a device in the machine editor.
+        [Parameter] public EventCallback<string> OnOpenDevice { get; set; }
+        // Selects this instruction and step when FocusVersion changes.
+        [Parameter] public string FocusMnemonic { get; set; }
+        [Parameter] public int FocusStep { get; set; }
+        [Parameter] public int FocusVersion { get; set; }
 
-        private readonly Stack<string> undo = new Stack<string>();
-        private readonly Stack<string> redo = new Stack<string>();
+        private int focusVersionSeen;
         private string selectedMnemonic;
         private int activeStep;
         private string filter = "";
@@ -59,6 +66,17 @@ namespace WebUI.Components
         protected override void OnParametersSet()
         {
             if (Microcode == null) return;
+            if (FocusVersion != focusVersionSeen)
+            {
+                focusVersionSeen = FocusVersion;
+                if (FocusMnemonic != null && Microcode.FindInstruction(FocusMnemonic) != null)
+                {
+                    selectedMnemonic = FocusMnemonic;
+                    activeStep = FocusStep;
+                    filter = "";
+                    return;
+                }
+            }
             if (selectedMnemonic == null || Microcode.FindInstruction(selectedMnemonic) == null)
             {
                 selectedMnemonic = Microcode.Fetch?.Mnemonic ?? Microcode.Instructions.FirstOrDefault()?.Mnemonic;
@@ -101,6 +119,10 @@ namespace WebUI.Components
         {
             var line = LineFor(signalText);
             if (line == null) return signalText;
+            return SignalDescription(signalText, line) + " (double-click to show the device)";
+        }
+        private string SignalDescription(string signalText, ControlLineInfo line)
+        {
             var bus = "";
             if (Signal.TryParse(signalText, out var signal))
             {
@@ -170,26 +192,17 @@ namespace WebUI.Components
 
         private async Task Mutate(Action change)
         {
-            PushUndo(Microcode.ToJson());
+            History?.Record();
             change();
             await MicrocodeChanged.InvokeAsync(Microcode);
         }
-        private void PushUndo(string snapshot)
+        private Task Undo() { return History?.Undo() ?? Task.CompletedTask; }
+        private Task Redo() { return History?.Redo() ?? Task.CompletedTask; }
+        private Task OpenDevice(string signalText)
         {
-            undo.Push(snapshot);
-            redo.Clear();
-        }
-        private async Task Undo()
-        {
-            if (undo.Count == 0) return;
-            redo.Push(Microcode.ToJson());
-            await Replace(MicrocodeDefinition.FromJson(undo.Pop()));
-        }
-        private async Task Redo()
-        {
-            if (redo.Count == 0) return;
-            undo.Push(Microcode.ToJson());
-            await Replace(MicrocodeDefinition.FromJson(redo.Pop()));
+            return Signal.TryParse(signalText, out var signal) && Machine?.FindDevice(signal.Device) != null
+                ? OnOpenDevice.InvokeAsync(signal.Device)
+                : Task.CompletedTask;
         }
         private async Task Replace(MicrocodeDefinition microcode)
         {
@@ -429,7 +442,7 @@ namespace WebUI.Components
             {
                 using var reader = new System.IO.StreamReader(e.File.OpenReadStream(2 * 1024 * 1024));
                 var imported = MicrocodeDefinition.Parse(await reader.ReadToEndAsync());
-                PushUndo(Microcode.ToJson());
+                History?.Record();
                 await Replace(imported);
             }
             catch (Exception ex) when (ex is MachineDefinitionException || ex is FormatException)
