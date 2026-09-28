@@ -1,8 +1,5 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 namespace BYOCCore
 {
    public  class Register : IBusDevice
@@ -23,17 +20,20 @@ namespace BYOCCore
             connectedBus = ConnectedBus;
             Data = InitialValue;
         }
-        public void Clk()
+        public virtual void Drive()
+        {
+            if (outputEnabled)
+            {
+                connectedBus.Data = Data;
+                outputEnabled = false;
+            }
+        }
+        public virtual void Latch()
         {
             if (loadEnabled)
             {
                 Data = connectedBus.Data;
                 loadEnabled = false;
-            }
-            if (outputEnabled)
-            {
-                connectedBus.Data = Data;
-                outputEnabled = false;
             }
             if (reset)
             {
@@ -52,7 +52,7 @@ namespace BYOCCore
             }
         }
         public string DisplayName() { return deviceName; }
-        public void Enable(string function)
+        public virtual void Enable(string function)
         {
             switch (function)
             {
@@ -76,21 +76,21 @@ namespace BYOCCore
             }
         }
         public string ID() { return deviceID; }
-        public bool IsOutputEnabled()
+        public virtual bool IsOutputEnabled()
         {
             return outputEnabled;
         }
-        public string OperationsOnNextClock()
+        public virtual string OperationsOnNextClock()
         {
             string next = "";
             if (loadEnabled) next = $"{next}load";
-            if (outputEnabled) next = $"{next}output"; ;
-            if (reset) next = $"{next}reset"; ;
-            if (inc) next = $"{next}inc"; ;
-            if (dec) next = $"{next}dec"; ;
+            if (outputEnabled) next = $"{next}output";
+            if (reset) next = $"{next}reset";
+            if (inc) next = $"{next}inc";
+            if (dec) next = $"{next}dec";
             return $"{next}";
         }
-        public List<String> SignalLines()
+        public virtual List<String> SignalLines()
         {
             var lines = new List<String>();
             lines.Add("output");
@@ -100,7 +100,7 @@ namespace BYOCCore
             lines.Add("dec");
             return lines;
         }
-        public string ToString(int firstColumnPaddedWidth)
+        public virtual string ToString(int firstColumnPaddedWidth)
         {
             return $"{deviceName}".PadRight(firstColumnPaddedWidth, ' ') + $"= {Data.ToString(connectedBus.NumberFormat)}";
         }

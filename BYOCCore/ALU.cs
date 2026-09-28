@@ -1,6 +1,5 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using System.Text;
 namespace BYOCCore
 {
     public class ALU : IBusDevice
@@ -12,10 +11,9 @@ namespace BYOCCore
         private bool cmp;
         private string deviceID;
         private string deviceName;
-        private string newStatus = "00000000";
         private Register sta;
         private bool sub;
-        char bit = '1';
+        private byte? pendingStatus;
         public ALU(string DeviceName, string DeviceID, Register rega, Register regb, Register regsta, Bus Bus)
         {
             deviceID = DeviceID;
@@ -25,50 +23,40 @@ namespace BYOCCore
             bus = Bus;
             deviceName = DeviceName;
         }
-        public void Clk()
+        // Operands are read in the drive phase, before any register latches a new value this tick.
+        public void Drive()
         {
             if (add)
             {
-                clearNewStatus();
-                bus.Data = (byte)(a.Data + b.Data);
-                if (a.Data + b.Data == 0)
-                {
-                    setZero();
-                }
-                if (a.Data + b.Data > 255)
-                {
-                    setCarry();
-                }
+                int sum = a.Data + b.Data;
+                byte result = (byte)sum;
+                byte status = 0;
+                if (result == 0) status |= StatusRegister.ZeroFlag;
+                if (sum > byte.MaxValue) status |= StatusRegister.CarryFlag;
+                if (((a.Data ^ result) & (b.Data ^ result) & 0x80) != 0) status |= StatusRegister.OverflowFlag;
+                bus.Data = result;
+                pendingStatus = status;
                 add = false;
-                pushNewStatusToRegister();
             }
             if (sub)
             {
-                clearNewStatus();
-                var res = a.Data - b.Data;
-                if (res == 0)
-                {
-                    setZero();
-                }
-                bus.Data = (byte)res;
+                bus.Data = subtract();
                 sub = false;
-                pushNewStatusToRegister();
             }
             if (cmp)
             {
-                clearNewStatus();
-                if (a.Data - b.Data == 0)
-                {
-                    setZero();
-                }
-                if (a.Data - b.Data < 0)
-                {
-                    setNegative();
-                }
+                subtract();
                 cmp = false;
-                pushNewStatusToRegister();
             }
-       }
+        }
+        public void Latch()
+        {
+            if (pendingStatus.HasValue)
+            {
+                sta.Data = pendingStatus.Value;
+                pendingStatus = null;
+            }
+        }
         public string DisplayName() { return deviceName; }
         public void Enable(string function)
         {
@@ -112,37 +100,16 @@ namespace BYOCCore
         {
             return deviceName;
         }
-        private void clearNewStatus()
+        // Computes a - b and the resulting status. Negative and carry (borrow) are set when a < b unsigned.
+        private byte subtract()
         {
-            newStatus = "00000000";
-        }
-        private void pushNewStatusToRegister()
-        {
-            this.sta.Data = Convert.ToByte(newStatus, 2);
-        }
-        private void setCarry()
-        {
-            StringBuilder sb = new StringBuilder(newStatus);
-            sb[6] = bit;
-            newStatus = sb.ToString();
-        }
-        private void setNegative()
-        {
-            StringBuilder sb = new StringBuilder(newStatus);
-            sb[4] = bit;
-            newStatus = sb.ToString();
-        }
-        private void setOverFlow()
-        {
-            StringBuilder sb = new StringBuilder(newStatus);
-            sb[5] = bit;
-            newStatus = sb.ToString();
-        }
-        private void setZero()
-        {
-            StringBuilder sb = new StringBuilder(newStatus);
-            sb[7] = bit;
-            newStatus = sb.ToString();
+            byte result = (byte)(a.Data - b.Data);
+            byte status = 0;
+            if (result == 0) status |= StatusRegister.ZeroFlag;
+            if (a.Data < b.Data) status |= StatusRegister.NegativeFlag | StatusRegister.CarryFlag;
+            if (((a.Data ^ b.Data) & (a.Data ^ result) & 0x80) != 0) status |= StatusRegister.OverflowFlag;
+            pendingStatus = status;
+            return result;
         }
     }
 }

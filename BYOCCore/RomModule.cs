@@ -23,17 +23,12 @@ namespace BYOCCore
             deviceID = DeviceID;
             connectedBus = ConnectedBus;
         }
-        public void Clk()
+        public virtual void Drive()
         {
             if (output)
             {
                 connectedBus.Data = memory[memoryAddress];
                 output = false;
-            }
-            if (loadMAR)
-            {
-                memoryAddress = connectedBus.Data;
-                loadMAR = false;
             }
             if (outputMAR)
             {
@@ -41,15 +36,23 @@ namespace BYOCCore
                 outputMAR = false;
             }
         }
+        public virtual void Latch()
+        {
+            if (loadMAR)
+            {
+                memoryAddress = connectedBus.Data;
+                loadMAR = false;
+            }
+        }
         public string DisplayName() { return deviceName; }
-        public void Enable(string function)
+        public virtual void Enable(string function)
         {
             switch (function)
             {
                 case "loadmar":
                     loadMAR = true;
                     break;
-                case "outputMAR":
+                case "outputmar":
                     outputMAR = true;
                     break;
                 case "output":
@@ -62,10 +65,14 @@ namespace BYOCCore
         public string ID() { return deviceID; }
         public bool IsOutputEnabled()
         {
-            return output;
+            return output || outputMAR;
         }
         public void LoadBytes(Byte[] bytes)
         {
+            if (bytes.Length > memory.Length)
+            {
+                throw new ArgumentException($"Program is {bytes.Length} bytes, but {deviceName} only holds {memory.Length} bytes.");
+            }
             for (int i = 0; i < bytes.Length; i++)
             {
                 memory[i] = bytes[i];
@@ -78,17 +85,17 @@ namespace BYOCCore
             if (outputMAR) next = $"{next}output";
             return next;
         }
-        public string OperationsOnNextClockRAM()
+        public virtual string OperationsOnNextClockRAM()
         {
             string next = "";
             if (output) next = $"{next}output";
             return next;
         }
-        public List<String> SignalLines()
+        public virtual List<String> SignalLines()
         {
             var lines = new List<String>();
             lines.Add("loadmar");
-            lines.Add("outputMAR");
+            lines.Add("outputmar");
             lines.Add("output");
             return lines;
         }

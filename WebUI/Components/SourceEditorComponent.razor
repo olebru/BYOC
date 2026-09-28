@@ -1,0 +1,30 @@
+<div class="mb-3">
+    <label class="form-label"><strong>@Label</strong></label>
+    <InputFile OnChange="LoadFile" class="form-control form-control-sm mb-1" />
+    <textarea class="form-control" style="font-family: monospace; font-size: 0.8rem;" rows="@Rows"
+              spellcheck="false" @bind="Value" @bind:after="() => ValueChanged.InvokeAsync(Value)"></textarea>
+</div>
+
+@code
+{
+    private const long MaxFileSize = 1024 * 1024;
+
+    [Parameter]
+    public string Label { get; set; }
+
+    [Parameter]
+    public int Rows { get; set; } = 12;
+
+    [Parameter]
+    public string Value { get; set; }
+
+    [Parameter]
+    public EventCallback<string> ValueChanged { get; set; }
+
+    private async Task LoadFile(InputFileChangeEventArgs e)
+    {
+        using var reader = new System.IO.StreamReader(e.File.OpenReadStream(MaxFileSize));
+        Value = await reader.ReadToEndAsync();
+        await ValueChanged.InvokeAsync(Value);
+    }
+}

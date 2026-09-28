@@ -1,0 +1,26 @@
+{
+  "name": "BYOC-8",
+  "buses": [
+    { "id": "main", "width": 8 }
+  ],
+  "devices": [
+    { "id": "regi", "type": "instructionRegister", "name": "REGINSTR", "bus": "main" },
+    { "id": "pc", "type": "programCounter", "name": "PCOUNT", "bus": "main" },
+    { "id": "regsp", "type": "register", "name": "REGSP", "bus": "main", "parameters": { "initialValue": 255 } },
+    { "id": "rega", "type": "register", "name": "REGA", "bus": "main" },
+    { "id": "regb", "type": "register", "name": "REGB", "bus": "main" },
+    { "id": "regc", "type": "register", "name": "REGC", "bus": "main" },
+    { "id": "regs", "type": "register", "name": "REGSWAP", "bus": "main" },
+    {
+      "id": "alu", "type": "alu", "name": "ALU", "bus": "main",
+      "connections": { "a": "rega", "b": "regb", "status": "regsta" }
+    },
+    { "id": "regsta", "type": "statusRegister", "name": "STATUS", "bus": "main" },
+    { "id": "mem", "type": "ram", "name": "BASEMEM", "bus": "main" },
+    { "id": "mmu", "type": "mmu", "name": "MMU", "bus": "main" },
+    { "id": "clk", "type": "clock", "name": "Clock" }
+  ],
+  "decoder": { "status": "regsta", "instruction": "regi" },
+  "halt": "clk",
+  "programMemory": "mem"
+}

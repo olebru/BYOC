@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 namespace BYOCCore
@@ -11,6 +11,8 @@ namespace BYOCCore
         private Bus bus;
         private string deviceName;
         private string id;
+        private List<string> pendingBankFunctions = new List<string>();
+        private bool select0Stack;
         public MMU(string DeviceName, string DeviceID, Bus bus)
         {
             this.bus = bus;
@@ -38,10 +40,37 @@ namespace BYOCCore
                 }
             }
         }
-        public void Clk()
+        // select0stack applies before anything else. Bank outputs use the bank selected at the start of the
+        // tick; bank inputs use the bank selected after the chip select register latched this tick.
+        public void Drive()
         {
-            this.ChipSelectRegister.Clk();
-            this.RamBanks[ChipSelectRegister.Data].Clk();
+            if (select0Stack)
+            {
+                ChipSelectRegister.Data = 0;
+                select0Stack = false;
+            }
+            ChipSelectRegister.Drive();
+            var bank = this.RamBanks[ChipSelectRegister.Data];
+            foreach (var function in pendingBankFunctions.Where(IsDriveFunction))
+            {
+                bank.Enable(function);
+            }
+            bank.Drive();
+        }
+        public void Latch()
+        {
+            ChipSelectRegister.Latch();
+            var bank = this.RamBanks[ChipSelectRegister.Data];
+            foreach (var function in pendingBankFunctions.Where(f => !IsDriveFunction(f)))
+            {
+                bank.Enable(function);
+            }
+            pendingBankFunctions.Clear();
+            bank.Latch();
+        }
+        private static bool IsDriveFunction(string function)
+        {
+            return function == "output" || function == "outputmar";
         }
         public string DisplayName() { return deviceName; }
         public void Enable(string function)
@@ -49,7 +78,7 @@ namespace BYOCCore
             switch (function)
             {
                 case "select0stack":
-                    ChipSelectRegister.Data = 0;
+                    select0Stack = true;
                     break;
                 case "loadcs":
                     ChipSelectRegister.Enable("load");
@@ -58,7 +87,11 @@ namespace BYOCCore
                     ChipSelectRegister.Enable("output");
                     break;
                 default:
-                    this.RamBanks[ChipSelectRegister.Data].Enable(function);
+                    if (!this.RamBanks[0].SignalLines().Contains(function))
+                    {
+                        throw new Exception("Unable to enable the unknown function: " + function);
+                    }
+                    pendingBankFunctions.Add(function);
                     break;
             }
         }
@@ -68,12 +101,8 @@ namespace BYOCCore
         }
         public bool IsOutputEnabled()
         {
-            if (ChipSelectRegister.IsOutputEnabled()) return true;
-            foreach (var bank in RamBanks)
-            {
-                if (bank != null && bank.IsOutputEnabled()) return true;
-            }
-            return false;
+            return ChipSelectRegister.IsOutputEnabled()
+                || pendingBankFunctions.Any(IsDriveFunction);
         }
         public List<String> SignalLines()
         {

@@ -2,8 +2,17 @@ using System;
 
 namespace BYOCCore 
 {
-    public class ExampleData 
+    public class ExampleData
     {
+        // The default machine definition, the BYOC-8 architecture the example ROM and program are written for.
+        public static string MACHINE { get { return ReadResource("BYOCCore.Machines.byoc8.json"); } }
+        private static string ReadResource(string name)
+        {
+            using var stream = typeof(ExampleData).Assembly.GetManifestResourceStream(name)
+                ?? throw new InvalidOperationException($"Embedded resource '{name}' is missing.");
+            using var reader = new System.IO.StreamReader(stream);
+            return reader.ReadToEnd();
+        }
         public const string ROMDATA = @"p	pc	output	FTC	x	x	x	x
 s	mem	loadmar	FTC	x	x	x	x
 p	mem	output	FTC	x	x	x	x

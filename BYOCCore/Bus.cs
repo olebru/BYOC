@@ -1,23 +1,22 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using System.Linq;
 namespace BYOCCore
 {
     public class Bus
     {
-        public int Cycles = 0;
-        public DecoderRom DecoderROM;
+        public string ID;
         public string NumberFormat = "X2";
+        // Devices attached to this bus, for display and single bus rigs. A machine clocks its own device list.
         public List<IBusDevice> devices;
+        public int Cycles = 0;
+        internal IBusDevice ActiveDevice;
         private byte data;
         private bool dataWrittenInThisClk = false;
-        private double hz = 0;
-        private System.Diagnostics.Stopwatch stopwatch;
-        public Bus()
+        private IBusDevice writer;
+        public Bus(string id = "bus")
         {
+            ID = id;
             devices = new List<IBusDevice>();
-            Data = new byte();
-            stopwatch = new System.Diagnostics.Stopwatch();
         }
         public byte Data
         {
@@ -27,41 +26,32 @@ namespace BYOCCore
             }
             set
             {
-                if (dataWrittenInThisClk && Cycles != 0)
+                if (dataWrittenInThisClk)
                 {
-                    throw new Exception("Puff of blue smoke exception, multiple bus devices has output enabled at the same time.");
+                    throw new Exception($"Puff of blue smoke exception, multiple bus devices has output enabled at the same time on bus '{ID}': {writer?.ID() ?? "unknown"}, {ActiveDevice?.ID() ?? "unknown"}");
                 }
                 data = value;
                 dataWrittenInThisClk = true;
+                writer = ActiveDevice;
             }
         }
-        public double ObservedClockSpeed { get { return hz; } }
+        // The device that drove the bus in the last tick, or null if the bus floated (reads as 0).
+        public IBusDevice Writer { get { return writer; } }
+        internal void BeginTick()
+        {
+            data = 0;
+            dataWrittenInThisClk = false;
+            writer = null;
+            ActiveDevice = null;
+        }
+        internal void EndTick()
+        {
+            ActiveDevice = null;
+            Cycles++;
+        }
         public void Clk()
         {
-            stopwatch.Stop();
-            double ms = stopwatch.ElapsedMilliseconds;
-            if (ms != 0)
-            {
-                hz = 1000 / ms;
-            }
-            stopwatch.Reset();
-            stopwatch.Start();
-            this.Data = 0;
-            this.dataWrittenInThisClk = false;
-            var outputtingDevice = devices.SingleOrDefault(d => d.IsOutputEnabled());
-            if (outputtingDevice != null)
-            {
-                outputtingDevice.Clk();
-            }
-            foreach (var busItem in devices)
-            {
-                if (!busItem.IsOutputEnabled())
-                {
-                    busItem.Clk();
-                }
-            }
-            dataWrittenInThisClk = false;
-            Cycles++;
+            Clocking.Tick(new[] { this }, devices);
         }
     }
 }

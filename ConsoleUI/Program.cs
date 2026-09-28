@@ -1,35 +1,45 @@
-﻿using System;
-using System.Collections.Generic;
+using System;
+using System.IO;
 using System.Linq;
-using System.Threading;
 using BYOCCore;
 namespace ConsoleUI
 {
     class Program
     {
-        static void Main(string[] args)
+        // Usage: ConsoleUI [machine.json microcode.tsv program.asm]
+        static int Main(string[] args)
         {
-            var c = new BYOCCore.LowLevelPileOfPartsActingAsAMCU(BYOCCore.ExampleData.ROMDATA,BYOCCore.ExampleData.SRC);
-            Console.WriteLine($"Percent of decoderrom used: {(c.decoderRom.OpCodeAddressSpaceUsedInPercent())}");
-            Console.ReadLine();
-            var mem = (RamModule)c.bus.devices.Single(d => d.ID() == "mem");
-            var mmu = (MMU)c.bus.devices.Single(d => d.ID() == "mmu");
-            foreach (var device in c.bus.devices)
+            Machine c;
+            try
             {
-                Console.WriteLine(device.ID());
+                c = args.Length == 3
+                    ? Machine.FromJson(File.ReadAllText(args[0]), File.ReadAllText(args[1]), File.ReadAllText(args[2]))
+                    : Machine.CreateDefault();
             }
-            foreach(int cyclenum in c.RunClk())
+            catch (Exception e) when (e is MachineDefinitionException || e is FormatException)
             {
-                foreach( var mi in c.currentMicroCode)
+                Console.Error.WriteLine(e.Message);
+                return 1;
+            }
+            Console.WriteLine($"Machine: {c.Definition.Name}");
+            Console.WriteLine($"Percent of decoderrom used: {(c.DecoderRom.OpCodeAddressSpaceUsedInPercent())}");
+            Console.ReadLine();
+            var mmu = c.Devices.OfType<MMU>().FirstOrDefault();
+            foreach (var bus in c.Buses.Values)
+            {
+                Console.WriteLine($"{bus.ID}: {string.Join(", ", bus.devices.Select(d => d.ID()))}");
+            }
+            foreach(int cyclenum in c.Run())
+            {
+                foreach( var mi in c.CurrentMicroCode)
                 {
                     Console.WriteLine($"{cyclenum}\t {mi.ToSingleLineString()}");
                 }
                 Console.WriteLine("---");
             if(cyclenum == 40) break;
-            Console.WriteLine(mmu.RamBanks[0].ToString());
-
-            
+            if (mmu != null) Console.WriteLine(mmu.RamBanks[0].ToString());
             }
+            return 0;
         }
     }
 }

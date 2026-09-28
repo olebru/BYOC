@@ -1,22 +1,23 @@
 ﻿using System;
+using System.Collections.Generic;
 namespace BYOCCore
 {
-    public class ProgramCounter : Register, IBusDevice
+    public class ProgramCounter : Register
     {
         private bool countEnabled = false;
         public ProgramCounter(string DeviceName, string DeviceID, Bus bus) : base(DeviceName,DeviceID,bus)
         {
         }
-        public new void Clk()
+        public override void Latch()
         {
             if (countEnabled)
             {
                 increment();
                 countEnabled = false;
             }
-            base.Clk();
+            base.Latch();
         }
-        public new void Enable(string function)
+        public override void Enable(string function)
         {
             switch (function)
             {
@@ -28,16 +29,17 @@ namespace BYOCCore
                     break;
             }
         }
-        public new string OperationsOnNextClock()
+        public override string OperationsOnNextClock()
         {
-            string next = "";
-            if (loadEnabled) next = $"{next}load";
-            if (outputEnabled) next = $"{next}output";
-            if (reset) next = $"{next}reset";
-            if (inc) next = $"{next}inc";
-            if (dec) next = $"{next}dec";
+            string next = base.OperationsOnNextClock();
             if (countEnabled) next = $"{next}count";
-            return $"{next}";
+            return next;
+        }
+        public override List<String> SignalLines()
+        {
+            var lines = base.SignalLines();
+            lines.Add("count");
+            return lines;
         }
         private void increment()
         {

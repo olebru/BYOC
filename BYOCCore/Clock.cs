@@ -13,7 +13,10 @@ namespace BYOCCore
             deviceID = DeviceID;
             name = Name;
         }
-        public void Clk()
+        public void Drive()
+        {
+        }
+        public void Latch()
         {
            cycle++;
         }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,55 +6,56 @@ namespace BYOCCore
 {
     public class DecoderRom
     {
+        public const int OpCodeAddressSpace = 256;
         private List<MicroInstruction> completeROM;
-
-
-
+        private Dictionary<int, List<MicroInstruction>> romByOpCode;
+        private Dictionary<string, int> baseAddressByMnemonic;
 
         public DecoderRom(string romfilecontent)
         {
-            
             var initialListLine = new List<fileLine>();
             var interMediateListLine = new List<fileLine>();
             var finalListLine = new List<fileLine>();
-          
-                int order = -1;
-            foreach (var csvLine in romfilecontent.Split(Environment.NewLine))
-	        {
-                    order++;
-                
-                    var line = new fileLine();
-                    var tokens = csvLine.Split('\t');
-                    line.readOrder = order;
-                    line.clkFlag = tokens[0];
-                    line.deviceID = tokens[1];
-                    line.function = tokens[2];
-                    line.mnemonic = tokens[3];
-                    line.negative = tokens[4];
-                    line.overflow = tokens[5];
-                    line.carry = tokens[6];
-                    line.zero = tokens[7];
-                    initialListLine.Add(line);               
-	        }
-              
-            
+
+            int order = -1;
+            foreach (var csvLine in SourceText.SplitLines(romfilecontent))
+            {
+                order++;
+                if (string.IsNullOrWhiteSpace(csvLine)) continue;
+                var tokens = csvLine.Split('\t');
+                if (tokens.Length < 8)
+                {
+                    throw new FormatException($"Decoder ROM line {order + 1}: expected 8 tab separated columns, found {tokens.Length}: '{csvLine}'");
+                }
+                var line = new fileLine();
+                line.readOrder = order;
+                line.clkFlag = tokens[0];
+                line.deviceID = tokens[1];
+                line.function = tokens[2];
+                line.mnemonic = tokens[3];
+                line.negative = tokens[4];
+                line.overflow = tokens[5];
+                line.carry = tokens[6];
+                line.zero = tokens[7];
+                if (line.status.Length != 4 || line.status.Any(c => c != '0' && c != '1' && c != 'x'))
+                {
+                    throw new FormatException($"Decoder ROM line {order + 1}: status columns must each be 0, 1 or x: '{csvLine}'");
+                }
+                initialListLine.Add(line);
+            }
+
             foreach (var line in initialListLine)
             {
-                List<String> possiblities = new List<string>();
                 List<String> validBitCombinations = new List<string>();
                 for (int i = 0; i < 16; i++)
                 {
-                    possiblities.Add(Convert.ToString(i, 2).PadLeft(4, '0'));
-                }
-                foreach (var possibilty in possiblities)
-                {
-                    var cand = new StringBuilder(string.Empty.PadLeft(4, '0'));
-                    for (int i = 0; i < 4; i++)
+                    var possibilty = Convert.ToString(i, 2).PadLeft(4, '0');
+                    var cand = new StringBuilder(line.status);
+                    for (int n = 0; n < 4; n++)
                     {
-                        if (line.status[i] == 'x') cand[i] = possibilty[i];
-                        if (line.status[i] != 'x') cand[i] = line.status[i];
+                        if (line.status[n] == 'x') cand[n] = possibilty[n];
                     }
-                    if (validBitCombinations.Count(v => v == cand.ToString()) == 0)
+                    if (!validBitCombinations.Contains(cand.ToString()))
                         validBitCombinations.Add(cand.ToString());
                 }
                 foreach (var validCombination in validBitCombinations)
@@ -65,8 +66,6 @@ namespace BYOCCore
                     newLine.deviceID = line.deviceID;
                     newLine.function = line.function;
                     newLine.mnemonic = line.mnemonic;
-                    newLine.mnemonicSeq = line.mnemonicSeq;
-                    newLine.instructionBaseAddress = line.instructionBaseAddress;
                     newLine.negative = validCombination[0].ToString();
                     newLine.overflow = validCombination[1].ToString();
                     newLine.carry = validCombination[2].ToString();
@@ -74,71 +73,41 @@ namespace BYOCCore
                     interMediateListLine.Add(newLine);
                 }
             }
-            var listMnemonics = new List<string>();
-            foreach (var line in interMediateListLine)
-            {
-                if (listMnemonics.Count(l => l == line.mnemonic) == 0)
-                {
-                    listMnemonics.Add(line.mnemonic);
-                }
-            }
+            var listMnemonics = interMediateListLine.Select(l => l.mnemonic).Distinct().ToList();
+            baseAddressByMnemonic = new Dictionary<string, int>();
             int addr = 0;
             foreach (var mnemonic in listMnemonics)
             {
-                var listOfList = new List<List<fileLine>>();
-                for (int i = 0; i < 16; i++)
+                var linesByStatus = interMediateListLine.Where(l => l.mnemonic == mnemonic)
+                                                        .OrderBy(l => l.readOrder)
+                                                        .GroupBy(l => l.statusAsInt);
+                int steps = 0;
+                foreach (var statusLines in linesByStatus)
                 {
-                    listOfList.Add(new List<fileLine>());
-                }
-                foreach (var instr in interMediateListLine.Where(l => l.mnemonic == mnemonic).OrderBy(l => l.readOrder))
-                {
-                    listOfList[instr.statusAsInt].Add(instr);
-                }
-                int listWithHighestCount = 0;
-                int countOfListWithHigestCount = 0;
-                foreach (var list in listOfList)
-                {
-                    if (list.Count(l => l.clkFlag == "p") > countOfListWithHigestCount)
-                    {
-                        countOfListWithHigestCount = list.Count(l => l.clkFlag == "p");
-                        listWithHighestCount = listOfList.IndexOf(list);
-                    }
-                }
-                foreach (var lineItem in interMediateListLine.Where(l => l.mnemonic == mnemonic))
-                {
-                    lineItem.instructionBaseAddress = addr;
-                }
-                addr = addr + countOfListWithHigestCount;
-            }
-            foreach (var mnemonic in listMnemonics)
-            {
-                var listOfList = new List<List<fileLine>>();
-                for (int i = 0; i < 16; i++)
-                {
-                    listOfList.Add(new List<fileLine>());
-                }
-                foreach (var instr in interMediateListLine.Where(l => l.mnemonic == mnemonic))
-                {
-                    listOfList[instr.statusAsInt].Add(instr);
-                }
-                foreach (var list in listOfList)
-                {
-                    bool firstFound = false;
                     int offset = 0;
-                    foreach (var line in list)
+                    bool firstFound = false;
+                    foreach (var line in statusLines)
                     {
                         if (line.clkFlag == "p" && firstFound)
                         {
                             offset++;
-                                                    }
+                        }
                         if (line.clkFlag == "p")
                         {
                             firstFound = true;
                         }
-                        line.mnemonicSeq += offset;
+                        line.instructionBaseAddress = addr;
+                        line.mnemonicSeq = offset;
                         finalListLine.Add(line);
                     }
+                    steps = Math.Max(steps, offset + 1);
                 }
+                baseAddressByMnemonic[mnemonic] = addr;
+                addr = addr + steps;
+            }
+            if (addr > OpCodeAddressSpace)
+            {
+                throw new Exception($"OpCode AddressSpace is exhausted, {addr} opcodes needed but only {OpCodeAddressSpace} available, optimize...");
             }
             completeROM = new List<MicroInstruction>();
             foreach (var line in finalListLine)
@@ -146,29 +115,29 @@ namespace BYOCCore
                 var mc = new MicroInstruction(line.completeOpCode, line.deviceID, line.function, line.mnemonic, false, (line.instructionBaseAddress == line.completeOpCode && line.status == "0000"));
                 completeROM.Add(mc);
             }
-            if (this.OpCodeAddressSpaceUsedInPercent() > 99 )
-            {
-                throw new Exception("OpCode AddressSpace is exhausted, optimize...");
-            }
+            romByOpCode = completeROM.GroupBy(m => m.OPCode).ToDictionary(g => g.Key, g => g.ToList());
         }
+        public IReadOnlyList<MicroInstruction> MicroInstructions { get { return completeROM; } }
         public byte FetchByteCodeFromMnemonic(string Mnemonic)
         {
-            var b = completeROM.FirstOrDefault(m => m.Mnemonic == Mnemonic).OPCode;
-            return (byte)b;
+            if (!baseAddressByMnemonic.TryGetValue(Mnemonic, out var baseAddress))
+            {
+                throw new ArgumentException($"Unknown mnemonic '{Mnemonic}', it is not defined in the decoder ROM.");
+            }
+            return (byte)baseAddress;
         }
+        // The decoder only has 4 status inputs (NVCZ), so higher status bits are ignored.
         public List<MicroInstruction> FetchInstruction(Byte StatusRegisterValue, Byte InstructionRegisterValue)
         {
-            string strBaseOpCode = Convert.ToString(InstructionRegisterValue, 2).PadLeft(8, '0');
-            string status = Convert.ToString(StatusRegisterValue, 2);
-            string strfullOpCode = status + strBaseOpCode;
-            int fullOpCode = Convert.ToInt32(strfullOpCode, 2);
-            return completeROM.Where(m => m.OPCode == fullOpCode).ToList<MicroInstruction>();
+            int fullOpCode = ((StatusRegisterValue & 0x0F) << 8) | InstructionRegisterValue;
+            return romByOpCode.TryGetValue(fullOpCode, out var microInstructions)
+                ? new List<MicroInstruction>(microInstructions)
+                : new List<MicroInstruction>();
         }
         public double OpCodeAddressSpaceUsedInPercent()
         {
-            var opCodesBelow256 = completeROM.Where(o => o.OPCode < 256);
-            var lastOpcode = opCodesBelow256.OrderBy(o => o.OPCode).Select(o => o.OPCode).Max();
-            return Math.Round(((double)lastOpcode / 256d * 100d), 1);
+            var opCodesUsed = baseAddressByMnemonic.Count == 0 ? 0 : completeROM.Max(o => o.OPCode & 0xFF) + 1;
+            return Math.Round(((double)opCodesUsed / OpCodeAddressSpace * 100d), 1);
         }
         private class fileLine
         {
@@ -183,16 +152,7 @@ namespace BYOCCore
             public string overflow = string.Empty;
             public int readOrder = 0;
             public string zero = string.Empty;
-            public int completeOpCode
-            {
-                get
-                {
-                    int fioc = 0;
-                    fioc = Convert.ToInt32($"{status}{opCodeAsString}", 2);
-                    return fioc;
-                }
-            }
-            public string opCodeAsString { get { return Convert.ToString(opCode, 2).PadLeft(8, '0'); } }
+            public int completeOpCode { get { return (statusAsInt << 8) | opCode; } }
             public string status { get { return $"{negative}{overflow}{carry}{zero}"; } }
             public int statusAsInt { get { return Convert.ToInt32(status, 2); } }
             private int opCode { get { return instructionBaseAddress + mnemonicSeq; } }

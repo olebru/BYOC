@@ -8,16 +8,16 @@ namespace BYOCCore
         public RamModule(string DeviceName, string DeviceID, Bus ConnectedBus) : base( DeviceName,  DeviceID,  ConnectedBus)
         {
         }
-        public new void Clk()
+        public override void Latch()
         {
             if (load)
             {
                 base.memory[memoryAddress] = base.connectedBus.Data;
                 load = false;
             }
-            base.Clk();
+            base.Latch();
         }
-        public new void Enable(string function)
+        public override void Enable(string function)
         {
             switch (function)
             {
@@ -29,13 +29,13 @@ namespace BYOCCore
                     break;
             }
         }
-        public new string OperationsOnNextClockRAM()
+        public override string OperationsOnNextClockRAM()
         {
             string next = base.OperationsOnNextClockRAM();
             if (load) next = $"{next}load";
             return next;
         }
-        public new List<String> SignalLines()
+        public override List<String> SignalLines()
         {
             var baseList = base.SignalLines();
             baseList.Add("load");

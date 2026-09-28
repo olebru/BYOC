@@ -1,0 +1,225 @@
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+namespace BYOCCore
+{
+    // A microcoded machine built from a MachineDefinition: buses, devices, a decoder ROM and a program.
+    public class Machine
+    {
+        public MachineDefinition Definition { get; }
+        public IReadOnlyDictionary<string, Bus> Buses { get; }
+        public IReadOnlyList<IBusDevice> Devices { get; }
+        public DecoderRom DecoderRom { get; }
+        public Assembler Assembler { get; }
+        public byte[] ProgramByteCode { get; }
+        public List<MicroInstruction> CurrentMicroCode { get; private set; }
+        public int Cycles { get; private set; }
+        public double ObservedClockSpeed { get; private set; }
+        private readonly Dictionary<string, IBusDevice> devicesByID;
+        private readonly Register instructionRegister;
+        private readonly Register statusRegister;
+        private readonly Clock halt;
+        private readonly Stopwatch stopwatch = new Stopwatch();
+
+        public Machine(MachineDefinition definition, string microcode, string source, DeviceRegistry registry = null)
+        {
+            registry ??= DeviceRegistry.CreateDefault();
+            Definition = definition;
+            Validate(definition, registry);
+
+            Buses = definition.Buses.ToDictionary(b => b.Id, b => new Bus(b.Id));
+            devicesByID = BuildDevices(definition, registry, Buses);
+            Devices = definition.Devices.Select(d => devicesByID[d.Id]).ToList();
+            foreach (var deviceDefinition in definition.Devices)
+            {
+                foreach (var busId in deviceDefinition.Ports().Select(p => p.Value).Distinct())
+                {
+                    Buses[busId].devices.Add(devicesByID[deviceDefinition.Id]);
+                }
+            }
+
+            statusRegister = Device<Register>(definition.Decoder.Status, "decoder.status");
+            instructionRegister = Device<Register>(definition.Decoder.Instruction, "decoder.instruction");
+            if (definition.Halt != null) halt = Device<Clock>(definition.Halt, "halt");
+
+            DecoderRom = new DecoderRom(microcode);
+            ValidateMicrocode(DecoderRom);
+            Assembler = new Assembler(DecoderRom);
+            ProgramByteCode = Assembler.Assemble(source ?? string.Empty);
+            if (ProgramByteCode.Length > 0)
+            {
+                if (definition.ProgramMemory == null)
+                {
+                    throw new MachineDefinitionException("\"programMemory\" must be set to load a program.");
+                }
+                Device<RomModule>(definition.ProgramMemory, "programMemory").LoadBytes(ProgramByteCode);
+            }
+            CurrentMicroCode = FetchMicroCode();
+        }
+
+        public static Machine FromJson(string definitionJson, string microcode, string source, DeviceRegistry registry = null)
+        {
+            return new Machine(MachineDefinition.FromJson(definitionJson), microcode, source, registry);
+        }
+        public static Machine CreateDefault()
+        {
+            return FromJson(ExampleData.MACHINE, ExampleData.ROMDATA, ExampleData.SRC);
+        }
+
+        public bool IsHalted { get { return halt != null && halt.IsHalted(); } }
+        public IBusDevice Device(string id)
+        {
+            return devicesByID.TryGetValue(id, out var device) ? device : null;
+        }
+        public T Device<T>(string id) where T : class, IBusDevice
+        {
+            return Device(id) as T;
+        }
+
+        public void SingleStep()
+        {
+            if (!IsHalted)
+            {
+                Step();
+            }
+        }
+        public IEnumerable<int> Run()
+        {
+            while (!IsHalted)
+            {
+                Step();
+                yield return Cycles;
+            }
+        }
+        private void Step()
+        {
+            CurrentMicroCode = FetchMicroCode();
+            foreach (var microCode in CurrentMicroCode)
+            {
+                devicesByID[microCode.DeviceID].Enable(microCode.Function);
+            }
+            Clocking.Tick(Buses.Values.ToList(), Devices);
+            Cycles++;
+            stopwatch.Stop();
+            if (stopwatch.Elapsed.TotalMilliseconds > 0) ObservedClockSpeed = 1000 / stopwatch.Elapsed.TotalMilliseconds;
+            stopwatch.Restart();
+        }
+        private List<MicroInstruction> FetchMicroCode()
+        {
+            return DecoderRom.FetchInstruction(statusRegister.Data, instructionRegister.Data);
+        }
+        private T Device<T>(string id, string setting) where T : class, IBusDevice
+        {
+            var device = Device(id);
+            return device as T ?? throw new MachineDefinitionException(
+                $"\"{setting}\" must name a {typeof(T).Name} device, but '{id}' is a {device.GetType().Name}.");
+        }
+
+        private static void Validate(MachineDefinition definition, DeviceRegistry registry)
+        {
+            var errors = new List<string>();
+            var busIds = new HashSet<string>();
+            foreach (var bus in definition.Buses)
+            {
+                if (string.IsNullOrWhiteSpace(bus.Id)) errors.Add("Every bus needs an \"id\".");
+                else if (!busIds.Add(bus.Id)) errors.Add($"Bus '{bus.Id}' is defined more than once.");
+                if (bus.Width != 8) errors.Add($"Bus '{bus.Id}': only 8 bit buses are supported, width is {bus.Width}.");
+            }
+            var deviceIds = new HashSet<string>();
+            foreach (var device in definition.Devices)
+            {
+                if (string.IsNullOrWhiteSpace(device.Id)) { errors.Add("Every device needs an \"id\"."); continue; }
+                if (!deviceIds.Add(device.Id)) errors.Add($"Device '{device.Id}' is defined more than once.");
+                if (!registry.IsRegistered(device.Type))
+                {
+                    errors.Add($"Device '{device.Id}': unknown type '{device.Type}', known types are {string.Join(", ", registry.Types)}.");
+                }
+                if (device.Bus != null && device.Buses.ContainsKey(DeviceBuildContext.DefaultPort))
+                {
+                    errors.Add($"Device '{device.Id}': port '{DeviceBuildContext.DefaultPort}' is set by both \"bus\" and \"buses\".");
+                }
+                foreach (var port in device.Ports().Where(p => !busIds.Contains(p.Value)))
+                {
+                    errors.Add($"Device '{device.Id}': port '{port.Key}' connects to unknown bus '{port.Value}'.");
+                }
+            }
+            foreach (var device in definition.Devices.Where(d => d.Id != null))
+            {
+                foreach (var connection in device.Connections.Where(c => !deviceIds.Contains(c.Value)))
+                {
+                    errors.Add($"Device '{device.Id}': connection '{connection.Key}' refers to unknown device '{connection.Value}'.");
+                }
+            }
+            if (definition.Decoder == null)
+            {
+                errors.Add("\"decoder\" with \"status\" and \"instruction\" is required.");
+            }
+            else
+            {
+                CheckReference(errors, deviceIds, definition.Decoder.Status, "decoder.status", required: true);
+                CheckReference(errors, deviceIds, definition.Decoder.Instruction, "decoder.instruction", required: true);
+            }
+            CheckReference(errors, deviceIds, definition.Halt, "halt", required: false);
+            CheckReference(errors, deviceIds, definition.ProgramMemory, "programMemory", required: false);
+            if (errors.Count > 0) throw new MachineDefinitionException(errors);
+        }
+        private static void CheckReference(List<string> errors, HashSet<string> deviceIds, string id, string setting, bool required)
+        {
+            if (id == null)
+            {
+                if (required) errors.Add($"\"{setting}\" is required.");
+            }
+            else if (!deviceIds.Contains(id))
+            {
+                errors.Add($"\"{setting}\" refers to unknown device '{id}'.");
+            }
+        }
+
+        // Builds devices on demand so connections may refer to devices defined later in the list.
+        private static Dictionary<string, IBusDevice> BuildDevices(MachineDefinition definition, DeviceRegistry registry, IReadOnlyDictionary<string, Bus> buses)
+        {
+            var definitions = definition.Devices.ToDictionary(d => d.Id);
+            var built = new Dictionary<string, IBusDevice>();
+            var building = new Stack<string>();
+            IBusDevice Build(string id)
+            {
+                if (built.TryGetValue(id, out var existing)) return existing;
+                if (building.Contains(id))
+                {
+                    throw new MachineDefinitionException($"Device connections form a cycle: {string.Join(" -> ", building.Reverse().Append(id))}.");
+                }
+                building.Push(id);
+                var deviceDefinition = definitions[id];
+                var device = registry.Factory(deviceDefinition.Type)(new DeviceBuildContext(deviceDefinition, buses, Build));
+                building.Pop();
+                if (device.ID() != id)
+                {
+                    throw new MachineDefinitionException($"Device '{id}': factory for type '{deviceDefinition.Type}' returned a device with ID '{device.ID()}'.");
+                }
+                built[id] = device;
+                return device;
+            }
+            foreach (var deviceDefinition in definition.Devices) Build(deviceDefinition.Id);
+            return built;
+        }
+
+        private void ValidateMicrocode(DecoderRom rom)
+        {
+            var errors = new List<string>();
+            foreach (var group in rom.MicroInstructions.GroupBy(m => (m.Mnemonic, m.DeviceID, m.Function)))
+            {
+                var (mnemonic, deviceId, function) = group.Key;
+                if (!devicesByID.TryGetValue(deviceId, out var device))
+                {
+                    errors.Add($"Microcode {mnemonic}: unknown device '{deviceId}'.");
+                }
+                else if (!device.SignalLines().Contains(function))
+                {
+                    errors.Add($"Microcode {mnemonic}: device '{deviceId}' has no control line '{function}', it has {string.Join(", ", device.SignalLines())}.");
+                }
+            }
+            if (errors.Count > 0) throw new MachineDefinitionException(errors);
+        }
+    }
+}
