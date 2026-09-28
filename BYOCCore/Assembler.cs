@@ -1,29 +1,36 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 namespace BYOCCore
 {
+    // Two pass assembler. Each opcode and operand takes one 16 bit memory cell.
     public class Assembler
     {
         public Dictionary<String, int> labelLUT;
-        // One entry per source line that has a label or emits bytes, in address order.
+        // One entry per source line that has a label or emits cells, in address order.
         public List<ListingLine> Listing { get; private set; } = new List<ListingLine>();
         private List<String> assemblerDirectives;
-        private List<byte> bytecode;
+        private List<int> cells;
         private DecoderRom completeDecoderRom;
+        private readonly int memorySize;
+        private const int cellWidth = Bus.Width;
+        private const int cellMask = Bus.Mask;
 
-        public Assembler(DecoderRom completeDecoderRom)
+        public Assembler(DecoderRom completeDecoderRom, int memorySize = RomModule.DefaultSize)
         {
             this.completeDecoderRom = completeDecoderRom;
-            bytecode = new List<byte>();
+            this.memorySize = memorySize;
+            cells = new List<int>();
             assemblerDirectives = new List<string>();
             assemblerDirectives.Add(".BYTE");
+            assemblerDirectives.Add(".WORD");
             labelLUT = new Dictionary<String, int>();
         }
 
-        public byte[] Assemble(string source)
+        public int[] Assemble(string source)
         {
-            bytecode = new List<byte>();
+            cells = new List<int>();
             labelLUT = new Dictionary<String, int>();
             Listing = new List<ListingLine>();
             var lines = SourceText.SplitLines(source)
@@ -55,29 +62,35 @@ namespace BYOCCore
                 }
                 address += line.Operands.Length;
             }
-            if (address > DecoderRom.OpCodeAddressSpace)
+            if (address > memorySize)
             {
-                throw new FormatException($"Program is {address} bytes, but only {DecoderRom.OpCodeAddressSpace} bytes of memory are addressable.");
+                throw new FormatException($"Program is {address} cells, but program memory only holds {memorySize}.");
             }
             //Second pass
             foreach (var line in lines)
             {
-                int start = bytecode.Count;
+                int start = cells.Count;
                 if (line.Mnemonic == null)
                 {
-                    if (line.Label != null) Listing.Add(line.ToListing(start, new byte[0]));
+                    if (line.Label != null) Listing.Add(line.ToListing(start, new int[0]));
                     continue;
                 }
                 if (!line.IsDirective)
                 {
+                    int opcode;
                     try
                     {
-                        bytecode.Add(completeDecoderRom.FetchByteCodeFromMnemonic(line.Mnemonic));
+                        opcode = completeDecoderRom.FetchByteCodeFromMnemonic(line.Mnemonic);
                     }
                     catch (ArgumentException e)
                     {
                         throw line.Error(e.Message);
                     }
+                    if (opcode > cellMask)
+                    {
+                        throw line.Error($"{line.Mnemonic} has opcode {opcode}, which does not fit in a {cellWidth} bit memory cell");
+                    }
+                    cells.Add(opcode);
                     var expectedOperands = completeDecoderRom.OperandCount(line.Mnemonic);
                     if (expectedOperands.HasValue && expectedOperands.Value != line.Operands.Length)
                     {
@@ -88,11 +101,11 @@ namespace BYOCCore
                 {
                     if (operandToken.StartsWith("#"))
                     {
-                        if (!byte.TryParse(operandToken.Substring(1), out var value))
+                        if (!TryParseNumber(operandToken.Substring(1), out var value) || value > cellMask)
                         {
-                            throw line.Error($"'{operandToken}' is not a number between 0 and 255");
+                            throw line.Error($"'{operandToken}' is not a number between 0 and {cellMask}");
                         }
-                        bytecode.Add(value);
+                        cells.Add(value);
                     }
                     else
                     {
@@ -100,12 +113,26 @@ namespace BYOCCore
                         {
                             throw line.Error($"unknown label '{operandToken}'");
                         }
-                        bytecode.Add((byte)labelAddress);
+                        if (labelAddress > cellMask)
+                        {
+                            throw line.Error($"label '{operandToken}' is at {labelAddress}, which does not fit in a {cellWidth} bit memory cell");
+                        }
+                        cells.Add(labelAddress);
                     }
                 }
-                Listing.Add(line.ToListing(start, bytecode.Skip(start).ToArray()));
+                Listing.Add(line.ToListing(start, cells.Skip(start).ToArray()));
             }
-            return bytecode.ToArray();
+            return cells.ToArray();
+        }
+
+        // Decimal, or hexadecimal with a 0x prefix.
+        private static bool TryParseNumber(string text, out int value)
+        {
+            if (text.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+            {
+                return int.TryParse(text.Substring(2), NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out value) && value >= 0;
+            }
+            return int.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out value);
         }
 
         // A source line is: [label:] TAB mnemonic [TAB operand[,operand...]]
@@ -141,7 +168,7 @@ namespace BYOCCore
                 if (tokens.Count > 3) throw Error("too many columns");
             }
             public bool IsDirective { get { return Mnemonic != null && Mnemonic.StartsWith("."); } }
-            public ListingLine ToListing(int address, byte[] bytes)
+            public ListingLine ToListing(int address, int[] cells)
             {
                 return new ListingLine
                 {
@@ -151,7 +178,7 @@ namespace BYOCCore
                     Mnemonic = Mnemonic,
                     Operands = Operands,
                     Address = address,
-                    Bytes = bytes,
+                    Cells = cells,
                     IsInstruction = Mnemonic != null && !IsDirective,
                 };
             }
@@ -170,8 +197,8 @@ namespace BYOCCore
         public string Mnemonic { get; set; }
         public string[] Operands { get; set; }
         public int Address { get; set; }
-        public byte[] Bytes { get; set; }
-        // False for .BYTE data and label only lines.
+        public int[] Cells { get; set; }
+        // False for .BYTE / .WORD data and label only lines.
         public bool IsInstruction { get; set; }
     }
 }

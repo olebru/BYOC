@@ -213,8 +213,8 @@ public class MicrocodeTests
     [Fact]
     public void AddressSpaceIsChecked()
     {
-        var microcode = WithInstructions(Enumerable.Range(0, 200).Select(i => Instruction($"X{i}", new[] { "regi.reset" })).ToArray());
-        Assert.Contains(Errors(Validate(microcode)), e => e.Message.Contains("opcodes but only 256"));
+        var microcode = WithInstructions(Enumerable.Range(0, DecoderRom.AddressSpace).Select(i => Instruction($"X{i}", new[] { "regi.reset" })).ToArray());
+        Assert.Contains(Errors(Validate(microcode)), e => e.Message.Contains("opcodes but only 65536"));
     }
 
     [Fact]

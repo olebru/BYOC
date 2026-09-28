@@ -4,7 +4,8 @@ namespace BYOCCore
 {
    public  class Register : IBusDevice
     {
-        public byte Data = 0;
+        // A 16 bit word; inc and dec wrap around.
+        public int Data = 0;
         protected Bus connectedBus;
         protected bool dec = false;
         protected string deviceID = "";
@@ -13,12 +14,12 @@ namespace BYOCCore
         protected bool loadEnabled = false;
         protected  bool outputEnabled = false;
         protected bool reset = false;
-        public Register(string DeviceName, string DeviceID, Bus ConnectedBus, byte InitialValue = 0)
+        public Register(string DeviceName, string DeviceID, Bus ConnectedBus, int InitialValue = 0)
         {
             deviceName = DeviceName;
             deviceID = DeviceID;
             connectedBus = ConnectedBus;
-            Data = InitialValue;
+            Data = InitialValue & Bus.Mask;
         }
         public virtual void Drive()
         {
@@ -42,12 +43,12 @@ namespace BYOCCore
             }
             if (inc)
             {
-                Data++;
+                Data = (Data + 1) & Bus.Mask;
                 inc = false;
             }
             if (dec)
             {
-                Data--;
+                Data = (Data - 1) & Bus.Mask;
                 dec = false;
             }
         }
@@ -102,7 +103,7 @@ namespace BYOCCore
         }
         public virtual string ToString(int firstColumnPaddedWidth)
         {
-            return $"{deviceName}".PadRight(firstColumnPaddedWidth, ' ') + $"= {Data.ToString(connectedBus.NumberFormat)}";
+            return $"{deviceName}".PadRight(firstColumnPaddedWidth, ' ') + $"= {Data.ToString("X4")}";
         }
     }
 }

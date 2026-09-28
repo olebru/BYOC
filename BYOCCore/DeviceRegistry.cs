@@ -58,7 +58,8 @@ namespace BYOCCore
 
         public static DeviceRegistry CreateDefault()
         {
-            var initialValue = new ParameterInfo { Name = "initialValue", Description = "Value after power on" };
+            var initialValue = new ParameterInfo { Name = "initialValue", Description = "Value after power on", Max = 65535 };
+            var size = new ParameterInfo { Name = "size", Description = "Number of 16 bit cells", Min = 1, Max = 65536, Default = RomModule.DefaultSize };
             List<ControlLineInfo> RegisterLines() => new List<ControlLineInfo>
             {
                 ControlLineInfo.Output("output", "Put the value on the bus"),
@@ -71,7 +72,7 @@ namespace BYOCCore
             {
                 ControlLineInfo.Input("loadmar", "Take the address from the bus"),
                 ControlLineInfo.Output("outputmar", "Put the address on the bus"),
-                ControlLineInfo.Output("output", "Put the byte at the address on the bus"),
+                ControlLineInfo.Output("output", "Put the cell at the address on the bus"),
             };
             List<ControlLineInfo> RamLines()
             {
@@ -81,11 +82,11 @@ namespace BYOCCore
             }
 
             var registry = new DeviceRegistry();
-            registry.Register("register", c => new Register(c.Name, c.Id, c.Bus(), c.ByteParameter("initialValue")),
-                new DeviceTypeInfo { Category = "Registers", Description = "8 bit register: output, load, reset, inc, dec", Parameters = { initialValue }, ControlLines = RegisterLines() });
+            registry.Register("register", c => new Register(c.Name, c.Id, c.Bus(), c.IntParameter("initialValue", 0, 0, 65535)),
+                new DeviceTypeInfo { Category = "Registers", Description = "16 bit register: output, load, reset, inc, dec", Parameters = { initialValue }, ControlLines = RegisterLines() });
             registry.Register("statusRegister", c => new StatusRegister(c.Name, c.Id, c.Bus()),
                 new DeviceTypeInfo { Category = "Registers", Description = "Holds the NVCZ flags written by the ALU", ControlLines = RegisterLines() });
-            registry.Register("dualPortRegister", c => new DualPortRegister(c.Name, c.Id, c.Bus("a"), c.Bus("b"), c.ByteParameter("initialValue")),
+            registry.Register("dualPortRegister", c => new DualPortRegister(c.Name, c.Id, c.Bus("a"), c.Bus("b"), c.IntParameter("initialValue", 0, 0, 65535)),
                 new DeviceTypeInfo
                 {
                     Category = "Registers",
@@ -104,11 +105,14 @@ namespace BYOCCore
                     }
                 });
             registry.Register("instructionRegister", c => new InstructionRegister(c.Name, c.Id, c.Bus()),
-                new DeviceTypeInfo { Category = "Control", Description = "Micro step counter, advances every tick unless loaded or reset", ControlLines = RegisterLines() });
-            var programCounterLines = RegisterLines();
-            programCounterLines.Add(ControlLineInfo.Internal("count", "Advance to the next program byte"));
+                new DeviceTypeInfo
+                {
+                    Category = "Control",
+                    Description = "Micro step counter, advances every tick unless loaded or reset. Selects one of 65536 decoder ROM step addresses",
+                    ControlLines = RegisterLines()
+                });
             registry.Register("programCounter", c => new ProgramCounter(c.Name, c.Id, c.Bus()),
-                new DeviceTypeInfo { Category = "Control", Description = "Register with count, points at the next program byte", ControlLines = programCounterLines });
+                new DeviceTypeInfo { Category = "Control", Description = "Register pointing at the next program cell; inc advances it", ControlLines = RegisterLines() });
             registry.Register("clock", c => new Clock(c.Name, c.Id),
                 new DeviceTypeInfo
                 {
@@ -135,17 +139,32 @@ namespace BYOCCore
                         ControlLineInfo.Internal("cmp", "Set flags for a - b"),
                     }
                 });
-            registry.Register("rom", c => new RomModule(c.Name, c.Id, c.Bus()),
-                new DeviceTypeInfo { Category = "Memory", Description = "256 bytes read only memory with address register", ControlLines = RomLines() });
-            registry.Register("ram", c => new RamModule(c.Name, c.Id, c.Bus()),
-                new DeviceTypeInfo { Category = "Memory", Description = "256 bytes memory with address register", ControlLines = RamLines() });
+            registry.Register("rom", c => new RomModule(c.Name, c.Id, c.Bus(), c.IntParameter("size", RomModule.DefaultSize, 1, 65536)),
+                new DeviceTypeInfo { Category = "Memory", Description = "Read only memory with address register", Parameters = { size }, ControlLines = RomLines() });
+            registry.Register("ram", c => new RamModule(c.Name, c.Id, c.Bus(), c.IntParameter("size", RomModule.DefaultSize, 1, 65536)),
+                new DeviceTypeInfo { Category = "Memory", Description = "Memory with address register", Parameters = { size }, ControlLines = RamLines() });
             var mmuLines = RamLines();
             mmuLines.Add(ControlLineInfo.Input("loadcs", "Select the bank given on the bus"));
             mmuLines.Add(ControlLineInfo.Output("outputcs", "Put the selected bank number on the bus"));
             mmuLines.Add(ControlLineInfo.Internal("select0stack", "Select bank 0, the stack bank"));
-            registry.Register("mmu", c => new MMU(c.Name, c.Id, c.Bus()),
-                new DeviceTypeInfo { Category = "Memory", Description = "256 banks of 256 bytes, selected by a chip select register", ControlLines = mmuLines });
-            registry.Register("display", c => new CharacterDisplay(c.Name, c.Id, c.Bus(), c.ByteParameter("columns", 16), c.ByteParameter("rows", 4)),
+            registry.Register("mmu", c =>
+                {
+                    int banks = c.IntParameter("banks", MMU.DefaultBanks, 1, 256), bankSize = c.IntParameter("bankSize", RomModule.DefaultSize, 1, 65536);
+                    if ((long)banks * bankSize > MMU.MaxCells) throw c.Error($"{banks} banks of {bankSize} cells is more than {MMU.MaxCells} cells");
+                    return new MMU(c.Name, c.Id, c.Bus(), banks, bankSize);
+                },
+                new DeviceTypeInfo
+                {
+                    Category = "Memory",
+                    Description = "Banks of memory, selected by a chip select register",
+                    Parameters =
+                    {
+                        new ParameterInfo { Name = "banks", Description = "Number of banks", Min = 1, Max = 256, Default = MMU.DefaultBanks },
+                        new ParameterInfo { Name = "bankSize", Description = "16 bit cells per bank", Min = 1, Max = 65536, Default = RomModule.DefaultSize },
+                    },
+                    ControlLines = mmuLines
+                });
+            registry.Register("display", c => new CharacterDisplay(c.Name, c.Id, c.Bus(), c.IntParameter("columns", 16, 1, 64), c.IntParameter("rows", 4, 1, 16)),
                 new DeviceTypeInfo
                 {
                     Category = "I/O",
@@ -223,6 +242,15 @@ namespace BYOCCore
             }
             var target = resolveDevice(targetId);
             return target as T ?? throw Error($"connection '{name}' must be a {typeof(T).Name}, but '{targetId}' is a {target.GetType().Name}");
+        }
+        public int IntParameter(string name, int defaultValue, int min, int max)
+        {
+            if (!definition.Parameters.TryGetValue(name, out var value)) return defaultValue;
+            if (value.ValueKind != JsonValueKind.Number || !value.TryGetInt32(out var result) || result < min || result > max)
+            {
+                throw Error($"parameter '{name}' must be a whole number between {min} and {max}");
+            }
+            return result;
         }
         public byte ByteParameter(string name, byte defaultValue = 0)
         {

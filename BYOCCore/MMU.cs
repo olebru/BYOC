@@ -7,39 +7,30 @@ namespace BYOCCore
     {
         public Register ChipSelectRegister;
         public RamModule[] RamBanks;
-        private bool asciiMode;
         private Bus bus;
         private string deviceName;
         private string id;
         private List<string> pendingBankFunctions = new List<string>();
         private bool select0Stack;
-        public MMU(string DeviceName, string DeviceID, Bus bus)
+        public const int MaxCells = 1 << 20;
+        public const int DefaultBanks = 16;
+        public MMU(string DeviceName, string DeviceID, Bus bus, int banks = DefaultBanks, int bankSize = RomModule.DefaultSize)
         {
+            if (banks < 1 || banks > 256) throw new ArgumentException($"An MMU has between 1 and 256 banks, not {banks}.");
+            if ((long)banks * bankSize > MaxCells) throw new ArgumentException($"{banks} banks of {bankSize} cells is more than {MaxCells} cells.");
             this.bus = bus;
             ChipSelectRegister = new Register("CS  ", "cs", this.bus);
             id = DeviceID;
             deviceName = DeviceName;
-            RamBanks = new RamModule[256];
-            for (int i = 0; i < 256; i++)
+            RamBanks = new RamModule[banks];
+            for (int i = 0; i < banks; i++)
             {
-                RamBanks[i] = new RamModule($"Bank {i}", i.ToString(), this.bus);
+                RamBanks[i] = new RamModule($"Bank {i}", i.ToString(), this.bus, bankSize);
             }
         }
-        public bool ASCIIMode
-        {
-            get
-            {
-                return asciiMode;
-            }
-            set
-            {
-                asciiMode = value;
-                foreach (var ramModule in RamBanks)
-                {
-                    ramModule.ASCIIMode = asciiMode;
-                }
-            }
-        }
+        // The bank the chip select register points at; bank numbers wrap at the number of banks.
+        public int SelectedBankNumber { get { return ChipSelectRegister.Data % RamBanks.Length; } }
+        public RamModule SelectedBank { get { return RamBanks[SelectedBankNumber]; } }
         // select0stack applies before anything else. Bank outputs use the bank selected at the start of the
         // tick; bank inputs use the bank selected after the chip select register latched this tick.
         public void Drive()
@@ -50,7 +41,7 @@ namespace BYOCCore
                 select0Stack = false;
             }
             ChipSelectRegister.Drive();
-            var bank = this.RamBanks[ChipSelectRegister.Data];
+            var bank = SelectedBank;
             foreach (var function in pendingBankFunctions.Where(IsDriveFunction))
             {
                 bank.Enable(function);
@@ -60,7 +51,7 @@ namespace BYOCCore
         public void Latch()
         {
             ChipSelectRegister.Latch();
-            var bank = this.RamBanks[ChipSelectRegister.Data];
+            var bank = SelectedBank;
             foreach (var function in pendingBankFunctions.Where(f => !IsDriveFunction(f)))
             {
                 bank.Enable(function);

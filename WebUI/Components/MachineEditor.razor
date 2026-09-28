@@ -73,7 +73,7 @@
                             <g class="bus @(selectedBus == bus.Id ? "selected" : "") @(hot ? "hot" : "")" @onpointerdown="e => StartMoveBus(e, bus)" @onpointerdown:stopPropagation>
                                 <rect class="bus-hit" x="10" y="@N(bus.Layout.Y - 14)" width="@N(CanvasWidth - 20)" height="28" />
                                 <rect class="bus-bar" x="16" y="@N(bus.Layout.Y - 5)" width="@N(CanvasWidth - 32)" height="10" rx="5" fill="@color" />
-                                <text class="bus-label" x="24" y="@N(bus.Layout.Y - 12)" fill="@color">@bus.Id · @bus.Width bit</text>
+                                <text class="bus-label" x="24" y="@N(bus.Layout.Y - 12)" fill="@color">@bus.Id · 16 bit</text>
                             </g>
                         }
 
@@ -232,7 +232,7 @@
             else if (selectedBusDefinition != null)
             {
                 <div class="inspector-title"><span class="dot" style="background:@BusColor(selectedBusDefinition.Id)"></span>bus</div>
-                <div class="inspector-description">Shared 8 bit data path. Only one device may drive it per tick.</div>
+                <div class="inspector-description">Shared 16 bit data path. Only one device may drive it per tick.</div>
                 <label>ID</label>
                 <input class="form-control form-control-sm @(renameError != null ? "is-invalid" : "")" value="@selectedBusDefinition.Id" @onchange="e => RenameSelectedBus((string)e.Value)" />
                 @if (renameError != null) { <div class="invalid-feedback d-block">@renameError</div> }

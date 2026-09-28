@@ -19,18 +19,11 @@ namespace BYOCCore
         }
         public override string ToString(int firstColumnPaddedWidth)
         {
-            return $"{base.deviceName} Value".PadRight(firstColumnPaddedWidth, ' ') + $"= {Data.ToString(base.connectedBus.NumberFormat)}";
+            return $"{base.deviceName} Value".PadRight(firstColumnPaddedWidth, ' ') + $"= {Data.ToString("X4")}";
         }
         private void increment()
         {
-            if (Data == byte.MaxValue)
-            {
-                Data = 0;
-            }
-            else
-            {
-                Data++;
-            }
+            Data = (Data + 1) & Bus.Mask;
         }
     }
 }

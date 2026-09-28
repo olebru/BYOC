@@ -46,7 +46,7 @@ namespace WebUI.Pages
             DefinitionJson = Definition.ToJson();
             Microcode = MicrocodeDefinition.FromJson(ExampleData.MICROCODE);
             MicrocodeJson = Microcode.ToJson();
-            Program = ExampleData.SRC;
+            Program = ExampleData.Programs[0].Source;
             ParseErrors.Clear();
             Rebuild();
         }

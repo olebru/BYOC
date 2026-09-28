@@ -219,7 +219,9 @@ namespace WebUI.Components
         {
             return Last?.Signals.Where(s => s.StartsWith(deviceId + ".")).Select(s => s.Substring(deviceId.Length + 1)) ?? Enumerable.Empty<string>();
         }
-        private static string Hex(int value) => value.ToString("X2");
+        // Every value is a 16 bit word: four hex digits.
+        private const int Digits = 4;
+        private static string Hex(int value) => value.ToString("X4");
 
         private ListingLine ListingAt(int? address)
         {
@@ -321,6 +323,14 @@ namespace WebUI.Components
             }
         }
         private int Bank { get { return Machine.Device(memoryDevice) is MMU ? memoryBank : -1; } }
+        private const int PageSize = 256;
+        private int memoryPage;
+        private int PageCount(RomModule module) => (module.Size + PageSize - 1) / PageSize;
+        private int Page(RomModule module) => Math.Clamp(memoryPage, 0, PageCount(module) - 1);
+        private void GoToMar(RomModule module) { memoryPage = module.memoryAddress / PageSize; }
+        private static int AddressDigits(RomModule module) => Math.Max(2, ((int)Math.Ceiling(Math.Log2(Math.Max(2, module.Size))) + 3) / 4);
+        // Widest listing line, in cells, to size the listing's cell column.
+        private int ListingCellColumns { get { return Math.Min(4, Machine.Assembler.Listing.Select(l => l.Cells.Length).DefaultIfEmpty(1).Max()); } }
         private IEnumerable<int> ProgramCounterValues
         {
             get { return Machine.Devices.OfType<ProgramCounter>().Select(p => (int)p.Data); }
@@ -332,7 +342,7 @@ namespace WebUI.Components
             bool isProgram = memoryDevice == Machine.Definition.ProgramMemory;
             if (isProgram && ProgramCounterValues.Contains(address)) classes.Add("pc");
             var current = ListingAt(Machine.CurrentInstructionAddress);
-            if (isProgram && current != null && address >= current.Address && address < current.Address + current.Bytes.Length) classes.Add("current");
+            if (isProgram && current != null && address >= current.Address && address < current.Address + current.Cells.Length) classes.Add("current");
             if (Last?.Writes.Any(w => w.Device == memoryDevice && w.Bank == Bank && w.Address == address) == true) classes.Add("written");
             else if (Machine.History.Skip(Math.Max(0, Machine.History.Count - 30)).Any(t => t.Writes.Any(w => w.Device == memoryDevice && w.Bank == Bank && w.Address == address))) classes.Add("recent");
             if (module.memory[address] == 0) classes.Add("zero");
@@ -362,7 +372,9 @@ namespace WebUI.Components
         }
         private int DecoderStatus { get { return (Last?.Status ?? Machine.Status) & 0x0F; } }
         private int DecoderStep { get { return Last?.MicroStep ?? Machine.MicroStepRegister; } }
-        private int NextAddress { get { return ((Machine.Status & 0x0F) << 8) | Machine.MicroStepRegister; } }
+        private int NextAddress { get { return DecoderRom.RomAddress(Machine.Status, Machine.MicroStepRegister); } }
+        private const int StepBits = DecoderRom.StepBits;
+        private static string RomHex(int address) => address.ToString("X5");
 
         // ROM rows to show: the fetch block and the block the decoder just used, or the whole ROM.
         private List<(int Address, string Label, bool BlockStart, HashSet<string> Signals)> RomRows
@@ -377,7 +389,7 @@ namespace WebUI.Components
                     for (int offset = 0; offset < block.Count; offset++)
                     {
                         var address = block.Base + offset;
-                        var signals = new HashSet<string>(rom.FetchInstruction((byte)DecoderStatus, (byte)address).Select(m => $"{m.DeviceID}.{m.Function}"));
+                        var signals = new HashSet<string>(rom.FetchInstruction(DecoderStatus, address).Select(m => $"{m.DeviceID}.{m.Function}"));
                         rows.Add((address, $"{block.Instruction.Mnemonic}.{offset + 1}", offset == 0, signals));
                     }
                 }

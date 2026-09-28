@@ -115,8 +115,8 @@ public class DisplayTests
         int ticks = 0;
         foreach (var _ in c.Run()) Assert.True(++ticks < 5000, "program did not halt");
         var lcd = c.Device<CharacterDisplay>("lcd");
-        Assert.Equal("HELLO, WORLD!   ", lcd.Line(0));
-        Assert.Equal("ÆØÅ æøå         ", lcd.Line(1));
+        Assert.Equal("HELLO, WORLD!", lcd.Line(0).TrimEnd());
+        Assert.Equal("ÆØÅ æøå", lcd.Line(1).TrimEnd());
         Assert.Contains(c.History, t => t.Writes.Any(w => w.Device == "lcd" && w.Address == 0 && w.Value == (byte)'H'));
     }
 
@@ -138,7 +138,7 @@ public class DisplayTests
         int ticks = 0;
         foreach (var _ in c.Run()) Assert.True(++ticks < 100000, "program did not halt");
         var text = c.Device<CharacterDisplay>("lcd").Text.Replace("\n", "");
-        Assert.Equal("1 1 2 3 5 8 13 21 34 55 89 144 233", text.Trim());
+        Assert.Equal("1 1 2 3 5 8 13 21 34 55 89 144 233 377 610 987 1597 2584 4181 6765 10946 17711 28657 46368", text.Trim());
     }
 
     [Fact]

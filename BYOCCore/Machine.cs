@@ -12,7 +12,8 @@ namespace BYOCCore
         public IReadOnlyList<IBusDevice> Devices { get; }
         public DecoderRom DecoderRom { get; }
         public Assembler Assembler { get; }
-        public byte[] ProgramByteCode { get; }
+        // The assembled program, one value per memory cell.
+        public int[] ProgramByteCode { get; }
         public List<MicroInstruction> CurrentMicroCode { get; private set; }
         public int Cycles { get; private set; }
         public double ObservedClockSpeed { get; private set; }
@@ -60,7 +61,7 @@ namespace BYOCCore
             MicrocodeWarnings = diagnostics.Where(d => d.Severity == DiagnosticSeverity.Warning).ToList();
 
             DecoderRom = new DecoderRom(microcode);
-            Assembler = new Assembler(DecoderRom);
+            Assembler = new Assembler(DecoderRom, programMemory?.Size ?? RomModule.DefaultSize);
             ProgramByteCode = Assembler.Assemble(source ?? string.Empty);
             if (ProgramByteCode.Length > 0)
             {
@@ -68,7 +69,7 @@ namespace BYOCCore
                 {
                     throw new MachineDefinitionException("\"programMemory\" must be set to load a program.");
                 }
-                Device<RomModule>(definition.ProgramMemory).LoadBytes(ProgramByteCode);
+                Device<RomModule>(definition.ProgramMemory).LoadProgram(ProgramByteCode);
             }
             CurrentMicroCode = FetchMicroCode();
         }
@@ -143,8 +144,8 @@ namespace BYOCCore
         public TickRecord LastTick { get; private set; }
         // Program memory address of the opcode last fetched into the micro step register.
         public int? CurrentInstructionAddress { get; private set; }
-        public byte Status { get { return statusRegister.Data; } }
-        public byte MicroStepRegister { get { return instructionRegister.Data; } }
+        public int Status { get { return statusRegister.Data; } }
+        public int MicroStepRegister { get { return instructionRegister.Data; } }
         // The instruction and micro step the next tick will run.
         public (InstructionDefinition Instruction, MicroStep Step, int Offset)? NextStep
         {
@@ -153,7 +154,13 @@ namespace BYOCCore
 
         private void Step()
         {
-            var record = new TickRecord { Cycle = Cycles + 1, Status = statusRegister.Data, MicroStep = instructionRegister.Data };
+            var record = new TickRecord
+            {
+                Cycle = Cycles + 1,
+                Status = statusRegister.Data,
+                MicroStep = instructionRegister.Data,
+                RomAddress = DecoderRom.RomAddress(statusRegister.Data, instructionRegister.Data),
+            };
             var located = NextStep;
             if (located != null)
             {
@@ -229,7 +236,7 @@ namespace BYOCCore
                     case CharacterDisplay display: values[device.ID() + ".cursor"] = display.Cursor; break;
                     case MMU mmu:
                         values[device.ID() + ".cs"] = mmu.ChipSelectRegister.Data;
-                        values[device.ID() + ".mar"] = mmu.RamBanks[mmu.ChipSelectRegister.Data].memoryAddress;
+                        values[device.ID() + ".mar"] = mmu.SelectedBank.memoryAddress;
                         break;
                 }
             }
@@ -267,7 +274,6 @@ namespace BYOCCore
             {
                 if (string.IsNullOrWhiteSpace(bus.Id)) errors.Add("Every bus needs an \"id\".");
                 else if (!busIds.Add(bus.Id)) errors.Add($"Bus '{bus.Id}' is defined more than once.");
-                if (bus.Width != 8) errors.Add($"Bus '{bus.Id}': only 8 bit buses are supported, width is {bus.Width}.");
             }
             var deviceIds = new HashSet<string>();
             foreach (var device in definition.Devices)

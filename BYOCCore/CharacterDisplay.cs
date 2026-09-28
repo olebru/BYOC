@@ -38,7 +38,7 @@ namespace BYOCCore
 
         public long WriteCount { get; private set; }
         public int LastWriteAddress { get; private set; } = -1;
-        public byte ValueAt(int address) { return Cells[address]; }
+        public int ValueAt(int address) { return Cells[address]; }
 
         public void Drive()
         {
@@ -53,7 +53,7 @@ namespace BYOCCore
             }
             if (load)
             {
-                Put(bus.Data);
+                Put((byte)(bus.Data & 0xFF));
                 load = false;
             }
         }
@@ -130,6 +130,6 @@ namespace BYOCCore
     {
         long WriteCount { get; }
         int LastWriteAddress { get; }
-        byte ValueAt(int address);
+        int ValueAt(int address);
     }
 }

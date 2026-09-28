@@ -8,7 +8,9 @@ namespace BYOCCore
     // addresses, sized for its longest flag variant.
     public class DecoderRom
     {
-        public const int OpCodeAddressSpace = 256;
+        // The micro step register is 16 bits, so there are 2^16 step addresses per flag value.
+        public const int StepBits = 16;
+        public const int AddressSpace = 1 << StepBits;
         public const int StatusVariants = 16;
         private List<MicroInstruction> completeROM;
         private Dictionary<int, List<MicroInstruction>> romByOpCode;
@@ -47,7 +49,7 @@ namespace BYOCCore
                             {
                                 throw new FormatException($"{instruction.Mnemonic} step {step}: '{text}' is not a signal, write it as device.line");
                             }
-                            int opCode = (status << 8) | (addr + step);
+                            int opCode = (status << StepBits) | (addr + step);
                             completeROM.Add(new MicroInstruction(opCode, signal.Device, signal.Line, instruction.Mnemonic, false, step == 0 && status == 0));
                         }
                     }
@@ -56,14 +58,16 @@ namespace BYOCCore
                 addr += steps;
             }
             opCodesUsed = addr;
-            if (addr > OpCodeAddressSpace)
+            if (addr > AddressSpace)
             {
-                throw new Exception($"OpCode AddressSpace is exhausted, {addr} opcodes needed but only {OpCodeAddressSpace} available, optimize...");
+                throw new Exception($"OpCode AddressSpace is exhausted, {addr} opcodes needed but only {AddressSpace} available, optimize...");
             }
             romByOpCode = completeROM.GroupBy(m => m.OPCode).ToDictionary(g => g.Key, g => g.ToList());
         }
 
         public MicrocodeDefinition Microcode { get; }
+        // Full ROM address for a status value and micro step: (status & 0x0F) << StepBits | step.
+        public static int RomAddress(int status, int step) { return ((status & 0x0F) << StepBits) | (step & (AddressSpace - 1)); }
         // Each instruction's block of micro step addresses, in address order.
         public IReadOnlyList<(InstructionDefinition Instruction, int Base, int Count)> Blocks { get { return ranges; } }
         public IReadOnlyList<MicroInstruction> MicroInstructions { get { return completeROM; } }
@@ -71,7 +75,7 @@ namespace BYOCCore
 
         // The instruction whose micro step block contains the address, and the step that runs there for
         // the given status flags (null when that flag variant has no step at this offset).
-        public (InstructionDefinition Instruction, MicroStep Step, int Offset)? Locate(byte statusRegisterValue, byte instructionRegisterValue)
+        public (InstructionDefinition Instruction, MicroStep Step, int Offset)? Locate(int statusRegisterValue, int instructionRegisterValue)
         {
             foreach (var range in ranges)
             {
@@ -82,13 +86,13 @@ namespace BYOCCore
             }
             return null;
         }
-        public byte FetchByteCodeFromMnemonic(string Mnemonic)
+        public int FetchByteCodeFromMnemonic(string Mnemonic)
         {
             if (Mnemonic == null || !baseAddressByMnemonic.TryGetValue(Mnemonic, out var baseAddress))
             {
                 throw new ArgumentException($"Unknown mnemonic '{Mnemonic}', it is not defined in the decoder ROM.");
             }
-            return (byte)baseAddress;
+            return baseAddress;
         }
         // Operand bytes the instruction declares, or null when it does not say.
         public int? OperandCount(string mnemonic)
@@ -96,16 +100,16 @@ namespace BYOCCore
             return Microcode.FindInstruction(mnemonic)?.Operands;
         }
         // The decoder only has 4 status inputs (NVCZ), so higher status bits are ignored.
-        public List<MicroInstruction> FetchInstruction(Byte StatusRegisterValue, Byte InstructionRegisterValue)
+        public List<MicroInstruction> FetchInstruction(int StatusRegisterValue, int InstructionRegisterValue)
         {
-            int fullOpCode = ((StatusRegisterValue & 0x0F) << 8) | InstructionRegisterValue;
+            int fullOpCode = RomAddress(StatusRegisterValue, InstructionRegisterValue);
             return romByOpCode.TryGetValue(fullOpCode, out var microInstructions)
                 ? new List<MicroInstruction>(microInstructions)
                 : new List<MicroInstruction>();
         }
         public double OpCodeAddressSpaceUsedInPercent()
         {
-            return Math.Round(((double)opCodesUsed / OpCodeAddressSpace * 100d), 1);
+            return Math.Round(((double)opCodesUsed / AddressSpace * 100d), 1);
         }
     }
 }

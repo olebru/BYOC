@@ -6,23 +6,25 @@ namespace BYOCCore
 {
     public class RomModule : IBusDevice
     {
-        public bool ASCIIMode = false;
-        public bool INSTRMode = false;
-        public bool ShowRAMValues = true;
         protected Bus connectedBus;
-        public byte[] memory = new byte[256];
-        public byte memoryAddress = 0;
+        // One 16 bit word per address.
+        public readonly int[] memory;
+        public int memoryAddress = 0;
         private string deviceID;
         private string deviceName = "";
         private bool loadMAR = false;
         private bool output = false;
         private bool outputMAR = false;
-        public RomModule(string DeviceName, string DeviceID, Bus ConnectedBus)
+        public const int DefaultSize = 4096;
+        public RomModule(string DeviceName, string DeviceID, Bus ConnectedBus, int size = DefaultSize)
         {
+            if (size < 1 || size > 65536) throw new ArgumentException($"Memory size must be between 1 and 65536 cells, not {size}.");
             deviceName = DeviceName;
             deviceID = DeviceID;
             connectedBus = ConnectedBus;
+            memory = new int[size];
         }
+        public int Size { get { return memory.Length; } }
         public virtual void Drive()
         {
             if (output)
@@ -40,7 +42,7 @@ namespace BYOCCore
         {
             if (loadMAR)
             {
-                memoryAddress = connectedBus.Data;
+                memoryAddress = connectedBus.Data % memory.Length;
                 loadMAR = false;
             }
         }
@@ -69,13 +71,17 @@ namespace BYOCCore
         }
         public void LoadBytes(Byte[] bytes)
         {
-            if (bytes.Length > memory.Length)
+            LoadProgram(bytes.Select(b => (int)b).ToArray());
+        }
+        public void LoadProgram(IReadOnlyList<int> cells)
+        {
+            if (cells.Count > memory.Length)
             {
-                throw new ArgumentException($"Program is {bytes.Length} bytes, but {deviceName} only holds {memory.Length} bytes.");
+                throw new ArgumentException($"Program is {cells.Count} cells, but {deviceName} only holds {memory.Length}.");
             }
-            for (int i = 0; i < bytes.Length; i++)
+            for (int i = 0; i < cells.Count; i++)
             {
-                memory[i] = bytes[i];
+                memory[i] = cells[i] & Bus.Mask;
             }
         }
         public string OperationsOnNextClockMAR()
@@ -109,11 +115,11 @@ namespace BYOCCore
             output.Append(Environment.NewLine);
             output.Append("Values:");
             output.Append(Environment.NewLine);
-            for (int i = 0; i < 16; i++)
+            for (int i = 0; i < memory.Length; i += 16)
             {
-                for (int n = 0; n < 16; n++)
+                for (int n = i; n < Math.Min(i + 16, memory.Length); n++)
                 {
-                    output.Append(memory[(i * 16) + n].ToString(connectedBus.NumberFormat));
+                    output.Append(memory[n].ToString(connectedBus.NumberFormat));
                     output.Append(" ");
                 }
                 output.Append(Environment.NewLine);

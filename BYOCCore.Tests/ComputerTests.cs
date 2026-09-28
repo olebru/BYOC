@@ -35,7 +35,7 @@ public class ComputerTests
     [Fact]
     public void JumpOnCarryAfterAddWrapsAround()
     {
-        var c = RunToHalt("\tLAI\t#255\n\tLBI\t#1\n\tADD\n\tJC\tcarry\n\tHLT\ncarry:\tLBI\t#42\n\tHLT");
+        var c = RunToHalt("\tLAI\t#65535\n\tLBI\t#1\n\tADD\n\tJC\tcarry\n\tHLT\ncarry:\tLBI\t#42\n\tHLT");
         Assert.Equal(42, c.Device<Register>("regb").Data);
         Assert.True(c.Device<StatusRegister>("regsta").Zero1);
     }
@@ -45,8 +45,8 @@ public class ComputerTests
     {
         var c = RunToHalt("\tLAI\t#7\n\tPSA\n\tLAI\t#0\n\tPOA\n\tHLT");
         Assert.Equal(7, c.Device<Register>("rega").Data);
-        Assert.Equal(255, c.Device<Register>("regsp").Data);
-        Assert.Equal(7, c.Device<MMU>("mmu").RamBanks[0].memory[254]);
+        Assert.Equal(4095, c.Device<Register>("regsp").Data);
+        Assert.Equal(7, c.Device<MMU>("mmu").RamBanks[0].memory[4094]);
     }
 
     [Fact]

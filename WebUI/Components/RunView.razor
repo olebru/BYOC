@@ -138,7 +138,7 @@
                                 case InstructionRegister ir:
                                     var located = Machine.NextStep;
                                     <span class="value">@Hex(ir.Data)</span>
-                                    <span class="sub">@(located == null ? "no microcode" : $"{located.Value.Instruction.Mnemonic} · step {located.Value.Offset + 1}")</span>
+                                    <span class="sub">@(located == null ? "no microcode" : $"{located.Value.Instruction.Mnemonic}.{located.Value.Offset + 1}")</span>
                                     break;
                                 case Register register:
                                     <span class="value">@Hex(register.Data)</span>
@@ -153,8 +153,8 @@
                                     <span class="sub">[@Hex(memory.memoryAddress)] = @Hex(memory.memory[memory.memoryAddress])</span>
                                     break;
                                 case MMU mmu:
-                                    var bank = mmu.RamBanks[mmu.ChipSelectRegister.Data];
-                                    <span class="mem">bank <strong>@Hex(mmu.ChipSelectRegister.Data)</strong>  MAR <strong>@Hex(bank.memoryAddress)</strong></span>
+                                    var bank = mmu.SelectedBank;
+                                    <span class="mem">bank <strong>@mmu.SelectedBankNumber</strong>  MAR <strong>@Hex(bank.memoryAddress)</strong></span>
                                     <span class="sub">[@Hex(bank.memoryAddress)] = @Hex(bank.memory[bank.memoryAddress])</span>
                                     break;
                                 case Clock clock:
@@ -269,14 +269,14 @@
 
             <div class="panel program">
                 <div class="panel-title">Program <span class="muted">click the gutter to set a breakpoint</span></div>
-                <div class="listing">
+                <div class="listing" style="--d:@Digits; --cw:@(ListingCellColumns * (Digits + 1))">
                     @foreach (var line in Machine.Assembler.Listing)
                     {
                         var isCurrent = line.IsInstruction && line.Address == Machine.CurrentInstructionAddress;
                         <div id="listing-@(isCurrent ? line.Address.ToString() : "")" class="lst @(isCurrent ? "current" : "") @(line.IsInstruction ? "" : "data")">
                             <span class="bp @(breakpoints.Contains(line.Address) ? "on" : "")" @onclick="() => ToggleBreakpoint(line.Address)" title="Toggle breakpoint"></span>
                             <span class="addr">@Hex(line.Address)</span>
-                            <span class="bytes">@string.Join(" ", line.Bytes.Select(b => Hex(b)))</span>
+                            <span class="bytes">@string.Join(" ", line.Cells.Select(b => Hex(b)))</span>
                             <span class="label">@(line.Label == null ? "" : line.Label + ":")</span>
                             <span class="src">@(line.IsInstruction ? SourceText(line) : line.Mnemonic == null ? "" : $"{line.Mnemonic} {string.Join(", ", line.Operands)}")</span>
                         </div>
@@ -296,7 +296,7 @@
             {
                 <span class="sep"></span>
                 <label class="bank"><input type="checkbox" @bind="wholeRom" /> whole ROM</label>
-                <span class="legend muted">@Machine.DecoderRom.OpCodesUsed of @DecoderRom.OpCodeAddressSpace step addresses used · rows shown for status @Bits(DecoderStatus, 4)</span>
+                <span class="legend muted">@Machine.DecoderRom.OpCodesUsed of @DecoderRom.AddressSpace step addresses used · rows shown for status @Bits(DecoderStatus, 4)</span>
             }
             @if (bottomTab == "Memory")
             {
@@ -309,8 +309,17 @@
                 {
                     <label class="bank">bank
                         <input type="number" min="0" max="255" @bind="memoryBank" />
-                        <button class="btab small" @onclick="() => memoryBank = mmuDevice.ChipSelectRegister.Data">selected (@mmuDevice.ChipSelectRegister.Data)</button>
+                        <button class="btab small" @onclick="() => memoryBank = mmuDevice.SelectedBankNumber">selected (@mmuDevice.SelectedBankNumber)</button>
                     </label>
+                }
+                @if (MemoryModule is RomModule paged && PageCount(paged) > 1)
+                {
+                    <span class="pager">
+                        <button class="btab small" disabled="@(Page(paged) == 0)" @onclick="() => memoryPage = Page(paged) - 1">‹</button>
+                        page @(Page(paged) + 1) / @PageCount(paged)
+                        <button class="btab small" disabled="@(Page(paged) == PageCount(paged) - 1)" @onclick="() => memoryPage = Page(paged) + 1">›</button>
+                        <button class="btab small" @onclick="() => GoToMar(paged)">go to MAR</button>
+                    </span>
                 }
                 <span class="legend">
                     <span class="lg pc">PC</span><span class="lg mar">MAR</span><span class="lg current">instruction</span><span class="lg written">written</span>
@@ -320,16 +329,18 @@
         @if (bottomTab == "Memory" && MemoryModule != null)
         {
             var module = MemoryModule;
-            <div class="memory">
+            var pageStart = Page(module) * PageSize;
+            var addressDigits = AddressDigits(module);
+            <div class="memory" style="--digits:@Digits; --adigits:@addressDigits">
                 <div class="mem-row head"><span class="mem-addr"></span>@for (int c = 0; c < 16; c++) { <span class="cell">@c.ToString("X")</span> }</div>
-                @for (int r = 0; r < 16; r++)
+                @for (int rowStart = pageStart; rowStart < Math.Min(pageStart + PageSize, module.Size); rowStart += 16)
                 {
+                    var start = rowStart;
                     <div class="mem-row">
-                        <span class="mem-addr">@((r * 16).ToString("X2"))</span>
-                        @for (int c = 0; c < 16; c++)
+                        <span class="mem-addr">@start.ToString("X" + addressDigits)</span>
+                        @for (int address = start; address < Math.Min(start + 16, module.Size); address++)
                         {
-                            var address = r * 16 + c;
-                            <span class="cell @CellClass(address, module)" title="[@Hex(address)] = @module.memory[address]">@Hex(module.memory[address])</span>
+                            <span class="cell @CellClass(address, module)" title="[@address.ToString("X" + addressDigits)] = @module.memory[address]">@Hex(module.memory[address])</span>
                         }
                     </div>
                 }
@@ -347,12 +358,12 @@
                             <span class="field-name">status</span>
                         </span>
                         <span class="field step">
-                            @for (int i = 0; i < 8; i++) { <span class="bit @(Bits(DecoderStep, 8)[i] == '1' ? "one" : "")">@(7 - i)<br />@Bits(DecoderStep, 8)[i]</span> }
+                            @for (int i = 0; i < StepBits; i++) { <span class="bit @(Bits(DecoderStep, StepBits)[i] == '1' ? "one" : "")">@(StepBits - 1 - i)<br />@Bits(DecoderStep, StepBits)[i]</span> }
                             <span class="field-name">micro step register</span>
                         </span>
                     </div>
-                    <div class="address-value">= ROM address <strong>@(((DecoderStatus << 8) | DecoderStep).ToString("X3"))</strong></div>
-                    <div class="address-next muted">next tick reads @NextAddress.ToString("X3")</div>
+                    <div class="address-value">= ROM address <strong>@RomHex(DecoderRom.RomAddress(DecoderStatus, DecoderStep))</strong></div>
+                    <div class="address-next muted">next tick reads @RomHex(NextAddress)</div>
                 </div>
                 <div class="rom">
                     <table class="rom-table">
@@ -378,7 +389,7 @@
                             {
                                 var isCurrent = Last != null && row.Address == DecoderStep;
                                 <tr class="@(isCurrent ? "current" : "") @(row.BlockStart ? "block-start" : "")">
-                                    <td class="rom-addr">@(((DecoderStatus << 8) | row.Address).ToString("X3"))</td>
+                                    <td class="rom-addr">@RomHex(DecoderRom.RomAddress(DecoderStatus, row.Address))</td>
                                     <td class="rom-label">@row.Label</td>
                                     @foreach (var group in groups)
                                     {

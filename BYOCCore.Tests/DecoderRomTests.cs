@@ -94,13 +94,22 @@ public class DecoderRomTests
     [Fact]
     public void FullAddressSpaceIsAllowedButOneMoreIsNot()
     {
-        string Build(int count) => string.Join("\n", Enumerable.Range(0, count).Select(i => Row("p", "clk", "disable", $"M{i}")));
+        MicrocodeDefinition Build(int count)
+        {
+            var microcode = new MicrocodeDefinition();
+            foreach (var i in Enumerable.Range(0, count))
+            {
+                var instruction = new InstructionDefinition { Mnemonic = $"M{i}", Steps = { new MicroStep { Signals = { "clk.disable" } } } };
+                if (i == 0) microcode.Fetch = instruction; else microcode.Instructions.Add(instruction);
+            }
+            return microcode;
+        }
 
-        var full = new DecoderRom(Build(256));
-        Assert.Equal(255, full.FetchByteCodeFromMnemonic("M255"));
+        var full = new DecoderRom(Build(DecoderRom.AddressSpace));
+        Assert.Equal(65535, full.FetchByteCodeFromMnemonic("M65535"));
         Assert.Equal(100, full.OpCodeAddressSpaceUsedInPercent());
 
-        Assert.Throws<Exception>(() => new DecoderRom(Build(257)));
+        Assert.Throws<Exception>(() => new DecoderRom(Build(DecoderRom.AddressSpace + 1)));
     }
 
     [Fact]

@@ -10,10 +10,10 @@ namespace BYOCCore
         public string Instruction { get; set; }
         public int? StepIndex { get; set; }
         // Status register value the decoder used for this tick.
-        public byte Status { get; set; }
-        // Micro step register value, and the full decoder ROM address: (status & 0x0F) << 8 | micro step.
-        public byte MicroStep { get; set; }
-        public int RomAddress { get { return ((Status & 0x0F) << 8) | MicroStep; } }
+        public int Status { get; set; }
+        // Micro step register value, and the full decoder ROM address: (status & 0x0F) << step bits | micro step.
+        public int MicroStep { get; set; }
+        public int RomAddress { get; set; }
         public List<string> Signals { get; set; } = new List<string>();
         public List<BusTransfer> Transfers { get; set; } = new List<BusTransfer>();
         public List<ValueChange> Changes { get; set; } = new List<ValueChange>();
@@ -27,7 +27,7 @@ namespace BYOCCore
         public string Bus { get; set; }
         // Device that drove the bus, or null when it floated.
         public string Driver { get; set; }
-        public byte Value { get; set; }
+        public int Value { get; set; }
         public List<string> Readers { get; set; } = new List<string>();
     }
 
@@ -45,6 +45,6 @@ namespace BYOCCore
         // Bank number for an MMU, otherwise -1.
         public int Bank { get; set; } = -1;
         public int Address { get; set; }
-        public byte Value { get; set; }
+        public int Value { get; set; }
     }
 }

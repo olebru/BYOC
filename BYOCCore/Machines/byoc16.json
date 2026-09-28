@@ -1,12 +1,12 @@
 {
-  "name": "BYOC-8",
+  "name": "BYOC-16",
   "buses": [
-    { "id": "main", "width": 8 }
+    { "id": "main" }
   ],
   "devices": [
     { "id": "regi", "type": "instructionRegister", "name": "REGINSTR", "bus": "main" },
     { "id": "pc", "type": "programCounter", "name": "PCOUNT", "bus": "main" },
-    { "id": "regsp", "type": "register", "name": "REGSP", "bus": "main", "parameters": { "initialValue": 255 } },
+    { "id": "regsp", "type": "register", "name": "REGSP", "bus": "main", "parameters": { "initialValue": 4095 } },
     { "id": "rega", "type": "register", "name": "REGA", "bus": "main" },
     { "id": "regb", "type": "register", "name": "REGB", "bus": "main" },
     { "id": "regc", "type": "register", "name": "REGC", "bus": "main" },
@@ -16,10 +16,10 @@
       "connections": { "a": "rega", "b": "regb", "status": "regsta" }
     },
     { "id": "regsta", "type": "statusRegister", "name": "STATUS", "bus": "main" },
-    { "id": "mem", "type": "ram", "name": "BASEMEM", "bus": "main" },
-    { "id": "mmu", "type": "mmu", "name": "MMU", "bus": "main" },
+    { "id": "mem", "type": "ram", "name": "BASEMEM", "bus": "main", "parameters": { "size": 4096 } },
+    { "id": "mmu", "type": "mmu", "name": "MMU", "bus": "main", "parameters": { "banks": 16, "bankSize": 4096 } },
     { "id": "clk", "type": "clock", "name": "Clock" },
-    { "id": "lcd", "type": "display", "name": "LCD", "bus": "main", "parameters": { "columns": 16, "rows": 4 } }
+    { "id": "lcd", "type": "display", "name": "LCD", "bus": "main", "parameters": { "columns": 32, "rows": 4 } }
   ],
   "decoder": { "status": "regsta", "instruction": "regi" },
   "halt": "clk",

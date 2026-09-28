@@ -6,19 +6,19 @@ namespace BYOCCore
     // so a value crosses between buses in two ticks (load on one side, output on the other).
     public class DualPortRegister : IBusDevice
     {
-        public byte Data;
+        public int Data;
         public readonly Bus BusA;
         public readonly Bus BusB;
         private string deviceID;
         private string deviceName;
         private bool loadA, loadB, outputA, outputB, reset, inc, dec;
-        public DualPortRegister(string DeviceName, string DeviceID, Bus busA, Bus busB, byte InitialValue = 0)
+        public DualPortRegister(string DeviceName, string DeviceID, Bus busA, Bus busB, int InitialValue = 0)
         {
             deviceName = DeviceName;
             deviceID = DeviceID;
             BusA = busA;
             BusB = busB;
-            Data = InitialValue;
+            Data = InitialValue & Bus.Mask;
         }
         public void Drive()
         {
@@ -42,8 +42,8 @@ namespace BYOCCore
             if (loadA) Data = BusA.Data;
             if (loadB) Data = BusB.Data;
             if (reset) Data = 0;
-            if (inc) Data++;
-            if (dec) Data--;
+            if (inc) Data = (Data + 1) & Bus.Mask;
+            if (dec) Data = (Data - 1) & Bus.Mask;
             loadA = loadB = reset = inc = dec = false;
         }
         public string DisplayName() { return deviceName; }

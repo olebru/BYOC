@@ -33,7 +33,7 @@ public class MachineDefinitionTests
         Row("s", "mem", "loadmar", "FTC"),
         Row("p", "mem", "output", "FTC"),
         Row("s", "ir", "load", "FTC"),
-        Row("s", "pc", "count", "FTC"),
+        Row("s", "pc", "inc", "FTC"),
         Row("p", "clk", "disable", "HLT"));
 
     private static MachineDefinitionException Fails(string json, string microcode = null, DeviceRegistry registry = null)
@@ -45,10 +45,10 @@ public class MachineDefinitionTests
     public void DefaultMachineLoads()
     {
         var c = Machine.CreateDefault();
-        Assert.Equal("BYOC-8", c.Definition.Name);
+        Assert.Equal("BYOC-16", c.Definition.Name);
         Assert.Equal(new[] { "regi", "pc", "regsp", "rega", "regb", "regc", "regs", "alu", "regsta", "mem", "mmu", "clk", "lcd" },
             c.Devices.Select(d => d.ID()));
-        Assert.Equal(255, c.Device<Register>("regsp").Data);
+        Assert.Equal(4095, c.Device<Register>("regsp").Data);
         Assert.Equal("REGSP", c.Device<Register>("regsp").DisplayName());
     }
 
@@ -93,7 +93,7 @@ public class MachineDefinitionTests
     {
         var json = """
             {
-              "buses": [ { "id": "main" }, { "id": "wide", "width": 16 } ],
+              "buses": [ { "id": "main" } ],
               "devices": [
                 { "id": "a", "type": "register", "bus": "nowhere" },
                 { "id": "a", "type": "register", "bus": "main" },
@@ -105,7 +105,6 @@ public class MachineDefinitionTests
             }
             """;
         var errors = Fails(json).Errors;
-        Assert.Contains(errors, e => e.Contains("only 8 bit buses"));
         Assert.Contains(errors, e => e.Contains("unknown bus 'nowhere'"));
         Assert.Contains(errors, e => e.Contains("'a' is defined more than once"));
         Assert.Contains(errors, e => e.Contains("unknown type 'flux-capacitor'"));

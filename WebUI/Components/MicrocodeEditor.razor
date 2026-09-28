@@ -12,9 +12,9 @@
         </label>
         <button class="tool" @onclick="Download">Download JSON</button>
         <span class="sep"></span>
-        <span class="meter" title="Micro step addresses used out of 256">
-            <span class="meter-bar"><span class="meter-fill @(OpCodesUsed > DecoderRom.OpCodeAddressSpace ? "over" : "")" style="width:@(Math.Min(100, OpCodesUsed * 100 / DecoderRom.OpCodeAddressSpace))%"></span></span>
-            @OpCodesUsed / @DecoderRom.OpCodeAddressSpace opcodes
+        <span class="meter" title="Micro step addresses used, out of the 65536 a 16 bit micro step register can select">
+            <span class="meter-bar"><span class="meter-fill @(OpCodesUsed > AddressSpace ? "over" : "")" style="width:@(Math.Min(100, OpCodesUsed * 100 / AddressSpace))%"></span></span>
+            @OpCodesUsed / @AddressSpace opcodes
         </span>
         <span class="grow"></span>
         @if (Diagnostics.Count == 0)

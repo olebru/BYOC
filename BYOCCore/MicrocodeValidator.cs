@@ -68,9 +68,9 @@ namespace BYOCCore
                 }
                 ValidateFlow(instruction, machine, Add);
             }
-            if (opCodes > DecoderRom.OpCodeAddressSpace)
+            if (opCodes > DecoderRom.AddressSpace)
             {
-                Add(DiagnosticSeverity.Error, null, null, null, $"needs {opCodes} opcodes but only {DecoderRom.OpCodeAddressSpace} are available.");
+                Add(DiagnosticSeverity.Error, null, null, null, $"needs {opCodes} opcodes but only {DecoderRom.AddressSpace} are available.");
             }
             return diagnostics;
         }

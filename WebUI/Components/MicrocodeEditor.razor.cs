@@ -137,6 +137,8 @@ namespace WebUI.Components
             return activity.Select(a => (a.Key, a.Value.Drivers, a.Value.Readers)).ToList();
         }
 
+        private const int AddressSpace = DecoderRom.AddressSpace;
+
         private int OpCodesUsed
         {
             get

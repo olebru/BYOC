@@ -13,7 +13,7 @@ namespace BYOCCore
         private string deviceName;
         private Register sta;
         private bool sub;
-        private byte? pendingStatus;
+        private int? pendingStatus;
         public ALU(string DeviceName, string DeviceID, Register rega, Register regb, Register regsta, Bus Bus)
         {
             deviceID = DeviceID;
@@ -28,12 +28,13 @@ namespace BYOCCore
         {
             if (add)
             {
-                int sum = a.Data + b.Data;
-                byte result = (byte)sum;
-                byte status = 0;
+                int x = a.Data & Mask, y = b.Data & Mask;
+                int sum = x + y;
+                int result = sum & Mask;
+                int status = 0;
                 if (result == 0) status |= StatusRegister.ZeroFlag;
-                if (sum > byte.MaxValue) status |= StatusRegister.CarryFlag;
-                if (((a.Data ^ result) & (b.Data ^ result) & 0x80) != 0) status |= StatusRegister.OverflowFlag;
+                if (sum > Mask) status |= StatusRegister.CarryFlag;
+                if (((x ^ result) & (y ^ result) & SignBit) != 0) status |= StatusRegister.OverflowFlag;
                 bus.Data = result;
                 pendingStatus = status;
                 add = false;
@@ -101,15 +102,19 @@ namespace BYOCCore
             return deviceName;
         }
         // Computes a - b and the resulting status. Negative and carry (borrow) are set when a < b unsigned.
-        private byte subtract()
+        private int subtract()
         {
-            byte result = (byte)(a.Data - b.Data);
-            byte status = 0;
+            int x = a.Data & Mask, y = b.Data & Mask;
+            int result = (x - y) & Mask;
+            int status = 0;
             if (result == 0) status |= StatusRegister.ZeroFlag;
-            if (a.Data < b.Data) status |= StatusRegister.NegativeFlag | StatusRegister.CarryFlag;
-            if (((a.Data ^ b.Data) & (a.Data ^ result) & 0x80) != 0) status |= StatusRegister.OverflowFlag;
+            if (x < y) status |= StatusRegister.NegativeFlag | StatusRegister.CarryFlag;
+            if (((x ^ y) & (x ^ result) & SignBit) != 0) status |= StatusRegister.OverflowFlag;
             pendingStatus = status;
             return result;
         }
+        // 16 bit arithmetic; the top bit is the sign bit for overflow.
+        private const int Mask = Bus.Mask;
+        private const int SignBit = Bus.SignBit;
     }
 }

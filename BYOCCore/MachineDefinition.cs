@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 namespace BYOCCore
@@ -42,7 +43,6 @@ namespace BYOCCore
     public class BusDefinition
     {
         public string Id { get; set; }
-        public int Width { get; set; } = 8;
         public Position Layout { get; set; }
     }
     public class DeviceDefinition

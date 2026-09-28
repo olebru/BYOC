@@ -107,21 +107,21 @@ public class BusDeviceTests
     [Fact]
     public void LoadBytesRejectsProgramLargerThanMemory()
     {
-        var ram = new RamModule("RAM", "mem", new Bus());
+        var ram = new RamModule("RAM", "mem", new Bus(), 256);
         Assert.Throws<ArgumentException>(() => ram.LoadBytes(new byte[257]));
     }
 
     [Fact]
-    public void ProgramCounterWrapsAndListsCountSignal()
+    public void ProgramCounterWrapsAtSixteenBits()
     {
         var bus = new Bus();
         var pc = new ProgramCounter("PC", "pc", bus);
         bus.devices.Add(pc);
-        pc.Data = 255;
-        pc.Enable("count");
+        pc.Data = 0xFFFF;
+        pc.Enable("inc");
         bus.Clk();
 
         Assert.Equal(0, pc.Data);
-        Assert.Contains("count", pc.SignalLines());
+        Assert.DoesNotContain("count", pc.SignalLines());
     }
 }

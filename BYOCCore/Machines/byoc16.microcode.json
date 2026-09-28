@@ -1,5 +1,5 @@
 {
-  "name": "BYOC-8 microcode",
+  "name": "BYOC-16 microcode",
   "fetch": {
     "mnemonic": "FTC",
     "description": "Fetch: load the opcode at the program counter into the micro step register",
@@ -19,7 +19,7 @@
       "operands": 0,
       "steps": [
         {
-          "signals": ["rega.output", "regb.load", "regi.reset", "pc.count"]
+          "signals": ["rega.output", "regb.load", "regi.reset", "pc.inc"]
         }
       ]
     },
@@ -29,7 +29,7 @@
       "operands": 0,
       "steps": [
         {
-          "signals": ["regb.output", "rega.load", "regi.reset", "pc.count"]
+          "signals": ["regb.output", "rega.load", "regi.reset", "pc.inc"]
         }
       ]
     },
@@ -39,7 +39,7 @@
       "operands": 0,
       "steps": [
         {
-          "signals": ["alu.add", "rega.load", "regi.reset", "pc.count"]
+          "signals": ["alu.add", "rega.load", "regi.reset", "pc.inc"]
         }
       ]
     },
@@ -49,7 +49,7 @@
       "operands": 0,
       "steps": [
         {
-          "signals": ["alu.sub", "rega.load", "regi.reset", "pc.count"]
+          "signals": ["alu.sub", "rega.load", "regi.reset", "pc.inc"]
         }
       ]
     },
@@ -59,7 +59,7 @@
       "operands": 1,
       "steps": [
         {
-          "signals": ["pc.count"]
+          "signals": ["pc.inc"]
         },
         {
           "signals": ["pc.output", "mem.loadmar"]
@@ -68,7 +68,7 @@
           "signals": ["mem.output", "mmu.loadmar"]
         },
         {
-          "signals": ["rega.output", "mmu.load", "regi.reset", "pc.count"]
+          "signals": ["rega.output", "mmu.load", "regi.reset", "pc.inc"]
         }
       ]
     },
@@ -78,7 +78,7 @@
       "operands": 1,
       "steps": [
         {
-          "signals": ["pc.count"]
+          "signals": ["pc.inc"]
         },
         {
           "signals": ["pc.output", "mem.loadmar"]
@@ -87,7 +87,7 @@
           "signals": ["mem.output", "mmu.loadmar"]
         },
         {
-          "signals": ["regb.output", "mmu.load", "regi.reset", "pc.count"]
+          "signals": ["regb.output", "mmu.load", "regi.reset", "pc.inc"]
         }
       ]
     },
@@ -97,7 +97,7 @@
       "operands": 1,
       "steps": [
         {
-          "signals": ["pc.count"]
+          "signals": ["pc.inc"]
         },
         {
           "signals": ["pc.output", "mem.loadmar"]
@@ -106,7 +106,7 @@
           "signals": ["mem.output", "mem.loadmar"]
         },
         {
-          "signals": ["rega.load", "mem.output", "regi.reset", "pc.count"]
+          "signals": ["rega.load", "mem.output", "regi.reset", "pc.inc"]
         }
       ]
     },
@@ -116,7 +116,7 @@
       "operands": 1,
       "steps": [
         {
-          "signals": ["pc.count"]
+          "signals": ["pc.inc"]
         },
         {
           "signals": ["pc.output", "mem.loadmar"]
@@ -125,7 +125,7 @@
           "signals": ["mem.output", "mem.loadmar"]
         },
         {
-          "signals": ["regb.load", "mem.output", "regi.reset", "pc.count"]
+          "signals": ["regb.load", "mem.output", "regi.reset", "pc.inc"]
         }
       ]
     },
@@ -135,7 +135,7 @@
       "operands": 1,
       "steps": [
         {
-          "signals": ["pc.count"]
+          "signals": ["pc.inc"]
         },
         {
           "signals": ["pc.output", "mem.loadmar"]
@@ -144,7 +144,7 @@
           "signals": ["mem.output", "mmu.loadmar"]
         },
         {
-          "signals": ["rega.load", "mmu.output", "regi.reset", "pc.count"]
+          "signals": ["rega.load", "mmu.output", "regi.reset", "pc.inc"]
         }
       ]
     },
@@ -154,7 +154,7 @@
       "operands": 1,
       "steps": [
         {
-          "signals": ["pc.count"]
+          "signals": ["pc.inc"]
         },
         {
           "signals": ["pc.output", "mem.loadmar"]
@@ -163,7 +163,7 @@
           "signals": ["mem.output", "mmu.loadmar"]
         },
         {
-          "signals": ["regb.load", "mmu.output", "regi.reset", "pc.count"]
+          "signals": ["regb.load", "mmu.output", "regi.reset", "pc.inc"]
         }
       ]
     },
@@ -188,7 +188,7 @@
           "signals": ["regs.output", "mmu.loadcs"]
         },
         {
-          "signals": ["regi.reset", "pc.count"]
+          "signals": ["regi.reset", "pc.inc"]
         }
       ]
     },
@@ -210,7 +210,7 @@
           "signals": ["rega.load", "mmu.output", "regsp.inc"]
         },
         {
-          "signals": ["regs.output", "mmu.loadcs", "regi.reset", "pc.count"]
+          "signals": ["regs.output", "mmu.loadcs", "regi.reset", "pc.inc"]
         }
       ]
     },
@@ -235,7 +235,7 @@
           "signals": ["regs.output", "mmu.loadcs"]
         },
         {
-          "signals": ["regi.reset", "pc.count"]
+          "signals": ["regi.reset", "pc.inc"]
         }
       ]
     },
@@ -257,7 +257,7 @@
           "signals": ["regb.load", "mmu.output", "regsp.inc"]
         },
         {
-          "signals": ["regs.output", "mmu.loadcs", "regi.reset", "pc.count"]
+          "signals": ["regs.output", "mmu.loadcs", "regi.reset", "pc.inc"]
         }
       ]
     },
@@ -267,7 +267,7 @@
       "operands": 0,
       "steps": [
         {
-          "signals": ["regi.reset", "pc.count"]
+          "signals": ["regi.reset", "pc.inc"]
         }
       ]
     },
@@ -277,7 +277,7 @@
       "operands": 1,
       "steps": [
         {
-          "signals": ["pc.count"]
+          "signals": ["pc.inc"]
         },
         {
           "signals": ["pc.output", "mem.loadmar"]
@@ -289,7 +289,7 @@
           "signals": ["alu.add", "mem.loadmar"]
         },
         {
-          "signals": ["mem.output", "rega.load", "regi.reset", "pc.count"]
+          "signals": ["mem.output", "rega.load", "regi.reset", "pc.inc"]
         }
       ]
     },
@@ -299,7 +299,7 @@
       "operands": 0,
       "steps": [
         {
-          "signals": ["alu.cmp", "regi.reset", "pc.count"]
+          "signals": ["alu.cmp", "regi.reset", "pc.inc"]
         }
       ]
     },
@@ -309,13 +309,13 @@
       "operands": 1,
       "steps": [
         {
-          "signals": ["pc.count"]
+          "signals": ["pc.inc"]
         },
         {
           "signals": ["pc.output", "mem.loadmar"]
         },
         {
-          "signals": ["pc.load", "mem.output", "regi.reset", "pc.count"]
+          "signals": ["pc.load", "mem.output", "regi.reset"]
         }
       ]
     },
@@ -325,7 +325,7 @@
       "operands": 1,
       "steps": [
         {
-          "signals": ["pc.count"]
+          "signals": ["pc.inc"]
         },
         {
           "when": { "Z": true },
@@ -333,11 +333,11 @@
         },
         {
           "when": { "Z": true },
-          "signals": ["pc.load", "mem.output", "regi.reset", "pc.count"]
+          "signals": ["pc.load", "mem.output", "regi.reset"]
         },
         {
           "when": { "Z": false },
-          "signals": ["regi.reset", "pc.count"]
+          "signals": ["regi.reset", "pc.inc"]
         }
       ]
     },
@@ -347,7 +347,7 @@
       "operands": 1,
       "steps": [
         {
-          "signals": ["pc.count"]
+          "signals": ["pc.inc"]
         },
         {
           "when": { "Z": false },
@@ -355,11 +355,11 @@
         },
         {
           "when": { "Z": false },
-          "signals": ["pc.load", "mem.output", "regi.reset", "pc.count"]
+          "signals": ["pc.load", "mem.output", "regi.reset"]
         },
         {
           "when": { "Z": true },
-          "signals": ["regi.reset", "pc.count"]
+          "signals": ["regi.reset", "pc.inc"]
         }
       ]
     },
@@ -369,7 +369,7 @@
       "operands": 0,
       "steps": [
         {
-          "signals": ["regsta.reset", "regi.reset", "pc.count"]
+          "signals": ["regsta.reset", "regi.reset", "pc.inc"]
         }
       ]
     },
@@ -379,7 +379,7 @@
       "operands": 1,
       "steps": [
         {
-          "signals": ["pc.count"]
+          "signals": ["pc.inc"]
         },
         {
           "when": { "C": true },
@@ -387,11 +387,11 @@
         },
         {
           "when": { "C": true },
-          "signals": ["pc.load", "mem.output", "regi.reset", "pc.count"]
+          "signals": ["pc.load", "mem.output", "regi.reset"]
         },
         {
           "when": { "C": false },
-          "signals": ["regi.reset", "pc.count"]
+          "signals": ["regi.reset", "pc.inc"]
         }
       ]
     },
@@ -401,7 +401,7 @@
       "operands": 1,
       "steps": [
         {
-          "signals": ["pc.count"]
+          "signals": ["pc.inc"]
         },
         {
           "signals": ["pc.output", "mem.loadmar"]
@@ -413,7 +413,7 @@
           "signals": ["regs.output", "mem.loadmar"]
         },
         {
-          "signals": ["rega.load", "mem.output", "regi.reset", "pc.count"]
+          "signals": ["rega.load", "mem.output", "regi.reset", "pc.inc"]
         }
       ]
     },
@@ -423,7 +423,7 @@
       "operands": 1,
       "steps": [
         {
-          "signals": ["pc.count"]
+          "signals": ["pc.inc"]
         },
         {
           "signals": ["pc.output", "mem.loadmar"]
@@ -435,7 +435,7 @@
           "signals": ["regs.output", "mem.loadmar"]
         },
         {
-          "signals": ["regb.load", "mem.output", "regi.reset", "pc.count"]
+          "signals": ["regb.load", "mem.output", "regi.reset", "pc.inc"]
         }
       ]
     },
@@ -455,13 +455,13 @@
       "operands": 1,
       "steps": [
         {
-          "signals": ["pc.count"]
+          "signals": ["pc.inc"]
         },
         {
           "signals": ["pc.output", "mem.loadmar"]
         },
         {
-          "signals": ["mem.output", "rega.load", "regi.reset", "pc.count"]
+          "signals": ["mem.output", "rega.load", "regi.reset", "pc.inc"]
         }
       ]
     },
@@ -471,13 +471,13 @@
       "operands": 1,
       "steps": [
         {
-          "signals": ["pc.count"]
+          "signals": ["pc.inc"]
         },
         {
           "signals": ["pc.output", "mem.loadmar"]
         },
         {
-          "signals": ["mem.output", "regb.load", "regi.reset", "pc.count"]
+          "signals": ["mem.output", "regb.load", "regi.reset", "pc.inc"]
         }
       ]
     },
@@ -490,7 +490,7 @@
           "signals": ["regsp.output", "mmu.loadmar"]
         },
         {
-          "signals": ["mmu.output", "rega.load", "regi.reset", "pc.count"]
+          "signals": ["mmu.output", "rega.load", "regi.reset", "pc.inc"]
         }
       ]
     },
@@ -503,7 +503,7 @@
           "signals": ["regsp.output", "mmu.loadmar"]
         },
         {
-          "signals": ["mmu.output", "regb.load", "regi.reset", "pc.count"]
+          "signals": ["mmu.output", "regb.load", "regi.reset", "pc.inc"]
         }
       ]
     },
@@ -513,13 +513,13 @@
       "operands": 1,
       "steps": [
         {
-          "signals": ["pc.count"]
+          "signals": ["pc.inc"]
         },
         {
           "signals": ["pc.output", "mem.loadmar"]
         },
         {
-          "signals": ["mem.output", "mmu.loadcs", "regi.reset", "pc.count"]
+          "signals": ["mem.output", "mmu.loadcs", "regi.reset", "pc.inc"]
         }
       ]
     },
@@ -529,7 +529,7 @@
       "operands": 0,
       "steps": [
         {
-          "signals": ["rega.inc", "regi.reset", "pc.count"]
+          "signals": ["rega.inc", "regi.reset", "pc.inc"]
         }
       ]
     },
@@ -539,7 +539,7 @@
       "operands": 0,
       "steps": [
         {
-          "signals": ["regb.inc", "regi.reset", "pc.count"]
+          "signals": ["regb.inc", "regi.reset", "pc.inc"]
         }
       ]
     },
@@ -549,7 +549,7 @@
       "operands": 0,
       "steps": [
         {
-          "signals": ["lcd.clear", "regi.reset", "pc.count"]
+          "signals": ["lcd.clear", "regi.reset", "pc.inc"]
         }
       ]
     },
@@ -559,7 +559,7 @@
       "operands": 0,
       "steps": [
         {
-          "signals": ["rega.output", "lcd.load", "regi.reset", "pc.count"]
+          "signals": ["rega.output", "lcd.load", "regi.reset", "pc.inc"]
         }
       ]
     },
@@ -569,7 +569,7 @@
       "operands": 0,
       "steps": [
         {
-          "signals": ["regb.output", "lcd.load", "regi.reset", "pc.count"]
+          "signals": ["regb.output", "lcd.load", "regi.reset", "pc.inc"]
         }
       ]
     },
@@ -579,13 +579,13 @@
       "operands": 1,
       "steps": [
         {
-          "signals": ["pc.count"]
+          "signals": ["pc.inc"]
         },
         {
           "signals": ["pc.output", "mem.loadmar"]
         },
         {
-          "signals": ["mem.output", "lcd.load", "regi.reset", "pc.count"]
+          "signals": ["mem.output", "lcd.load", "regi.reset", "pc.inc"]
         }
       ]
     }

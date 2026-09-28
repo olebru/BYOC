@@ -625,7 +625,7 @@
 
 .lst {
     display: grid;
-    grid-template-columns: 16px 28px 58px 64px 1fr;
+    grid-template-columns: 16px calc(var(--d, 2) * 1ch + 8px) calc(var(--cw, 6) * 1ch + 6px) 64px 1fr;
     align-items: center;
     gap: 4px;
     padding: 1px 4px;
@@ -748,12 +748,20 @@
     }
 
 .mem-addr {
-    width: 30px;
+    width: calc(var(--adigits, 2) * 1ch + 12px);
     color: var(--muted);
 }
 
+.pager {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.78rem;
+    margin-left: 8px;
+}
+
 .cell {
-    width: 28px;
+    width: calc(var(--digits, 2) * 1ch + 14px);
     text-align: center;
     border-radius: 3px;
     padding: 0 1px;
@@ -829,7 +837,7 @@
 }
 
 .address {
-    width: 300px;
+    min-width: 300px;
     flex-shrink: 0;
     padding: 10px 12px;
     border-right: 1px solid var(--line);
@@ -851,7 +859,7 @@
 
 .field {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 2px;
     position: relative;
     padding-bottom: 16px;

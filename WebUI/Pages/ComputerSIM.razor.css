@@ -26,3 +26,9 @@
     color: #7a8599;
     margin-right: 4px;
 }
+
+.workspace-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}

@@ -9,7 +9,7 @@ public class ALUTests
     private const byte V = StatusRegister.OverflowFlag;
     private const byte N = StatusRegister.NegativeFlag;
 
-    private static (byte result, byte status) Run(string function, byte a, byte b)
+    private static (int result, int status) Run(string function, int a, int b)
     {
         var bus = new Bus();
         var rega = new Register("A", "rega", bus, a);
@@ -30,11 +30,11 @@ public class ALUTests
     [Theory]
     [InlineData(2, 3, 5, 0)]
     [InlineData(0, 0, 0, Z)]
-    [InlineData(255, 1, 0, Z | C)]
-    [InlineData(200, 100, 44, C)]
-    [InlineData(127, 1, 128, V)]
-    [InlineData(128, 128, 0, Z | C | V)]
-    public void Add(byte a, byte b, byte expected, byte flags)
+    [InlineData(0xFFFF, 1, 0, Z | C)]
+    [InlineData(40000, 30000, 4464, C)]
+    [InlineData(0x7FFF, 1, 0x8000, V)]
+    [InlineData(0x8000, 0x8000, 0, Z | C | V)]
+    public void Add(int a, int b, int expected, int flags)
     {
         var (result, status) = Run("add", a, b);
         Assert.Equal(expected, result);
@@ -44,10 +44,10 @@ public class ALUTests
     [Theory]
     [InlineData(5, 3, 2, 0)]
     [InlineData(4, 4, 0, Z)]
-    [InlineData(3, 5, 254, N | C)]
-    [InlineData(128, 1, 127, V)]
-    [InlineData(0, 128, 128, N | C | V)]
-    public void Sub(byte a, byte b, byte expected, byte flags)
+    [InlineData(3, 5, 0xFFFE, N | C)]
+    [InlineData(0x8000, 1, 0x7FFF, V)]
+    [InlineData(0, 0x8000, 0x8000, N | C | V)]
+    public void Sub(int a, int b, int expected, int flags)
     {
         var (result, status) = Run("sub", a, b);
         Assert.Equal(expected, result);
@@ -58,7 +58,7 @@ public class ALUTests
     [InlineData(4, 4, Z)]
     [InlineData(3, 5, N | C)]
     [InlineData(9, 2, 0)]
-    public void CmpSetsSameFlagsAsSubWithoutDrivingBus(byte a, byte b, byte flags)
+    public void CmpSetsSameFlagsAsSubWithoutDrivingBus(int a, int b, int flags)
     {
         var (result, status) = Run("cmp", a, b);
         Assert.Equal(0, result);
