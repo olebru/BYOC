@@ -6,6 +6,8 @@ namespace BYOCCore
     {
         // The default machine definition, the BYOC-8 architecture the example ROM and program are written for.
         public static string MACHINE { get { return ReadResource("BYOCCore.Machines.byoc8.json"); } }
+        // The BYOC-8 microcode as JSON. ROMDATA below is the same microcode in the legacy tab separated format.
+        public static string MICROCODE { get { return ReadResource("BYOCCore.Machines.byoc8.microcode.json"); } }
         private static string ReadResource(string name)
         {
             using var stream = typeof(ExampleData).Assembly.GetManifestResourceStream(name)

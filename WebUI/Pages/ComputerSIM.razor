@@ -7,7 +7,11 @@
             <li class="nav-item">
                 <a class="nav-link @(ActiveTab == tab ? "active" : "")" href="" @onclick="() => ActiveTab = tab" @onclick:preventDefault>
                     @tab
-                    @if (tab == "Design" && Errors.Count > 0) { <span class="badge badge-danger ml-1">@Errors.Count</span> }
+                    @if (tab == "Design" && DefinitionErrors.Count > 0) { <span class="badge badge-danger ml-1">@DefinitionErrors.Count</span> }
+                    @if (tab == "Microcode" && MicrocodeErrorCount > 0) { <span class="badge badge-danger ml-1">@MicrocodeErrorCount</span> }
+                    @if (tab == "Microcode" && MicrocodeErrorCount == 0 && MicrocodeWarningCount > 0) { <span class="badge badge-warning ml-1">@MicrocodeWarningCount</span> }
+                    @if (tab == "Program" && ProgramErrors.Count > 0) { <span class="badge badge-danger ml-1">@ProgramErrors.Count</span> }
+                    @if (tab == "JSON" && ParseErrors.Count > 0) { <span class="badge badge-danger ml-1">@ParseErrors.Count</span> }
                 </a>
             </li>
         }
@@ -19,26 +23,32 @@
 
 @if (ActiveTab == "Design")
 {
-    <MachineEditor Definition="Definition" DefinitionChanged="OnDesignChanged" Errors="Errors" Preview="C" />
+    <MachineEditor Definition="Definition" DefinitionChanged="OnDesignChanged" Errors="DefinitionErrors" Preview="C" Registry="Registry" />
 }
 else if (ActiveTab == "Microcode")
 {
-    <SourceEditorComponent Label="Microcode (tab separated: clock flag, device, control line, mnemonic, N, V, C, Z)" Value="@Microcode" ValueChanged="OnMicrocodeChanged" Rows="30" />
-    <ErrorList Errors="Errors" />
+    <MicrocodeEditor Microcode="Microcode" MicrocodeChanged="OnMicrocodeChanged" Machine="Definition" Diagnostics="MicrocodeDiagnostics" Registry="Registry" />
 }
 else if (ActiveTab == "Program")
 {
     <SourceEditorComponent Label="Program (assembly)" Value="@Program" ValueChanged="OnProgramChanged" Rows="30" />
-    <ErrorList Errors="Errors" />
+    <ErrorList Errors="ProgramErrors" />
 }
 else if (ActiveTab == "JSON")
 {
-    <SourceEditorComponent Label="Machine definition (JSON), kept in sync with the designer" Value="@DefinitionJson" ValueChanged="OnJsonChanged" Rows="30" />
-    <ErrorList Errors="Errors" />
+    <ErrorList Errors="ParseErrors" />
+    <div class="row">
+        <div class="col-lg-6">
+            <SourceEditorComponent Label="Machine definition (JSON), kept in sync with the designer" Value="@DefinitionJson" ValueChanged="OnJsonChanged" Rows="30" />
+        </div>
+        <div class="col-lg-6">
+            <SourceEditorComponent Label="Microcode (JSON, or a legacy tab separated ROM), kept in sync with the microcode editor" Value="@MicrocodeJson" ValueChanged="OnMicrocodeJsonChanged" Rows="30" />
+        </div>
+    </div>
 }
 else if (ActiveTab == "Run")
 {
-    <ErrorList Errors="Errors" />
+    <ErrorList Errors="AllErrors.ToList()" />
     @if (C != null)
     {
         <h3>@(C.Definition.Name ?? "Unnamed machine")</h3>

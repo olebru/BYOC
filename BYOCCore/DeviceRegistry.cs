@@ -16,6 +16,24 @@ namespace BYOCCore
         public List<string> Ports { get; set; } = new List<string> { DeviceBuildContext.DefaultPort };
         public List<ConnectionInfo> Connections { get; set; } = new List<ConnectionInfo>();
         public List<ParameterInfo> Parameters { get; set; } = new List<ParameterInfo>();
+        // The control lines microcode can enable. Empty when the type does not describe them.
+        public List<ControlLineInfo> ControlLines { get; set; } = new List<ControlLineInfo>();
+    }
+    public class ControlLineInfo
+    {
+        public string Name { get; set; }
+        public string Description { get; set; } = "";
+        // Bus port this line puts a value on during the tick, if any.
+        public string Drives { get; set; }
+        // Bus port this line takes a value from at the end of the tick, if any.
+        public string Reads { get; set; }
+
+        public static ControlLineInfo Output(string name, string description, string port = DeviceBuildContext.DefaultPort)
+            => new ControlLineInfo { Name = name, Description = description, Drives = port };
+        public static ControlLineInfo Input(string name, string description, string port = DeviceBuildContext.DefaultPort)
+            => new ControlLineInfo { Name = name, Description = description, Reads = port };
+        public static ControlLineInfo Internal(string name, string description)
+            => new ControlLineInfo { Name = name, Description = description };
     }
     public class ConnectionInfo
     {
@@ -41,19 +59,64 @@ namespace BYOCCore
         public static DeviceRegistry CreateDefault()
         {
             var initialValue = new ParameterInfo { Name = "initialValue", Description = "Value after power on" };
+            List<ControlLineInfo> RegisterLines() => new List<ControlLineInfo>
+            {
+                ControlLineInfo.Output("output", "Put the value on the bus"),
+                ControlLineInfo.Input("load", "Take the value from the bus"),
+                ControlLineInfo.Internal("reset", "Set to 0"),
+                ControlLineInfo.Internal("inc", "Add 1"),
+                ControlLineInfo.Internal("dec", "Subtract 1"),
+            };
+            List<ControlLineInfo> RomLines() => new List<ControlLineInfo>
+            {
+                ControlLineInfo.Input("loadmar", "Take the address from the bus"),
+                ControlLineInfo.Output("outputmar", "Put the address on the bus"),
+                ControlLineInfo.Output("output", "Put the byte at the address on the bus"),
+            };
+            List<ControlLineInfo> RamLines()
+            {
+                var lines = RomLines();
+                lines.Add(ControlLineInfo.Input("load", "Store the bus value at the address"));
+                return lines;
+            }
+
             var registry = new DeviceRegistry();
             registry.Register("register", c => new Register(c.Name, c.Id, c.Bus(), c.ByteParameter("initialValue")),
-                new DeviceTypeInfo { Category = "Registers", Description = "8 bit register: output, load, reset, inc, dec", Parameters = { initialValue } });
+                new DeviceTypeInfo { Category = "Registers", Description = "8 bit register: output, load, reset, inc, dec", Parameters = { initialValue }, ControlLines = RegisterLines() });
             registry.Register("statusRegister", c => new StatusRegister(c.Name, c.Id, c.Bus()),
-                new DeviceTypeInfo { Category = "Registers", Description = "Holds the NVCZ flags written by the ALU" });
+                new DeviceTypeInfo { Category = "Registers", Description = "Holds the NVCZ flags written by the ALU", ControlLines = RegisterLines() });
             registry.Register("dualPortRegister", c => new DualPortRegister(c.Name, c.Id, c.Bus("a"), c.Bus("b"), c.ByteParameter("initialValue")),
-                new DeviceTypeInfo { Category = "Registers", Description = "Register on two buses, moves values between them", Ports = new List<string> { "a", "b" }, Parameters = { initialValue } });
+                new DeviceTypeInfo
+                {
+                    Category = "Registers",
+                    Description = "Register on two buses, moves values between them",
+                    Ports = new List<string> { "a", "b" },
+                    Parameters = { initialValue },
+                    ControlLines =
+                    {
+                        ControlLineInfo.Input("loada", "Take the value from bus a", "a"),
+                        ControlLineInfo.Input("loadb", "Take the value from bus b", "b"),
+                        ControlLineInfo.Output("outputa", "Put the value on bus a", "a"),
+                        ControlLineInfo.Output("outputb", "Put the value on bus b", "b"),
+                        ControlLineInfo.Internal("reset", "Set to 0"),
+                        ControlLineInfo.Internal("inc", "Add 1"),
+                        ControlLineInfo.Internal("dec", "Subtract 1"),
+                    }
+                });
             registry.Register("instructionRegister", c => new InstructionRegister(c.Name, c.Id, c.Bus()),
-                new DeviceTypeInfo { Category = "Control", Description = "Micro step counter, advances every tick unless loaded or reset" });
+                new DeviceTypeInfo { Category = "Control", Description = "Micro step counter, advances every tick unless loaded or reset", ControlLines = RegisterLines() });
+            var programCounterLines = RegisterLines();
+            programCounterLines.Add(ControlLineInfo.Internal("count", "Advance to the next program byte"));
             registry.Register("programCounter", c => new ProgramCounter(c.Name, c.Id, c.Bus()),
-                new DeviceTypeInfo { Category = "Control", Description = "Register with count, points at the next program byte" });
+                new DeviceTypeInfo { Category = "Control", Description = "Register with count, points at the next program byte", ControlLines = programCounterLines });
             registry.Register("clock", c => new Clock(c.Name, c.Id),
-                new DeviceTypeInfo { Category = "Control", Description = "Counts cycles, its disable line halts the machine", Ports = new List<string>() });
+                new DeviceTypeInfo
+                {
+                    Category = "Control",
+                    Description = "Counts cycles, its disable line halts the machine",
+                    Ports = new List<string>(),
+                    ControlLines = { ControlLineInfo.Internal("disable", "Halt the machine") }
+                });
             registry.Register("alu", c => new ALU(c.Name, c.Id, c.Connection<Register>("a"), c.Connection<Register>("b"), c.Connection<Register>("status"), c.Bus()),
                 new DeviceTypeInfo
                 {
@@ -64,14 +127,24 @@ namespace BYOCCore
                         new ConnectionInfo { Name = "a", Description = "First operand register" },
                         new ConnectionInfo { Name = "b", Description = "Second operand register" },
                         new ConnectionInfo { Name = "status", Description = "Register that receives the flags" },
+                    },
+                    ControlLines =
+                    {
+                        ControlLineInfo.Output("add", "Put a + b on the bus and set flags"),
+                        ControlLineInfo.Output("sub", "Put a - b on the bus and set flags"),
+                        ControlLineInfo.Internal("cmp", "Set flags for a - b"),
                     }
                 });
             registry.Register("rom", c => new RomModule(c.Name, c.Id, c.Bus()),
-                new DeviceTypeInfo { Category = "Memory", Description = "256 bytes read only memory with address register" });
+                new DeviceTypeInfo { Category = "Memory", Description = "256 bytes read only memory with address register", ControlLines = RomLines() });
             registry.Register("ram", c => new RamModule(c.Name, c.Id, c.Bus()),
-                new DeviceTypeInfo { Category = "Memory", Description = "256 bytes memory with address register" });
+                new DeviceTypeInfo { Category = "Memory", Description = "256 bytes memory with address register", ControlLines = RamLines() });
+            var mmuLines = RamLines();
+            mmuLines.Add(ControlLineInfo.Input("loadcs", "Select the bank given on the bus"));
+            mmuLines.Add(ControlLineInfo.Output("outputcs", "Put the selected bank number on the bus"));
+            mmuLines.Add(ControlLineInfo.Internal("select0stack", "Select bank 0, the stack bank"));
             registry.Register("mmu", c => new MMU(c.Name, c.Id, c.Bus()),
-                new DeviceTypeInfo { Category = "Memory", Description = "256 banks of 256 bytes, selected by a chip select register" });
+                new DeviceTypeInfo { Category = "Memory", Description = "256 banks of 256 bytes, selected by a chip select register", ControlLines = mmuLines });
             return registry;
         }
 

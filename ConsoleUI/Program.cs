@@ -6,7 +6,7 @@ namespace ConsoleUI
 {
     class Program
     {
-        // Usage: ConsoleUI [machine.json microcode.tsv program.asm]
+        // Usage: ConsoleUI [machine.json microcode.json program.asm], microcode may also be a legacy tab separated ROM
         static int Main(string[] args)
         {
             Machine c;

@@ -9,14 +9,19 @@ namespace WebUI.Pages
     {
         private const int MaxRunCycles = 10000;
         private static readonly string[] Tabs = { "Design", "Microcode", "Program", "JSON", "Run" };
+        private static readonly DeviceRegistry Registry = DeviceRegistry.CreateDefault();
 
         private string ActiveTab = "Design";
         private Machine C;
         private MachineDefinition Definition;
         private string DefinitionJson;
-        private string Microcode;
+        private MicrocodeDefinition Microcode;
+        private string MicrocodeJson;
         private string Program;
-        private List<string> Errors = new List<string>();
+        private IReadOnlyList<string> DefinitionErrors = Array.Empty<string>();
+        private IReadOnlyList<MicrocodeDiagnostic> MicrocodeDiagnostics = Array.Empty<MicrocodeDiagnostic>();
+        private List<string> ParseErrors = new List<string>();
+        private List<string> ProgramErrors = new List<string>();
 
         public ComputerSIM()
         {
@@ -30,13 +35,26 @@ namespace WebUI.Pages
                 return C.Definition.ProgramMemory == null ? null : C.Device<RomModule>(C.Definition.ProgramMemory);
             }
         }
+        private int MicrocodeErrorCount { get { return MicrocodeDiagnostics.Count(d => d.Severity == DiagnosticSeverity.Error); } }
+        private int MicrocodeWarningCount { get { return MicrocodeDiagnostics.Count(d => d.Severity == DiagnosticSeverity.Warning); } }
+        private IEnumerable<string> AllErrors
+        {
+            get
+            {
+                return ParseErrors.Concat(DefinitionErrors)
+                    .Concat(MicrocodeDiagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).Select(d => d.ToString()))
+                    .Concat(ProgramErrors);
+            }
+        }
 
         private void ResetToDefault()
         {
             Definition = MachineDefinition.FromJson(ExampleData.MACHINE);
             DefinitionJson = Definition.ToJson();
-            Microcode = ExampleData.ROMDATA;
+            Microcode = MicrocodeDefinition.FromJson(ExampleData.MICROCODE);
+            MicrocodeJson = Microcode.ToJson();
             Program = ExampleData.SRC;
+            ParseErrors.Clear();
             Rebuild();
         }
 
@@ -47,24 +65,33 @@ namespace WebUI.Pages
             Rebuild();
         }
 
+        private void OnMicrocodeChanged(MicrocodeDefinition microcode)
+        {
+            Microcode = microcode;
+            MicrocodeJson = microcode.ToJson();
+            Rebuild();
+        }
+
         private void OnJsonChanged(string json)
         {
             DefinitionJson = json;
-            try
-            {
-                Definition = MachineDefinition.FromJson(json);
-                Rebuild();
-            }
-            catch (MachineDefinitionException e)
-            {
-                C = null;
-                Errors = e.Errors.ToList();
-            }
+            ParseText();
         }
 
-        private void OnMicrocodeChanged(string microcode)
+        private void OnMicrocodeJsonChanged(string json)
         {
-            Microcode = microcode;
+            MicrocodeJson = json;
+            ParseText();
+        }
+
+        // Parses both JSON editors; a file that does not parse keeps the last good model in the visual editors.
+        private void ParseText()
+        {
+            ParseErrors = new List<string>();
+            try { Definition = MachineDefinition.FromJson(DefinitionJson); }
+            catch (MachineDefinitionException e) { ParseErrors.AddRange(e.Errors); }
+            try { Microcode = MicrocodeDefinition.Parse(MicrocodeJson); }
+            catch (Exception e) when (e is MachineDefinitionException || e is FormatException) { ParseErrors.Add(e.Message); }
             Rebuild();
         }
 
@@ -74,23 +101,25 @@ namespace WebUI.Pages
             Rebuild();
         }
 
-        // Builds a fresh machine from a copy of the definition, so the designer can keep editing its own.
+        // Validates the definition, then the microcode against it, then builds a machine to assemble the program.
         private void Rebuild()
         {
-            Errors = new List<string>();
+            DefinitionErrors = Machine.ValidateDefinition(Definition, Registry);
+            MicrocodeDiagnostics = MicrocodeValidator.Validate(Microcode, Definition, Registry);
+            ProgramErrors = new List<string>();
+            C = null;
+            if (ParseErrors.Count > 0 || DefinitionErrors.Count > 0 || MicrocodeErrorCount > 0) return;
             try
             {
-                C = new Machine(Definition.Clone(), Microcode, Program);
+                C = new Machine(Definition.Clone(), Microcode.Clone(), Program, Registry);
             }
             catch (MachineDefinitionException e)
             {
-                C = null;
-                Errors.AddRange(e.Errors);
+                ProgramErrors.AddRange(e.Errors);
             }
             catch (Exception e)
             {
-                C = null;
-                Errors.Add(e.Message);
+                ProgramErrors.Add(e.Message);
             }
         }
 
@@ -110,7 +139,7 @@ namespace WebUI.Pages
             }
             catch (Exception e)
             {
-                Errors = new List<string> { $"Cycle {C.Cycles}: {e.Message}" };
+                ProgramErrors = new List<string> { $"Cycle {C.Cycles}: {e.Message}" };
             }
         }
     }

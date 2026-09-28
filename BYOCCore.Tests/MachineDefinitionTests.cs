@@ -214,14 +214,14 @@ public class MachineDefinitionTests
         Assert.DoesNotContain(c.Device("out"), c.Buses["main"].devices);
     }
 
+    // Two signals driving the same bus in one step are caught when the machine is built, not at run time.
     [Fact]
-    public void BusConflictNamesBusAndDevices()
+    public void BusConflictInMicrocodeIsRejectedAtLoad()
     {
         var microcode = FetchAndHalt + "\n" + Row("p", "pc", "output", "BAD") + "\n" + Row("s", "ir", "output", "BAD");
-        var c = Machine.FromJson(MinimalJson, microcode, "\tBAD");
-        var e = Assert.Throws<Exception>(() => { foreach (var _ in c.Run().Take(10)) { } });
+        var e = Fails(MinimalJson, microcode);
         Assert.Contains("bus 'main'", e.Message);
-        Assert.Contains("pc", e.Message);
-        Assert.Contains("ir", e.Message);
+        Assert.Contains("pc.output", e.Message);
+        Assert.Contains("ir.output", e.Message);
     }
 }

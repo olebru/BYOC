@@ -70,6 +70,11 @@ namespace BYOCCore
                     {
                         throw line.Error(e.Message);
                     }
+                    var expectedOperands = completeDecoderRom.OperandCount(line.Mnemonic);
+                    if (expectedOperands.HasValue && expectedOperands.Value != line.Operands.Length)
+                    {
+                        throw line.Error($"{line.Mnemonic} takes {expectedOperands} operand{(expectedOperands == 1 ? "" : "s")}, found {line.Operands.Length}");
+                    }
                 }
                 foreach (var operandToken in line.Operands)
                 {

@@ -7,7 +7,7 @@ public class ComputerTests
 {
     internal static Machine RunToHalt(string src, MachineDefinition definition = null, int maxCycles = 5000)
     {
-        var c = new Machine(definition ?? MachineDefinition.FromJson(ExampleData.MACHINE), ExampleData.ROMDATA, src);
+        var c = new Machine(definition ?? MachineDefinition.FromJson(ExampleData.MACHINE), ExampleData.MICROCODE, src);
         int cycles = 0;
         foreach (var _ in c.Run())
         {

@@ -23,6 +23,11 @@ namespace BYOCCore
         private readonly Stopwatch stopwatch = new Stopwatch();
 
         public Machine(MachineDefinition definition, string microcode, string source, DeviceRegistry registry = null)
+            : this(definition, MicrocodeDefinition.Parse(microcode), source, registry)
+        {
+        }
+
+        public Machine(MachineDefinition definition, MicrocodeDefinition microcode, string source, DeviceRegistry registry = null)
         {
             registry ??= DeviceRegistry.CreateDefault();
             Definition = definition;
@@ -42,9 +47,14 @@ namespace BYOCCore
             statusRegister = Device<Register>(definition.Decoder.Status, "decoder.status");
             instructionRegister = Device<Register>(definition.Decoder.Instruction, "decoder.instruction");
             if (definition.Halt != null) halt = Device<Clock>(definition.Halt, "halt");
+            if (definition.ProgramMemory != null) Device<RomModule>(definition.ProgramMemory, "programMemory");
+
+            var diagnostics = MicrocodeValidator.Validate(microcode, definition, registry, this);
+            var errors = diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).Select(d => d.ToString()).ToList();
+            if (errors.Count > 0) throw new MachineDefinitionException(errors);
+            MicrocodeWarnings = diagnostics.Where(d => d.Severity == DiagnosticSeverity.Warning).ToList();
 
             DecoderRom = new DecoderRom(microcode);
-            ValidateMicrocode(DecoderRom);
             Assembler = new Assembler(DecoderRom);
             ProgramByteCode = Assembler.Assemble(source ?? string.Empty);
             if (ProgramByteCode.Length > 0)
@@ -53,7 +63,7 @@ namespace BYOCCore
                 {
                     throw new MachineDefinitionException("\"programMemory\" must be set to load a program.");
                 }
-                Device<RomModule>(definition.ProgramMemory, "programMemory").LoadBytes(ProgramByteCode);
+                Device<RomModule>(definition.ProgramMemory).LoadBytes(ProgramByteCode);
             }
             CurrentMicroCode = FetchMicroCode();
         }
@@ -64,8 +74,25 @@ namespace BYOCCore
         }
         public static Machine CreateDefault()
         {
-            return FromJson(ExampleData.MACHINE, ExampleData.ROMDATA, ExampleData.SRC);
+            return FromJson(ExampleData.MACHINE, ExampleData.MICROCODE, ExampleData.SRC);
         }
+
+        // Checks a definition on its own, without microcode or a program. Returns the problems found.
+        public static IReadOnlyList<string> ValidateDefinition(MachineDefinition definition, DeviceRegistry registry = null)
+        {
+            try
+            {
+                new Machine(definition, new MicrocodeDefinition { Fetch = new InstructionDefinition { Mnemonic = "FTC", Steps = { new MicroStep() } } }, "", registry);
+                return Array.Empty<string>();
+            }
+            catch (MachineDefinitionException e)
+            {
+                return e.Errors.Where(error => !error.StartsWith("Microcode")).ToList();
+            }
+        }
+
+        // Microcode problems that do not stop the machine from running.
+        public IReadOnlyList<MicrocodeDiagnostic> MicrocodeWarnings { get; }
 
         public bool IsHalted { get { return halt != null && halt.IsHalted(); } }
         public IBusDevice Device(string id)
@@ -204,22 +231,5 @@ namespace BYOCCore
             return built;
         }
 
-        private void ValidateMicrocode(DecoderRom rom)
-        {
-            var errors = new List<string>();
-            foreach (var group in rom.MicroInstructions.GroupBy(m => (m.Mnemonic, m.DeviceID, m.Function)))
-            {
-                var (mnemonic, deviceId, function) = group.Key;
-                if (!devicesByID.TryGetValue(deviceId, out var device))
-                {
-                    errors.Add($"Microcode {mnemonic}: unknown device '{deviceId}'.");
-                }
-                else if (!device.SignalLines().Contains(function))
-                {
-                    errors.Add($"Microcode {mnemonic}: device '{deviceId}' has no control line '{function}', it has {string.Join(", ", device.SignalLines())}.");
-                }
-            }
-            if (errors.Count > 0) throw new MachineDefinitionException(errors);
-        }
     }
 }

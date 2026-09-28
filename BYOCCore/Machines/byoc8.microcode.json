@@ -1,0 +1,527 @@
+{
+  "name": "BYOC-8 microcode",
+  "fetch": {
+    "mnemonic": "FTC",
+    "description": "Fetch: load the opcode at the program counter into the micro step register",
+    "steps": [
+      {
+        "signals": ["pc.output", "mem.loadmar"]
+      },
+      {
+        "signals": ["mem.output", "regi.load"]
+      }
+    ]
+  },
+  "instructions": [
+    {
+      "mnemonic": "TAB",
+      "description": "Copy A to B",
+      "operands": 0,
+      "steps": [
+        {
+          "signals": ["rega.output", "regb.load", "regi.reset", "pc.count"]
+        }
+      ]
+    },
+    {
+      "mnemonic": "TBA",
+      "description": "Copy B to A",
+      "operands": 0,
+      "steps": [
+        {
+          "signals": ["regb.output", "rega.load", "regi.reset", "pc.count"]
+        }
+      ]
+    },
+    {
+      "mnemonic": "ADD",
+      "description": "A = A \u002B B, sets Z C V",
+      "operands": 0,
+      "steps": [
+        {
+          "signals": ["alu.add", "rega.load", "regi.reset", "pc.count"]
+        }
+      ]
+    },
+    {
+      "mnemonic": "SUB",
+      "description": "A = A - B, sets Z N C V",
+      "operands": 0,
+      "steps": [
+        {
+          "signals": ["alu.sub", "rega.load", "regi.reset", "pc.count"]
+        }
+      ]
+    },
+    {
+      "mnemonic": "STA",
+      "description": "Store A in the selected memory bank at the operand address",
+      "operands": 1,
+      "steps": [
+        {
+          "signals": ["pc.count"]
+        },
+        {
+          "signals": ["pc.output", "mem.loadmar"]
+        },
+        {
+          "signals": ["mem.output", "mmu.loadmar"]
+        },
+        {
+          "signals": ["rega.output", "mmu.load", "regi.reset", "pc.count"]
+        }
+      ]
+    },
+    {
+      "mnemonic": "STB",
+      "description": "Store B in the selected memory bank at the operand address",
+      "operands": 1,
+      "steps": [
+        {
+          "signals": ["pc.count"]
+        },
+        {
+          "signals": ["pc.output", "mem.loadmar"]
+        },
+        {
+          "signals": ["mem.output", "mmu.loadmar"]
+        },
+        {
+          "signals": ["regb.output", "mmu.load", "regi.reset", "pc.count"]
+        }
+      ]
+    },
+    {
+      "mnemonic": "LRA",
+      "description": "Load A from base memory at the operand address",
+      "operands": 1,
+      "steps": [
+        {
+          "signals": ["pc.count"]
+        },
+        {
+          "signals": ["pc.output", "mem.loadmar"]
+        },
+        {
+          "signals": ["mem.output", "mem.loadmar"]
+        },
+        {
+          "signals": ["rega.load", "mem.output", "regi.reset", "pc.count"]
+        }
+      ]
+    },
+    {
+      "mnemonic": "LRB",
+      "description": "Load B from base memory at the operand address",
+      "operands": 1,
+      "steps": [
+        {
+          "signals": ["pc.count"]
+        },
+        {
+          "signals": ["pc.output", "mem.loadmar"]
+        },
+        {
+          "signals": ["mem.output", "mem.loadmar"]
+        },
+        {
+          "signals": ["regb.load", "mem.output", "regi.reset", "pc.count"]
+        }
+      ]
+    },
+    {
+      "mnemonic": "LDA",
+      "description": "Load A from the selected memory bank at the operand address",
+      "operands": 1,
+      "steps": [
+        {
+          "signals": ["pc.count"]
+        },
+        {
+          "signals": ["pc.output", "mem.loadmar"]
+        },
+        {
+          "signals": ["mem.output", "mmu.loadmar"]
+        },
+        {
+          "signals": ["rega.load", "mmu.output", "regi.reset", "pc.count"]
+        }
+      ]
+    },
+    {
+      "mnemonic": "LDB",
+      "description": "Load B from the selected memory bank at the operand address",
+      "operands": 1,
+      "steps": [
+        {
+          "signals": ["pc.count"]
+        },
+        {
+          "signals": ["pc.output", "mem.loadmar"]
+        },
+        {
+          "signals": ["mem.output", "mmu.loadmar"]
+        },
+        {
+          "signals": ["regb.load", "mmu.output", "regi.reset", "pc.count"]
+        }
+      ]
+    },
+    {
+      "mnemonic": "PSA",
+      "description": "Push A on the stack in bank 0",
+      "operands": 0,
+      "steps": [
+        {
+          "signals": ["regsp.dec"]
+        },
+        {
+          "signals": ["regs.load", "mmu.outputcs"]
+        },
+        {
+          "signals": ["mmu.select0stack", "mmu.loadmar", "regsp.output"]
+        },
+        {
+          "signals": ["rega.output", "mmu.load"]
+        },
+        {
+          "signals": ["regs.output", "mmu.loadcs"]
+        },
+        {
+          "signals": ["regi.reset", "pc.count"]
+        }
+      ]
+    },
+    {
+      "mnemonic": "POA",
+      "description": "Pop A from the stack in bank 0",
+      "operands": 0,
+      "steps": [
+        {
+          "signals": ["regs.load", "mmu.outputcs"]
+        },
+        {
+          "signals": ["mmu.select0stack"]
+        },
+        {
+          "signals": ["mmu.loadmar", "regsp.output"]
+        },
+        {
+          "signals": ["rega.load", "mmu.output", "regsp.inc"]
+        },
+        {
+          "signals": ["regs.output", "mmu.loadcs", "regi.reset", "pc.count"]
+        }
+      ]
+    },
+    {
+      "mnemonic": "PSB",
+      "description": "Push B on the stack in bank 0",
+      "operands": 0,
+      "steps": [
+        {
+          "signals": ["regsp.dec"]
+        },
+        {
+          "signals": ["regs.load", "mmu.outputcs"]
+        },
+        {
+          "signals": ["mmu.select0stack", "mmu.loadmar", "regsp.output"]
+        },
+        {
+          "signals": ["regb.output", "mmu.load"]
+        },
+        {
+          "signals": ["regs.output", "mmu.loadcs"]
+        },
+        {
+          "signals": ["regi.reset", "pc.count"]
+        }
+      ]
+    },
+    {
+      "mnemonic": "POB",
+      "description": "Pop B from the stack in bank 0",
+      "operands": 0,
+      "steps": [
+        {
+          "signals": ["regs.load", "mmu.outputcs"]
+        },
+        {
+          "signals": ["mmu.select0stack"]
+        },
+        {
+          "signals": ["mmu.loadmar", "regsp.output"]
+        },
+        {
+          "signals": ["regb.load", "mmu.output", "regsp.inc"]
+        },
+        {
+          "signals": ["regs.output", "mmu.loadcs", "regi.reset", "pc.count"]
+        }
+      ]
+    },
+    {
+      "mnemonic": "NOP",
+      "description": "Do nothing",
+      "operands": 0,
+      "steps": [
+        {
+          "signals": ["regi.reset", "pc.count"]
+        }
+      ]
+    },
+    {
+      "mnemonic": "LNA",
+      "description": "Load A from base memory at the operand address \u002B B",
+      "operands": 1,
+      "steps": [
+        {
+          "signals": ["pc.count"]
+        },
+        {
+          "signals": ["pc.output", "mem.loadmar"]
+        },
+        {
+          "signals": ["mem.output", "rega.load"]
+        },
+        {
+          "signals": ["alu.add", "mem.loadmar"]
+        },
+        {
+          "signals": ["mem.output", "rega.load", "regi.reset", "pc.count"]
+        }
+      ]
+    },
+    {
+      "mnemonic": "CMP",
+      "description": "Compare A with B, sets Z N C V",
+      "operands": 0,
+      "steps": [
+        {
+          "signals": ["alu.cmp", "regi.reset", "pc.count"]
+        }
+      ]
+    },
+    {
+      "mnemonic": "JMP",
+      "description": "Jump to the operand address",
+      "operands": 1,
+      "steps": [
+        {
+          "signals": ["pc.count"]
+        },
+        {
+          "signals": ["pc.output", "mem.loadmar"]
+        },
+        {
+          "signals": ["pc.load", "mem.output", "regi.reset", "pc.count"]
+        }
+      ]
+    },
+    {
+      "mnemonic": "JEQ",
+      "description": "Jump to the operand address if Z is set",
+      "operands": 1,
+      "steps": [
+        {
+          "signals": ["pc.count"]
+        },
+        {
+          "when": { "Z": true },
+          "signals": ["pc.output", "mem.loadmar"]
+        },
+        {
+          "when": { "Z": true },
+          "signals": ["pc.load", "mem.output", "regi.reset", "pc.count"]
+        },
+        {
+          "when": { "Z": false },
+          "signals": ["regi.reset", "pc.count"]
+        }
+      ]
+    },
+    {
+      "mnemonic": "JNE",
+      "description": "Jump to the operand address if Z is clear",
+      "operands": 1,
+      "steps": [
+        {
+          "signals": ["pc.count"]
+        },
+        {
+          "when": { "Z": false },
+          "signals": ["pc.output", "mem.loadmar"]
+        },
+        {
+          "when": { "Z": false },
+          "signals": ["pc.load", "mem.output", "regi.reset", "pc.count"]
+        },
+        {
+          "when": { "Z": true },
+          "signals": ["regi.reset", "pc.count"]
+        }
+      ]
+    },
+    {
+      "mnemonic": "RST",
+      "description": "Clear the status flags",
+      "operands": 0,
+      "steps": [
+        {
+          "signals": ["regsta.reset", "regi.reset", "pc.count"]
+        }
+      ]
+    },
+    {
+      "mnemonic": "JC",
+      "description": "Jump to the operand address if C is set",
+      "operands": 1,
+      "steps": [
+        {
+          "signals": ["pc.count"]
+        },
+        {
+          "when": { "C": true },
+          "signals": ["pc.output", "mem.loadmar"]
+        },
+        {
+          "when": { "C": true },
+          "signals": ["pc.load", "mem.output", "regi.reset", "pc.count"]
+        },
+        {
+          "when": { "C": false },
+          "signals": ["regi.reset", "pc.count"]
+        }
+      ]
+    },
+    {
+      "mnemonic": "LPA",
+      "description": "Load A from base memory at the address stored at the operand address",
+      "operands": 1,
+      "steps": [
+        {
+          "signals": ["pc.count"]
+        },
+        {
+          "signals": ["pc.output", "mem.loadmar"]
+        },
+        {
+          "signals": ["mem.output", "regs.load"]
+        },
+        {
+          "signals": ["regs.output", "mem.loadmar"]
+        },
+        {
+          "signals": ["rega.load", "mem.output", "regi.reset", "pc.count"]
+        }
+      ]
+    },
+    {
+      "mnemonic": "LPB",
+      "description": "Load B from base memory at the address stored at the operand address",
+      "operands": 1,
+      "steps": [
+        {
+          "signals": ["pc.count"]
+        },
+        {
+          "signals": ["pc.output", "mem.loadmar"]
+        },
+        {
+          "signals": ["mem.output", "regs.load"]
+        },
+        {
+          "signals": ["regs.output", "mem.loadmar"]
+        },
+        {
+          "signals": ["regb.load", "mem.output", "regi.reset", "pc.count"]
+        }
+      ]
+    },
+    {
+      "mnemonic": "HLT",
+      "description": "Halt the machine",
+      "operands": 0,
+      "steps": [
+        {
+          "signals": ["clk.disable"]
+        }
+      ]
+    },
+    {
+      "mnemonic": "LAI",
+      "description": "Load A with the operand",
+      "operands": 1,
+      "steps": [
+        {
+          "signals": ["pc.count"]
+        },
+        {
+          "signals": ["pc.output", "mem.loadmar"]
+        },
+        {
+          "signals": ["mem.output", "rega.load", "regi.reset", "pc.count"]
+        }
+      ]
+    },
+    {
+      "mnemonic": "LBI",
+      "description": "Load B with the operand",
+      "operands": 1,
+      "steps": [
+        {
+          "signals": ["pc.count"]
+        },
+        {
+          "signals": ["pc.output", "mem.loadmar"]
+        },
+        {
+          "signals": ["mem.output", "regb.load", "regi.reset", "pc.count"]
+        }
+      ]
+    },
+    {
+      "mnemonic": "PEA",
+      "description": "Peek: load A from the top of the stack without popping",
+      "operands": 0,
+      "steps": [
+        {
+          "signals": ["regsp.output", "mmu.loadmar"]
+        },
+        {
+          "signals": ["mmu.output", "rega.load", "regi.reset", "pc.count"]
+        }
+      ]
+    },
+    {
+      "mnemonic": "PEB",
+      "description": "Peek: load B from the top of the stack without popping",
+      "operands": 0,
+      "steps": [
+        {
+          "signals": ["regsp.output", "mmu.loadmar"]
+        },
+        {
+          "signals": ["mmu.output", "regb.load", "regi.reset", "pc.count"]
+        }
+      ]
+    },
+    {
+      "mnemonic": "SWB",
+      "description": "Select the memory bank given by the operand",
+      "operands": 1,
+      "steps": [
+        {
+          "signals": ["pc.count"]
+        },
+        {
+          "signals": ["pc.output", "mem.loadmar"]
+        },
+        {
+          "signals": ["mem.output", "mmu.loadcs", "regi.reset", "pc.count"]
+        }
+      ]
+    }
+  ]
+}

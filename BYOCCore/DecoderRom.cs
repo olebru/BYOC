@@ -1,130 +1,82 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 namespace BYOCCore
 {
+    // The compiled microcode. An address is the 4 status bits (NVCZ) followed by the 8 bit micro step
+    // address held in the instruction register. Each instruction gets a block of consecutive step
+    // addresses, sized for its longest flag variant.
     public class DecoderRom
     {
         public const int OpCodeAddressSpace = 256;
+        public const int StatusVariants = 16;
         private List<MicroInstruction> completeROM;
         private Dictionary<int, List<MicroInstruction>> romByOpCode;
         private Dictionary<string, int> baseAddressByMnemonic;
+        private int opCodesUsed;
 
-        public DecoderRom(string romfilecontent)
+        // Accepts microcode JSON, or the legacy tab separated format.
+        public DecoderRom(string microcode) : this(MicrocodeDefinition.Parse(microcode))
         {
-            var initialListLine = new List<fileLine>();
-            var interMediateListLine = new List<fileLine>();
-            var finalListLine = new List<fileLine>();
+        }
 
-            int order = -1;
-            foreach (var csvLine in SourceText.SplitLines(romfilecontent))
-            {
-                order++;
-                if (string.IsNullOrWhiteSpace(csvLine)) continue;
-                var tokens = csvLine.Split('\t');
-                if (tokens.Length < 8)
-                {
-                    throw new FormatException($"Decoder ROM line {order + 1}: expected 8 tab separated columns, found {tokens.Length}: '{csvLine}'");
-                }
-                var line = new fileLine();
-                line.readOrder = order;
-                line.clkFlag = tokens[0];
-                line.deviceID = tokens[1];
-                line.function = tokens[2];
-                line.mnemonic = tokens[3];
-                line.negative = tokens[4];
-                line.overflow = tokens[5];
-                line.carry = tokens[6];
-                line.zero = tokens[7];
-                if (line.status.Length != 4 || line.status.Any(c => c != '0' && c != '1' && c != 'x'))
-                {
-                    throw new FormatException($"Decoder ROM line {order + 1}: status columns must each be 0, 1 or x: '{csvLine}'");
-                }
-                initialListLine.Add(line);
-            }
-
-            foreach (var line in initialListLine)
-            {
-                List<String> validBitCombinations = new List<string>();
-                for (int i = 0; i < 16; i++)
-                {
-                    var possibilty = Convert.ToString(i, 2).PadLeft(4, '0');
-                    var cand = new StringBuilder(line.status);
-                    for (int n = 0; n < 4; n++)
-                    {
-                        if (line.status[n] == 'x') cand[n] = possibilty[n];
-                    }
-                    if (!validBitCombinations.Contains(cand.ToString()))
-                        validBitCombinations.Add(cand.ToString());
-                }
-                foreach (var validCombination in validBitCombinations)
-                {
-                    var newLine = new fileLine();
-                    newLine.readOrder = line.readOrder;
-                    newLine.clkFlag = line.clkFlag;
-                    newLine.deviceID = line.deviceID;
-                    newLine.function = line.function;
-                    newLine.mnemonic = line.mnemonic;
-                    newLine.negative = validCombination[0].ToString();
-                    newLine.overflow = validCombination[1].ToString();
-                    newLine.carry = validCombination[2].ToString();
-                    newLine.zero = validCombination[3].ToString();
-                    interMediateListLine.Add(newLine);
-                }
-            }
-            var listMnemonics = interMediateListLine.Select(l => l.mnemonic).Distinct().ToList();
+        public DecoderRom(MicrocodeDefinition microcode)
+        {
+            Microcode = microcode;
+            completeROM = new List<MicroInstruction>();
             baseAddressByMnemonic = new Dictionary<string, int>();
             int addr = 0;
-            foreach (var mnemonic in listMnemonics)
+            foreach (var instruction in microcode.AllInstructions)
             {
-                var linesByStatus = interMediateListLine.Where(l => l.mnemonic == mnemonic)
-                                                        .OrderBy(l => l.readOrder)
-                                                        .GroupBy(l => l.statusAsInt);
-                int steps = 0;
-                foreach (var statusLines in linesByStatus)
+                if (baseAddressByMnemonic.ContainsKey(instruction.Mnemonic ?? ""))
                 {
-                    int offset = 0;
-                    bool firstFound = false;
-                    foreach (var line in statusLines)
-                    {
-                        if (line.clkFlag == "p" && firstFound)
-                        {
-                            offset++;
-                        }
-                        if (line.clkFlag == "p")
-                        {
-                            firstFound = true;
-                        }
-                        line.instructionBaseAddress = addr;
-                        line.mnemonicSeq = offset;
-                        finalListLine.Add(line);
-                    }
-                    steps = Math.Max(steps, offset + 1);
+                    throw new ArgumentException($"Mnemonic '{instruction.Mnemonic}' is defined more than once.");
                 }
-                baseAddressByMnemonic[mnemonic] = addr;
-                addr = addr + steps;
+                baseAddressByMnemonic[instruction.Mnemonic ?? ""] = addr;
+                int steps = 1;
+                for (int status = 0; status < StatusVariants; status++)
+                {
+                    var variant = instruction.StepsFor(status);
+                    steps = Math.Max(steps, variant.Count);
+                    for (int step = 0; step < variant.Count; step++)
+                    {
+                        foreach (var text in variant[step].Signals)
+                        {
+                            if (!Signal.TryParse(text, out var signal))
+                            {
+                                throw new FormatException($"{instruction.Mnemonic} step {step}: '{text}' is not a signal, write it as device.line");
+                            }
+                            int opCode = (status << 8) | (addr + step);
+                            completeROM.Add(new MicroInstruction(opCode, signal.Device, signal.Line, instruction.Mnemonic, false, step == 0 && status == 0));
+                        }
+                    }
+                }
+                addr += steps;
             }
+            opCodesUsed = addr;
             if (addr > OpCodeAddressSpace)
             {
                 throw new Exception($"OpCode AddressSpace is exhausted, {addr} opcodes needed but only {OpCodeAddressSpace} available, optimize...");
             }
-            completeROM = new List<MicroInstruction>();
-            foreach (var line in finalListLine)
-            {
-                var mc = new MicroInstruction(line.completeOpCode, line.deviceID, line.function, line.mnemonic, false, (line.instructionBaseAddress == line.completeOpCode && line.status == "0000"));
-                completeROM.Add(mc);
-            }
             romByOpCode = completeROM.GroupBy(m => m.OPCode).ToDictionary(g => g.Key, g => g.ToList());
         }
+
+        public MicrocodeDefinition Microcode { get; }
         public IReadOnlyList<MicroInstruction> MicroInstructions { get { return completeROM; } }
+        public int OpCodesUsed { get { return opCodesUsed; } }
+
         public byte FetchByteCodeFromMnemonic(string Mnemonic)
         {
-            if (!baseAddressByMnemonic.TryGetValue(Mnemonic, out var baseAddress))
+            if (Mnemonic == null || !baseAddressByMnemonic.TryGetValue(Mnemonic, out var baseAddress))
             {
                 throw new ArgumentException($"Unknown mnemonic '{Mnemonic}', it is not defined in the decoder ROM.");
             }
             return (byte)baseAddress;
+        }
+        // Operand bytes the instruction declares, or null when it does not say.
+        public int? OperandCount(string mnemonic)
+        {
+            return Microcode.FindInstruction(mnemonic)?.Operands;
         }
         // The decoder only has 4 status inputs (NVCZ), so higher status bits are ignored.
         public List<MicroInstruction> FetchInstruction(Byte StatusRegisterValue, Byte InstructionRegisterValue)
@@ -136,30 +88,7 @@ namespace BYOCCore
         }
         public double OpCodeAddressSpaceUsedInPercent()
         {
-            var opCodesUsed = baseAddressByMnemonic.Count == 0 ? 0 : completeROM.Max(o => o.OPCode & 0xFF) + 1;
             return Math.Round(((double)opCodesUsed / OpCodeAddressSpace * 100d), 1);
-        }
-        private class fileLine
-        {
-            public string carry = string.Empty;
-            public string clkFlag = string.Empty;
-            public string deviceID = string.Empty;
-            public string function = string.Empty;
-            public int instructionBaseAddress = 0;
-            public string mnemonic = string.Empty;
-            public int mnemonicSeq = 0;
-            public string negative = string.Empty;
-            public string overflow = string.Empty;
-            public int readOrder = 0;
-            public string zero = string.Empty;
-            public int completeOpCode { get { return (statusAsInt << 8) | opCode; } }
-            public string status { get { return $"{negative}{overflow}{carry}{zero}"; } }
-            public int statusAsInt { get { return Convert.ToInt32(status, 2); } }
-            private int opCode { get { return instructionBaseAddress + mnemonicSeq; } }
-            public override string ToString()
-            {
-                return $"{mnemonic},CO{completeOpCode},O{opCode},B{instructionBaseAddress},{clkFlag},{deviceID},{function},{status}";
-            }
         }
     }
 }

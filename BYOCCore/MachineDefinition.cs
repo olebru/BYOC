@@ -30,7 +30,7 @@ namespace BYOCCore
         }
         public string ToJson()
         {
-            return JsonSerializer.Serialize(this, MachineDefinitionJsonContext.Default.MachineDefinition);
+            return CompactJson.Format(JsonSerializer.Serialize(this, MachineDefinitionJsonContext.Default.MachineDefinition));
         }
     }
     // Where an editor drew an element. Has no effect on the machine.
@@ -126,6 +126,8 @@ namespace BYOCCore
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
         UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow)]
     [JsonSerializable(typeof(MachineDefinition))]
+    [JsonSerializable(typeof(MicrocodeDefinition))]
+    [JsonSerializable(typeof(string))]
     internal partial class MachineDefinitionJsonContext : JsonSerializerContext
     {
     }
