@@ -1,0 +1,404 @@
+@if (Machine != null)
+{
+    var definition = Machine.Definition;
+    var timeline = TimelineInstruction;
+    var current = ListingAt(Machine.CurrentInstructionAddress);
+<div class="run" tabindex="0" @onkeydown="OnKeyDown">
+
+    <!-- Controls -->
+    <div class="controls">
+        <button class="ctl primary" title="Run / pause (Space)" disabled="@(Machine.IsHalted || runtimeError != null)" @onclick="ToggleRun">
+            @(running ? "❚❚ Pause" : "▶ Run")
+        </button>
+        <button class="ctl" title="One clock tick (→)" disabled="@(running || Machine.IsHalted || runtimeError != null)" @onclick="TickOnce">Tick</button>
+        <button class="ctl" title="Run the current instruction and fetch the next (Shift+→)" disabled="@(running || Machine.IsHalted || runtimeError != null)" @onclick="StepInstruction">Instruction</button>
+        <button class="ctl" title="Run until the machine halts" disabled="@(running || Machine.IsHalted || runtimeError != null)" @onclick="RunToHalt">Run to halt</button>
+        <button class="ctl" title="Reload the program and reset every device (R)" @onclick="Restart">⟲ Reset</button>
+        <span class="sep"></span>
+        <label class="speed" title="Clock speed while running">
+            <input type="range" min="0" max="100" @bind="speedSlider" @bind:event="oninput" />
+            <span>@Hz Hz</span>
+        </label>
+        <span class="grow"></span>
+        <span class="cycle">cycle <strong>@Machine.Cycles</strong></span>
+        <span class="state state-@State">@State</span>
+    </div>
+    @if (runtimeError != null)
+    {
+        <div class="runtime-error">⚠ @runtimeError</div>
+    }
+
+    <!-- Control word: every control line, lit when enabled this tick -->
+    <div class="control-strip" title="Control lines driven by the decoder ROM this tick">
+        <span class="strip-title">control lines</span>
+        @foreach (var group in ControlLines)
+        {
+            <span class="line-group" style="--cat:@group.Color">
+                <span class="line-device">@group.Device.Id</span>
+                @foreach (var line in group.Lines)
+                {
+                    <span class="led @(LineActive(group.Device.Id, line) ? "on" : "")" title="@group.Device.Id.@line">@line</span>
+                }
+            </span>
+        }
+    </div>
+
+    <div class="main">
+        <!-- Live schematic -->
+        <div class="schematic" @ref="schematicElement">
+            <div class="zoom">
+                <button title="Zoom out" @onclick="() => Zoom(1 / 1.15)">−</button>
+                <button title="Fit to width" @onclick="Fit">@((int)Math.Round(zoom * 100))%</button>
+                <button title="Zoom in" @onclick="() => Zoom(1.15)">＋</button>
+            </div>
+            <div class="schematic-sizer" style="width:@Px(CanvasWidth * zoom); height:@Px(CanvasHeight * zoom)">
+            <div class="schematic-canvas" style="width:@Px(CanvasWidth); height:@Px(CanvasHeight); transform:scale(@N(zoom))">
+                <svg width="@N(CanvasWidth)" height="@N(CanvasHeight)" class="wires">
+                    <defs>
+                        <marker id="run-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                            <path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke" />
+                        </marker>
+                    </defs>
+                    @for (int b = 0; b < definition.Buses.Count; b++)
+                    {
+                        var bus = definition.Buses[b];
+                        var y = BusY(bus, b);
+                        var color = BusColor(bus.Id);
+                        var transfer = TransferOn(bus.Id);
+                        <g>
+                            <rect class="bus-bar @(transfer != null ? "live" : "")" x="16" y="@N(y - 6)" width="@N(CanvasWidth - 32)" height="12" rx="6" fill="@color" />
+                            <text class="bus-label" x="24" y="@N(y - 14)" fill="@color">@bus.Id</text>
+                        </g>
+                    }
+                    @for (int d = 0; d < definition.Devices.Count; d++)
+                    {
+                        var device = definition.Devices[d];
+                        var position = LayoutOf(device, d);
+                        foreach (var port in device.Ports())
+                        {
+                            var anchor = PortAnchor(device, position, port.Key);
+                            var busY = BusY(port.Value);
+                            var color = BusColor(port.Value);
+                            if (Drives(device.Id, port.Value))
+                            {
+                                <line class="wire drive" x1="@N(anchor.X)" y1="@N(anchor.Y)" x2="@N(anchor.X)" y2="@N(busY)" stroke="@color" marker-end="url(#run-arrow)" />
+                            }
+                            else if (Reads(device.Id, port.Value))
+                            {
+                                <line class="wire read" x1="@N(anchor.X)" y1="@N(busY)" x2="@N(anchor.X)" y2="@N(anchor.Y)" stroke="@color" marker-end="url(#run-arrow)" />
+                            }
+                            else
+                            {
+                                <line class="wire idle" x1="@N(anchor.X)" y1="@N(anchor.Y)" x2="@N(anchor.X)" y2="@N(busY)" />
+                            }
+                        }
+                    }
+                    @foreach (var bus in definition.Buses)
+                    {
+                        var transfer = TransferOn(bus.Id);
+                        if (transfer == null) continue;
+                        var driverIndex = definition.Devices.FindIndex(dd => dd.Id == transfer.Driver);
+                        if (driverIndex < 0) continue;
+                        var driver = definition.Devices[driverIndex];
+                        var port = driver.Ports().First(p => p.Value == bus.Id).Key;
+                        var x = PortAnchor(driver, LayoutOf(driver, driverIndex), port).X;
+                        var y = BusY(bus.Id);
+                        <g class="bus-value" @key="Last.Cycle">
+                            <rect x="@N(x - 26)" y="@N(y - 12)" width="52" height="24" rx="12" fill="#fff" stroke="@BusColor(bus.Id)" stroke-width="2" />
+                            <text x="@N(x)" y="@N(y + 5)" text-anchor="middle" fill="@BusColor(bus.Id)">@Hex(transfer.Value)</text>
+                        </g>
+                    }
+                </svg>
+
+                @for (int d = 0; d < definition.Devices.Count; d++)
+                {
+                    var device = definition.Devices[d];
+                    var position = LayoutOf(device, d);
+                    var info = Info(device);
+                    var built = Machine.Device(device.Id);
+                    var driving = device.Ports().Where(p => Drives(device.Id, p.Value)).Select(p => p.Value).FirstOrDefault();
+                    var reading = device.Ports().Any(p => Reads(device.Id, p.Value));
+                    <div class="dev @(IsActive(device.Id) ? "active" : "") @(driving != null ? "driving" : "") @(reading ? "reading" : "")"
+                         style="left:@Px(position.X); top:@Px(position.Y); width:@Px(CardWidth); height:@Px(CardHeight); border-top-color:@CategoryColor(info); @(driving != null ? $"--glow:{BusColor(driving)}" : "")">
+                        <div class="dev-head">
+                            <span class="dev-id">@device.Id</span>
+                            <span class="dev-type">@(device.Name ?? device.Type)</span>
+                        </div>
+                        <div class="dev-body @(built is RomModule || built is MMU || built is Clock || built is ALU ? "stacked" : "") @(Changed(device.Id) ? "changed" : "")" @key="(Changed(device.Id) ? Last.Cycle : 0)">
+                            @switch (built)
+                            {
+                                case StatusRegister status:
+                                    <span class="flags">
+                                        <span class="lamp @(status.Negative8 ? "on" : "")">N</span>
+                                        <span class="lamp @(status.Overflow4 ? "on" : "")">V</span>
+                                        <span class="lamp @(status.Carry2 ? "on" : "")">C</span>
+                                        <span class="lamp @(status.Zero1 ? "on" : "")">Z</span>
+                                    </span>
+                                    break;
+                                case InstructionRegister ir:
+                                    var located = Machine.NextStep;
+                                    <span class="value">@Hex(ir.Data)</span>
+                                    <span class="sub">@(located == null ? "no microcode" : $"{located.Value.Instruction.Mnemonic} · step {located.Value.Offset + 1}")</span>
+                                    break;
+                                case Register register:
+                                    <span class="value">@Hex(register.Data)</span>
+                                    <span class="sub">@register.Data</span>
+                                    break;
+                                case DualPortRegister dual:
+                                    <span class="value">@Hex(dual.Data)</span>
+                                    <span class="sub">@dual.Data</span>
+                                    break;
+                                case RomModule memory:
+                                    <span class="mem">MAR <strong>@Hex(memory.memoryAddress)</strong></span>
+                                    <span class="sub">[@Hex(memory.memoryAddress)] = @Hex(memory.memory[memory.memoryAddress])</span>
+                                    break;
+                                case MMU mmu:
+                                    var bank = mmu.RamBanks[mmu.ChipSelectRegister.Data];
+                                    <span class="mem">bank <strong>@Hex(mmu.ChipSelectRegister.Data)</strong>  MAR <strong>@Hex(bank.memoryAddress)</strong></span>
+                                    <span class="sub">[@Hex(bank.memoryAddress)] = @Hex(bank.memory[bank.memoryAddress])</span>
+                                    break;
+                                case Clock clock:
+                                    <span class="mem">@(clock.IsHalted() ? "HALTED" : "running")</span>
+                                    <span class="sub">@clock.cycle cycles</span>
+                                    break;
+                                case ALU:
+                                    var op = SignalsOf(device.Id).FirstOrDefault();
+                                    <span class="mem">@(op ?? "idle")</span>
+                                    @if (op != null && driving != null) { <span class="sub">= @Hex(TransferOn(driving).Value)</span> }
+                                    break;
+                            }
+                        </div>
+                        @if (IsActive(device.Id))
+                        {
+                            <div class="dev-signals">@foreach (var line in SignalsOf(device.Id)) { <span>@line</span> }</div>
+                        }
+                    </div>
+                }
+            </div>
+            </div>
+        </div>
+
+        <!-- Side panel -->
+        <div class="side">
+            <div class="panel now">
+                <div class="panel-title">Now executing</div>
+                @if (current != null)
+                {
+                    <div class="now-instr">
+                        <span class="addr">@Hex(current.Address)</span>
+                        @if (current.Label != null) { <span class="label">@current.Label:</span> }
+                        <span class="src">@SourceText(current)</span>
+                    </div>
+                    <div class="now-desc">@(InstructionNamed(current.Mnemonic)?.Description)</div>
+                }
+                else
+                {
+                    <div class="now-desc">No instruction fetched yet. Press Tick or Instruction.</div>
+                }
+
+                @if (timeline.Instruction != null)
+                {
+                    var variant = timeline.Instruction.StepsFor(timeline.Status);
+                    var next = Machine.NextStep;
+                    <div class="timeline-title">
+                        <strong>@timeline.Instruction.Mnemonic</strong> micro steps
+                        @if (timeline.Instruction.Steps.Any(s => s.When != null)) { <span class="muted">for the current flags</span> }
+                    </div>
+                    <ol class="timeline">
+                        @for (int i = 0; i < variant.Count; i++)
+                        {
+                            var step = variant[i];
+                            var index = timeline.Instruction.Steps.IndexOf(step);
+                            var ranIndex = timeline.RanIndex.HasValue ? variant.FindIndex(v => timeline.Instruction.Steps.IndexOf(v) == timeline.RanIndex) : -1;
+                            var isNext = next != null && next.Value.Instruction == timeline.Instruction && next.Value.Step == step;
+                            var state = index == timeline.RanIndex ? "ran" : isNext ? "next" : i < ranIndex ? "done" : "todo";
+                            <li class="tl tl-@state">
+                                <span class="tl-mark">@(state == "ran" ? "●" : state == "next" ? "▶" : state == "done" ? "✓" : (i + 1).ToString())</span>
+                                <span class="tl-signals">@foreach (var signal in step.Signals) { <span class="chip">@signal</span> }</span>
+                            </li>
+                        }
+                    </ol>
+                    @if (next != null && next.Value.Instruction != timeline.Instruction)
+                    {
+                        <div class="up-next">next tick: <strong>@next.Value.Instruction.Mnemonic</strong> step @(next.Value.Offset + 1)</div>
+                    }
+                }
+
+                @if (Last != null)
+                {
+                    <div class="timeline-title">Last tick <span class="muted">cycle @Last.Cycle</span></div>
+                    <div class="last-tick">
+                        @foreach (var transfer in Last.Transfers)
+                        {
+                            <div class="flow" style="--bus:@BusColor(transfer.Bus)">
+                                @if (transfer.Driver == null)
+                                {
+                                    <span class="muted">@transfer.Bus floating</span>
+                                }
+                                else
+                                {
+                                    <span class="who">@transfer.Driver</span><span class="arrow">→</span>
+                                    <span class="busname">@transfer.Bus <strong>@Hex(transfer.Value)</strong></span><span class="arrow">→</span>
+                                    <span class="who">@(transfer.Readers.Count == 0 ? "nobody" : string.Join(", ", transfer.Readers))</span>
+                                }
+                            </div>
+                        }
+                        @foreach (var change in Last.Changes)
+                        {
+                            <div class="change">@change.Device <span class="muted">@Hex(change.Before) →</span> <strong>@Hex(change.After)</strong></div>
+                        }
+                        @foreach (var write in Last.Writes)
+                        {
+                            <div class="change">write @write.Device@(write.Bank >= 0 ? $" bank {write.Bank}" : "") [@Hex(write.Address)] = <strong>@Hex(write.Value)</strong></div>
+                        }
+                    </div>
+                }
+            </div>
+
+            <div class="panel program">
+                <div class="panel-title">Program <span class="muted">click the gutter to set a breakpoint</span></div>
+                <div class="listing">
+                    @foreach (var line in Machine.Assembler.Listing)
+                    {
+                        var isCurrent = line.IsInstruction && line.Address == Machine.CurrentInstructionAddress;
+                        <div id="listing-@(isCurrent ? line.Address.ToString() : "")" class="lst @(isCurrent ? "current" : "") @(line.IsInstruction ? "" : "data")">
+                            <span class="bp @(breakpoints.Contains(line.Address) ? "on" : "")" @onclick="() => ToggleBreakpoint(line.Address)" title="Toggle breakpoint"></span>
+                            <span class="addr">@Hex(line.Address)</span>
+                            <span class="bytes">@string.Join(" ", line.Bytes.Select(b => Hex(b)))</span>
+                            <span class="label">@(line.Label == null ? "" : line.Label + ":")</span>
+                            <span class="src">@(line.IsInstruction ? SourceText(line) : line.Mnemonic == null ? "" : $"{line.Mnemonic} {string.Join(", ", line.Operands)}")</span>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom: memory and trace -->
+    <div class="bottom">
+        <div class="bottom-tabs">
+            <button class="btab @(bottomTab == "Memory" ? "on" : "")" @onclick="@(() => bottomTab = "Memory")">Memory</button>
+            <button class="btab @(bottomTab == "Decoder" ? "on" : "")" @onclick="@(() => bottomTab = "Decoder")">Decoder ROM</button>
+            <button class="btab @(bottomTab == "Trace" ? "on" : "")" @onclick="@(() => bottomTab = "Trace")">Trace</button>
+            @if (bottomTab == "Decoder")
+            {
+                <span class="sep"></span>
+                <label class="bank"><input type="checkbox" @bind="wholeRom" /> whole ROM</label>
+                <span class="legend muted">@Machine.DecoderRom.OpCodesUsed of @DecoderRom.OpCodeAddressSpace step addresses used · rows shown for status @Bits(DecoderStatus, 4)</span>
+            }
+            @if (bottomTab == "Memory")
+            {
+                <span class="sep"></span>
+                @foreach (var device in MemoryDevices)
+                {
+                    <button class="btab small @(memoryDevice == device.ID() ? "on" : "")" @onclick="() => memoryDevice = device.ID()">@device.ID()</button>
+                }
+                @if (Machine.Device(memoryDevice) is MMU mmuDevice)
+                {
+                    <label class="bank">bank
+                        <input type="number" min="0" max="255" @bind="memoryBank" />
+                        <button class="btab small" @onclick="() => memoryBank = mmuDevice.ChipSelectRegister.Data">selected (@mmuDevice.ChipSelectRegister.Data)</button>
+                    </label>
+                }
+                <span class="legend">
+                    <span class="lg pc">PC</span><span class="lg mar">MAR</span><span class="lg current">instruction</span><span class="lg written">written</span>
+                </span>
+            }
+        </div>
+        @if (bottomTab == "Memory" && MemoryModule != null)
+        {
+            var module = MemoryModule;
+            <div class="memory">
+                <div class="mem-row head"><span class="mem-addr"></span>@for (int c = 0; c < 16; c++) { <span class="cell">@c.ToString("X")</span> }</div>
+                @for (int r = 0; r < 16; r++)
+                {
+                    <div class="mem-row">
+                        <span class="mem-addr">@((r * 16).ToString("X2"))</span>
+                        @for (int c = 0; c < 16; c++)
+                        {
+                            var address = r * 16 + c;
+                            <span class="cell @CellClass(address, module)" title="[@Hex(address)] = @module.memory[address]">@Hex(module.memory[address])</span>
+                        }
+                    </div>
+                }
+            </div>
+        }
+        else if (bottomTab == "Decoder")
+        {
+            var groups = ControlLines;
+            <div class="decoder">
+                <div class="address">
+                    <div class="address-title">decoder address</div>
+                    <div class="address-bits">
+                        <span class="field status">
+                            @for (int i = 0; i < 4; i++) { <span class="bit @(Bits(DecoderStatus, 4)[i] == '1' ? "one" : "")">@("NVCZ"[i])<br />@Bits(DecoderStatus, 4)[i]</span> }
+                            <span class="field-name">status</span>
+                        </span>
+                        <span class="field step">
+                            @for (int i = 0; i < 8; i++) { <span class="bit @(Bits(DecoderStep, 8)[i] == '1' ? "one" : "")">@(7 - i)<br />@Bits(DecoderStep, 8)[i]</span> }
+                            <span class="field-name">micro step register</span>
+                        </span>
+                    </div>
+                    <div class="address-value">= ROM address <strong>@(((DecoderStatus << 8) | DecoderStep).ToString("X3"))</strong></div>
+                    <div class="address-next muted">next tick reads @NextAddress.ToString("X3")</div>
+                </div>
+                <div class="rom">
+                    <table class="rom-table">
+                        <thead>
+                            <tr>
+                                <th class="rom-addr" rowspan="2">addr</th>
+                                <th class="rom-label" rowspan="2">step</th>
+                                @foreach (var group in groups) { <th class="rom-device" colspan="@group.Lines.Count" style="--cat:@group.Color">@group.Device.Id</th> }
+                            </tr>
+                            <tr>
+                                @foreach (var group in groups)
+                                {
+                                    for (int i = 0; i < group.Lines.Count; i++)
+                                    {
+                                        var line = group.Lines[i];
+                                        <th class="rom-line @(LineActive(group.Device.Id, line) ? "on" : "") @(i == 0 ? "first" : "")"><span>@line</span></th>
+                                    }
+                                }
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var row in RomRows)
+                            {
+                                var isCurrent = Last != null && row.Address == DecoderStep;
+                                <tr class="@(isCurrent ? "current" : "") @(row.BlockStart ? "block-start" : "")">
+                                    <td class="rom-addr">@(((DecoderStatus << 8) | row.Address).ToString("X3"))</td>
+                                    <td class="rom-label">@row.Label</td>
+                                    @foreach (var group in groups)
+                                    {
+                                        for (int i = 0; i < group.Lines.Count; i++)
+                                        {
+                                            var signal = $"{group.Device.Id}.{group.Lines[i]}";
+                                            <td class="rom-cell @(i == 0 ? "first" : "")">@if (row.Signals.Contains(signal)) { <span class="dot" style="background:@group.Color"></span> }</td>
+                                        }
+                                    }
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+        else if (bottomTab == "Trace")
+        {
+            <div class="trace">
+                <div class="tr head"><span>cycle</span><span>micro step</span><span>bus</span><span>changes</span><span>signals</span></div>
+                @foreach (var tick in Machine.History.Reverse().Take(TraceRows))
+                {
+                    <div class="tr @(tick.FetchedFromAddress != null ? "fetch" : "")">
+                        <span>@tick.Cycle</span>
+                        <span>@tick.Instruction@(tick.StepIndex.HasValue ? $".{tick.StepIndex + 1}" : "")</span>
+                        <span>@DescribeTransfers(tick)</span>
+                        <span>@DescribeChanges(tick)</span>
+                        <span class="muted">@string.Join(" ", tick.Signals)</span>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>
+}

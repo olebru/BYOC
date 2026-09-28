@@ -14,6 +14,7 @@ namespace BYOCCore
         private Dictionary<int, List<MicroInstruction>> romByOpCode;
         private Dictionary<string, int> baseAddressByMnemonic;
         private int opCodesUsed;
+        private readonly List<(InstructionDefinition Instruction, int Base, int Count)> ranges = new List<(InstructionDefinition, int, int)>();
 
         // Accepts microcode JSON, or the legacy tab separated format.
         public DecoderRom(string microcode) : this(MicrocodeDefinition.Parse(microcode))
@@ -51,6 +52,7 @@ namespace BYOCCore
                         }
                     }
                 }
+                ranges.Add((instruction, addr, steps));
                 addr += steps;
             }
             opCodesUsed = addr;
@@ -62,9 +64,24 @@ namespace BYOCCore
         }
 
         public MicrocodeDefinition Microcode { get; }
+        // Each instruction's block of micro step addresses, in address order.
+        public IReadOnlyList<(InstructionDefinition Instruction, int Base, int Count)> Blocks { get { return ranges; } }
         public IReadOnlyList<MicroInstruction> MicroInstructions { get { return completeROM; } }
         public int OpCodesUsed { get { return opCodesUsed; } }
 
+        // The instruction whose micro step block contains the address, and the step that runs there for
+        // the given status flags (null when that flag variant has no step at this offset).
+        public (InstructionDefinition Instruction, MicroStep Step, int Offset)? Locate(byte statusRegisterValue, byte instructionRegisterValue)
+        {
+            foreach (var range in ranges)
+            {
+                if (instructionRegisterValue < range.Base || instructionRegisterValue >= range.Base + range.Count) continue;
+                int offset = instructionRegisterValue - range.Base;
+                var variant = range.Instruction.StepsFor(statusRegisterValue & 0x0F);
+                return (range.Instruction, offset < variant.Count ? variant[offset] : null, offset);
+            }
+            return null;
+        }
         public byte FetchByteCodeFromMnemonic(string Mnemonic)
         {
             if (Mnemonic == null || !baseAddressByMnemonic.TryGetValue(Mnemonic, out var baseAddress))

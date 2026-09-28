@@ -93,6 +93,38 @@ namespace BYOCCore
             }
         }
 
+        public const double LayoutCardWidth = 150;
+        public const double LayoutFirstBusY = 190;
+        public const double LayoutBusSpacing = 320;
+
+        // Gives buses and devices without a position one: buses stacked, devices in rows around their first bus,
+        // one row above it and the rest below. With force, everything is laid out again.
+        public static void EnsureLayout(this MachineDefinition definition, bool force = false)
+        {
+            for (int i = 0; i < definition.Buses.Count; i++)
+            {
+                if (force || definition.Buses[i].Layout == null)
+                {
+                    definition.Buses[i].Layout = new Position { X = 0, Y = LayoutFirstBusY + i * LayoutBusSpacing };
+                }
+            }
+            const int perRow = 6;
+            var unplaced = definition.Devices.Where(d => force || d.Layout == null).ToList();
+            foreach (var band in unplaced.GroupBy(d => Math.Max(0, definition.Buses.FindIndex(b => b.Id == d.Ports().Select(p => p.Value).FirstOrDefault()))))
+            {
+                var busY = definition.Buses.Count == 0 ? LayoutFirstBusY : definition.Buses[Math.Min(band.Key, definition.Buses.Count - 1)].Layout.Y;
+                int index = 0;
+                foreach (var device in band)
+                {
+                    int row = index / perRow;
+                    int column = index % perRow;
+                    double y = row == 0 ? busY - 140 : busY + 60 + (row - 1) * 130;
+                    device.Layout = new Position { X = 30 + column * (LayoutCardWidth + 36), Y = y };
+                    index++;
+                }
+            }
+        }
+
         public static MachineDefinition Clone(this MachineDefinition definition)
         {
             return MachineDefinition.FromJson(definition.ToJson());

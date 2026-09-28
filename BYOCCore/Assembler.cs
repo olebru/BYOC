@@ -6,6 +6,8 @@ namespace BYOCCore
     public class Assembler
     {
         public Dictionary<String, int> labelLUT;
+        // One entry per source line that has a label or emits bytes, in address order.
+        public List<ListingLine> Listing { get; private set; } = new List<ListingLine>();
         private List<String> assemblerDirectives;
         private List<byte> bytecode;
         private DecoderRom completeDecoderRom;
@@ -23,6 +25,7 @@ namespace BYOCCore
         {
             bytecode = new List<byte>();
             labelLUT = new Dictionary<String, int>();
+            Listing = new List<ListingLine>();
             var lines = SourceText.SplitLines(source)
                                   .Select((text, index) => new SourceLine(text, index + 1))
                                   .ToList();
@@ -59,7 +62,12 @@ namespace BYOCCore
             //Second pass
             foreach (var line in lines)
             {
-                if (line.Mnemonic == null) continue;
+                int start = bytecode.Count;
+                if (line.Mnemonic == null)
+                {
+                    if (line.Label != null) Listing.Add(line.ToListing(start, new byte[0]));
+                    continue;
+                }
                 if (!line.IsDirective)
                 {
                     try
@@ -95,6 +103,7 @@ namespace BYOCCore
                         bytecode.Add((byte)labelAddress);
                     }
                 }
+                Listing.Add(line.ToListing(start, bytecode.Skip(start).ToArray()));
             }
             return bytecode.ToArray();
         }
@@ -132,10 +141,37 @@ namespace BYOCCore
                 if (tokens.Count > 3) throw Error("too many columns");
             }
             public bool IsDirective { get { return Mnemonic != null && Mnemonic.StartsWith("."); } }
+            public ListingLine ToListing(int address, byte[] bytes)
+            {
+                return new ListingLine
+                {
+                    LineNumber = lineNumber,
+                    Text = text,
+                    Label = Label,
+                    Mnemonic = Mnemonic,
+                    Operands = Operands,
+                    Address = address,
+                    Bytes = bytes,
+                    IsInstruction = Mnemonic != null && !IsDirective,
+                };
+            }
             public FormatException Error(string message)
             {
                 return new FormatException($"Line {lineNumber}: {message}: '{text}'");
             }
         }
+    }
+
+    public class ListingLine
+    {
+        public int LineNumber { get; set; }
+        public string Text { get; set; }
+        public string Label { get; set; }
+        public string Mnemonic { get; set; }
+        public string[] Operands { get; set; }
+        public int Address { get; set; }
+        public byte[] Bytes { get; set; }
+        // False for .BYTE data and label only lines.
+        public bool IsInstruction { get; set; }
     }
 }

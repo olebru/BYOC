@@ -181,31 +181,9 @@ namespace WebUI.Components
             return Definition.Buses.Where(b => b.Layout != null).OrderBy(b => Math.Abs(b.Layout.Y - y)).FirstOrDefault();
         }
 
-        // Places buses and devices that have no position yet: buses stacked, devices in rows around their bus.
         private void EnsureLayout(bool force = false)
         {
-            for (int i = 0; i < Definition.Buses.Count; i++)
-            {
-                if (force || Definition.Buses[i].Layout == null)
-                {
-                    Definition.Buses[i].Layout = new Position { X = 0, Y = FirstBusY + i * BusSpacing };
-                }
-            }
-            var perRow = (int)((MinCanvasWidth - 40) / (CardWidth + 36));
-            var unplaced = Definition.Devices.Where(d => force || d.Layout == null).ToList();
-            foreach (var band in unplaced.GroupBy(d => Math.Max(0, Definition.Buses.FindIndex(b => b.Id == d.Ports().Select(p => p.Value).FirstOrDefault()))))
-            {
-                var busY = Definition.Buses.Count == 0 ? FirstBusY : Definition.Buses[Math.Min(band.Key, Definition.Buses.Count - 1)].Layout.Y;
-                int index = 0;
-                foreach (var device in band)
-                {
-                    int row = index / perRow;
-                    int column = index % perRow;
-                    double y = row == 0 ? busY - 140 : busY + 60 + (row - 1) * 130;
-                    device.Layout = new Position { X = 30 + column * (CardWidth + 36), Y = y };
-                    index++;
-                }
-            }
+            Definition.EnsureLayout(force);
         }
 
         // ---- Validation display ----

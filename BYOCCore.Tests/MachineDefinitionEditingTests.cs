@@ -102,4 +102,25 @@ public class MachineDefinitionEditingTests
         Assert.Empty(registry.Info("clock").Ports);
         Assert.Equal(new[] { "a", "b", "status" }, registry.Info("alu").Connections.Select(c => c.Name));
     }
+
+    [Fact]
+    public void EnsureLayoutPlacesUnpositionedElementsAroundTheirBus()
+    {
+        var d = Default();
+        d.Buses.Add(new BusDefinition { Id = "io" });
+        d.Devices.Add(new DeviceDefinition { Id = "out", Type = "register", Bus = "io" });
+        d.FindDevice("rega").Layout = new Position { X = 999, Y = 999 };
+        d.EnsureLayout();
+
+        Assert.Equal(190, d.FindBus("main").Layout.Y);
+        Assert.Equal(510, d.FindBus("io").Layout.Y);
+        Assert.Equal(999, d.FindDevice("rega").Layout.X);
+        Assert.All(d.Devices.Where(x => x.Id != "rega"), x => Assert.NotNull(x.Layout));
+        Assert.Equal(370, d.FindDevice("out").Layout.Y);
+        // No card overlaps its bus: above-bus cards end before it, below-bus cards start after it.
+        Assert.All(d.Devices.Where(x => x.Bus == "main" && x.Id != "rega"), x => Assert.True(x.Layout.Y + 90 < 190 || x.Layout.Y > 190));
+
+        d.EnsureLayout(force: true);
+        Assert.NotEqual(999, d.FindDevice("rega").Layout.X);
+    }
 }

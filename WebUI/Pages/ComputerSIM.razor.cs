@@ -7,7 +7,6 @@ namespace WebUI.Pages
 {
     public partial class ComputerSIM
     {
-        private const int MaxRunCycles = 10000;
         private static readonly string[] Tabs = { "Design", "Microcode", "Program", "JSON", "Run" };
         private static readonly DeviceRegistry Registry = DeviceRegistry.CreateDefault();
 
@@ -28,13 +27,6 @@ namespace WebUI.Pages
             ResetToDefault();
         }
 
-        private RomModule ProgramMemory
-        {
-            get
-            {
-                return C.Definition.ProgramMemory == null ? null : C.Device<RomModule>(C.Definition.ProgramMemory);
-            }
-        }
         private int MicrocodeErrorCount { get { return MicrocodeDiagnostics.Count(d => d.Severity == DiagnosticSeverity.Error); } }
         private int MicrocodeWarningCount { get { return MicrocodeDiagnostics.Count(d => d.Severity == DiagnosticSeverity.Warning); } }
         private IEnumerable<string> AllErrors
@@ -50,6 +42,7 @@ namespace WebUI.Pages
         private void ResetToDefault()
         {
             Definition = MachineDefinition.FromJson(ExampleData.MACHINE);
+            Definition.EnsureLayout();
             DefinitionJson = Definition.ToJson();
             Microcode = MicrocodeDefinition.FromJson(ExampleData.MICROCODE);
             MicrocodeJson = Microcode.ToJson();
@@ -88,7 +81,7 @@ namespace WebUI.Pages
         private void ParseText()
         {
             ParseErrors = new List<string>();
-            try { Definition = MachineDefinition.FromJson(DefinitionJson); }
+            try { Definition = MachineDefinition.FromJson(DefinitionJson); Definition.EnsureLayout(); }
             catch (MachineDefinitionException e) { ParseErrors.AddRange(e.Errors); }
             try { Microcode = MicrocodeDefinition.Parse(MicrocodeJson); }
             catch (Exception e) when (e is MachineDefinitionException || e is FormatException) { ParseErrors.Add(e.Message); }
@@ -120,26 +113,6 @@ namespace WebUI.Pages
             catch (Exception e)
             {
                 ProgramErrors.Add(e.Message);
-            }
-        }
-
-        private void Step()
-        {
-            StepMany(1);
-        }
-
-        private void StepMany(int cycles)
-        {
-            try
-            {
-                for (int i = 0; i < cycles && !C.IsHalted; i++)
-                {
-                    C.SingleStep();
-                }
-            }
-            catch (Exception e)
-            {
-                ProgramErrors = new List<string> { $"Cycle {C.Cycles}: {e.Message}" };
             }
         }
     }

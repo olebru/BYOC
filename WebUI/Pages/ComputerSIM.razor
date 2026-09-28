@@ -48,47 +48,13 @@ else if (ActiveTab == "JSON")
 }
 else if (ActiveTab == "Run")
 {
-    <ErrorList Errors="AllErrors.ToList()" />
-    @if (C != null)
+    @if (C == null)
     {
-        <h3>@(C.Definition.Name ?? "Unnamed machine")</h3>
-        <div class="mb-2">
-            <button class="btn btn-primary" @onclick="Step" disabled="@C.IsHalted">Step</button>
-            <button class="btn btn-primary" @onclick="() => StepMany(10)" disabled="@C.IsHalted">Step 10</button>
-            <button class="btn btn-primary" @onclick="() => StepMany(MaxRunCycles)" disabled="@C.IsHalted">Run to halt</button>
-            <button class="btn btn-outline-secondary" @onclick="Rebuild">Restart</button>
-            <span class="ml-3">Cycle @C.Cycles @(C.IsHalted ? "(halted)" : "")</span>
-        </div>
-
-        <div class="mb-2">
-            @foreach (var bus in C.Buses.Values)
-            {
-                <div><strong>Bus @bus.ID</strong>: @string.Join(", ", bus.devices.Select(d => d.ID()))</div>
-            }
-        </div>
-
-        <div>
-            @foreach (var mi in C.CurrentMicroCode)
-            {
-                <div><code>@mi.ToSingleLineString()</code></div>
-            }
-        </div>
-
-        <RegisterListComponent Registers="@(C.Devices.OfType<Register>())"></RegisterListComponent>
-        @foreach (var dualPort in C.Devices.OfType<DualPortRegister>())
-        {
-            <div class="card m-3" style="min-width: 18rem; max-width:30.5%;">
-                <div class="card-header"><h3>@dualPort.DisplayName()</h3></div>
-                <div class="card-footer text-center">@dualPort.Data</div>
-            </div>
-        }
-        @if (ProgramMemory != null)
-        {
-            <RAMComponent RamModule=@ProgramMemory></RAMComponent>
-        }
-        @foreach (var mmu in C.Devices.OfType<MMU>())
-        {
-            <MMUComponent MMU=@mmu></MMUComponent>
-        }
+        <div class="alert alert-warning">The machine can not run until these problems are fixed:</div>
+        <ErrorList Errors="AllErrors.ToList()" />
+    }
+    else
+    {
+        <RunView Machine="C" Registry="Registry" OnRestart="Rebuild" />
     }
 }

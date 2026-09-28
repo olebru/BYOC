@@ -5,6 +5,9 @@ namespace BYOCCore
     public class RamModule : RomModule
     {
         private bool load = false;
+        // Counts stores, so observers can tell which modules were written in a tick.
+        public long WriteCount { get; private set; }
+        public int LastWriteAddress { get; private set; } = -1;
         public RamModule(string DeviceName, string DeviceID, Bus ConnectedBus) : base( DeviceName,  DeviceID,  ConnectedBus)
         {
         }
@@ -13,6 +16,8 @@ namespace BYOCCore
             if (load)
             {
                 base.memory[memoryAddress] = base.connectedBus.Data;
+                LastWriteAddress = memoryAddress;
+                WriteCount++;
                 load = false;
             }
             base.Latch();

@@ -9,6 +9,10 @@ window.byocEditor = {
         const r = element.getBoundingClientRect();
         return { left: r.left, top: r.top, width: r.width, height: r.height };
     },
+    scrollToId: function (id) {
+        const element = document.getElementById(id);
+        if (element) element.scrollIntoView({ block: 'nearest' });
+    },
     focus: function (element) {
         element.focus({ preventScroll: true });
     },

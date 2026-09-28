@@ -21,6 +21,10 @@ namespace BYOCCore
         private readonly Register statusRegister;
         private readonly Clock halt;
         private readonly Stopwatch stopwatch = new Stopwatch();
+        private readonly DeviceRegistry registry;
+        private readonly RomModule programMemory;
+        private readonly List<TickRecord> history = new List<TickRecord>();
+        public const int HistoryLimit = 500;
 
         public Machine(MachineDefinition definition, string microcode, string source, DeviceRegistry registry = null)
             : this(definition, MicrocodeDefinition.Parse(microcode), source, registry)
@@ -30,6 +34,7 @@ namespace BYOCCore
         public Machine(MachineDefinition definition, MicrocodeDefinition microcode, string source, DeviceRegistry registry = null)
         {
             registry ??= DeviceRegistry.CreateDefault();
+            this.registry = registry;
             Definition = definition;
             Validate(definition, registry);
 
@@ -47,7 +52,7 @@ namespace BYOCCore
             statusRegister = Device<Register>(definition.Decoder.Status, "decoder.status");
             instructionRegister = Device<Register>(definition.Decoder.Instruction, "decoder.instruction");
             if (definition.Halt != null) halt = Device<Clock>(definition.Halt, "halt");
-            if (definition.ProgramMemory != null) Device<RomModule>(definition.ProgramMemory, "programMemory");
+            if (definition.ProgramMemory != null) programMemory = Device<RomModule>(definition.ProgramMemory, "programMemory");
 
             var diagnostics = MicrocodeValidator.Validate(microcode, definition, registry, this);
             var errors = diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).Select(d => d.ToString()).ToList();
@@ -119,18 +124,128 @@ namespace BYOCCore
                 yield return Cycles;
             }
         }
+        // Runs ticks until the next instruction has been fetched into the micro step register, or the machine
+        // halts. Returns the number of ticks run.
+        public int StepInstruction(int maxTicks = 10000)
+        {
+            int ticks = 0;
+            while (!IsHalted && ticks < maxTicks)
+            {
+                Step();
+                ticks++;
+                if (LastTick.FetchedFromAddress != null) break;
+            }
+            return ticks;
+        }
+
+        // The last ticks, oldest first, at most HistoryLimit.
+        public IReadOnlyList<TickRecord> History { get { return history; } }
+        public TickRecord LastTick { get; private set; }
+        // Program memory address of the opcode last fetched into the micro step register.
+        public int? CurrentInstructionAddress { get; private set; }
+        public byte Status { get { return statusRegister.Data; } }
+        public byte MicroStepRegister { get { return instructionRegister.Data; } }
+        // The instruction and micro step the next tick will run.
+        public (InstructionDefinition Instruction, MicroStep Step, int Offset)? NextStep
+        {
+            get { return DecoderRom.Locate(statusRegister.Data, instructionRegister.Data); }
+        }
+
         private void Step()
         {
+            var record = new TickRecord { Cycle = Cycles + 1, Status = statusRegister.Data, MicroStep = instructionRegister.Data };
+            var located = NextStep;
+            if (located != null)
+            {
+                record.Instruction = located.Value.Instruction.Mnemonic;
+                if (located.Value.Step != null) record.StepIndex = located.Value.Instruction.Steps.IndexOf(located.Value.Step);
+            }
+            var valuesBefore = SnapshotValues();
+            var writesBefore = SnapshotWrites();
+
             CurrentMicroCode = FetchMicroCode();
             foreach (var microCode in CurrentMicroCode)
             {
                 devicesByID[microCode.DeviceID].Enable(microCode.Function);
             }
+            record.Signals = CurrentMicroCode.Select(m => $"{m.DeviceID}.{m.Function}").ToList();
             Clocking.Tick(Buses.Values.ToList(), Devices);
             Cycles++;
+
+            foreach (var bus in Buses.Values)
+            {
+                record.Transfers.Add(new BusTransfer { Bus = bus.ID, Driver = bus.Writer?.ID(), Value = bus.Data, Readers = ReadersOf(bus.ID, record.Signals) });
+            }
+            var valuesAfter = SnapshotValues();
+            foreach (var value in valuesAfter)
+            {
+                if (valuesBefore.TryGetValue(value.Key, out var before) && before != value.Value)
+                {
+                    record.Changes.Add(new ValueChange { Device = value.Key, Before = before, After = value.Value });
+                }
+            }
+            foreach (var (deviceId, bank, module, count) in writesBefore)
+            {
+                if (module.WriteCount != count)
+                {
+                    record.Writes.Add(new MemoryWrite { Device = deviceId, Bank = bank, Address = module.LastWriteAddress, Value = module.memory[module.LastWriteAddress] });
+                }
+            }
+            if (record.Signals.Contains($"{Definition.Decoder.Instruction}.load") && programMemory != null)
+            {
+                record.FetchedFromAddress = programMemory.memoryAddress;
+                CurrentInstructionAddress = programMemory.memoryAddress;
+            }
+            LastTick = record;
+            history.Add(record);
+            if (history.Count > HistoryLimit) history.RemoveAt(0);
+
             stopwatch.Stop();
             if (stopwatch.Elapsed.TotalMilliseconds > 0) ObservedClockSpeed = 1000 / stopwatch.Elapsed.TotalMilliseconds;
             stopwatch.Restart();
+        }
+        private List<string> ReadersOf(string busId, List<string> signals)
+        {
+            var readers = new List<string>();
+            foreach (var text in signals)
+            {
+                if (!Signal.TryParse(text, out var signal)) continue;
+                var device = Definition.FindDevice(signal.Device);
+                var line = device == null ? null : registry.Info(device.Type)?.ControlLines.FirstOrDefault(l => l.Name == signal.Line);
+                if (line?.Reads != null && device.GetPortBus(line.Reads) == busId && !readers.Contains(signal.Device)) readers.Add(signal.Device);
+            }
+            return readers;
+        }
+        private Dictionary<string, int> SnapshotValues()
+        {
+            var values = new Dictionary<string, int>();
+            foreach (var device in Devices)
+            {
+                switch (device)
+                {
+                    case Register register: values[device.ID()] = register.Data; break;
+                    case DualPortRegister dualPort: values[device.ID()] = dualPort.Data; break;
+                    case RomModule memory: values[device.ID() + ".mar"] = memory.memoryAddress; break;
+                    case MMU mmu:
+                        values[device.ID() + ".cs"] = mmu.ChipSelectRegister.Data;
+                        values[device.ID() + ".mar"] = mmu.RamBanks[mmu.ChipSelectRegister.Data].memoryAddress;
+                        break;
+                }
+            }
+            return values;
+        }
+        private List<(string Device, int Bank, RamModule Module, long Count)> SnapshotWrites()
+        {
+            var writes = new List<(string, int, RamModule, long)>();
+            foreach (var device in Devices)
+            {
+                if (device is RamModule ram) writes.Add((device.ID(), -1, ram, ram.WriteCount));
+                if (device is MMU mmu)
+                {
+                    for (int bank = 0; bank < mmu.RamBanks.Length; bank++) writes.Add((device.ID(), bank, mmu.RamBanks[bank], mmu.RamBanks[bank].WriteCount));
+                }
+            }
+            return writes;
         }
         private List<MicroInstruction> FetchMicroCode()
         {
