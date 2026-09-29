@@ -275,17 +275,17 @@
                     <option value="">— none —</option>
                     @foreach (var device in Definition.Devices) { <option value="@device.Id">@device.Id (@device.Type)</option> }
                 </select>
-                <label>Micro step register</label>
-                <select class="form-control form-control-sm" value="@(Definition.Decoder?.Instruction ?? "")" @onchange="e => SetDecoder(d => d.Instruction = Blank((string)e.Value))">
+                <label>Instruction register <span class="muted">micro step counter for the decoder ROM</span></label>
+                <select class="form-control form-control-sm" value="@(Definition.Decoder?.InstructionRegister ?? "")" @onchange="e => SetDecoder(d => d.InstructionRegister = Blank((string)e.Value))">
                     <option value="">— none —</option>
-                    @foreach (var device in Definition.Devices) { <option value="@device.Id">@device.Id (@device.Type)</option> }
+                    @foreach (var device in Definition.Devices.Where(d => d.Type == "instructionRegister" || d.Id == Definition.Decoder?.InstructionRegister)) { <option value="@device.Id">@device.Id (@device.Type)</option> }
                 </select>
 
                 <div class="section">Program</div>
                 <label>Program memory</label>
                 <select class="form-control form-control-sm" value="@(Definition.ProgramMemory ?? "")" @onchange="e => Mutate(() => Definition.ProgramMemory = Blank((string)e.Value))">
                     <option value="">— none —</option>
-                    @foreach (var device in Definition.Devices.Where(d => d.Type == "ram" || d.Type == "rom")) { <option value="@device.Id">@device.Id</option> }
+                    @foreach (var device in Definition.Devices.Where(d => d.Type == "ram")) { <option value="@device.Id">@device.Id</option> }
                 </select>
                 <label>Halt clock</label>
                 <select class="form-control form-control-sm" value="@(Definition.Halt ?? "")" @onchange="e => Mutate(() => Definition.Halt = Blank((string)e.Value))">

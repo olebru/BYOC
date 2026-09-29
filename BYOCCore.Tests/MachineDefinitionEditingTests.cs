@@ -21,7 +21,7 @@ public class MachineDefinitionEditingTests
         Assert.Equal("flags", d.FindDevice("alu").Connections["status"]);
         Assert.Equal("acc", d.FindDevice("alu").Connections["a"]);
         Assert.Equal("flags", d.Decoder.Status);
-        Assert.Equal("step", d.Decoder.Instruction);
+        Assert.Equal("step", d.Decoder.InstructionRegister);
         Assert.Equal("clock", d.Halt);
         Assert.Equal("ram", d.ProgramMemory);
         Machine.FromJson(d.ToJson(), ExampleData.ROMDATA.Replace("\trega\t", "\tacc\t").Replace("\tregsta\t", "\tflags\t")

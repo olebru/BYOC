@@ -14,7 +14,7 @@ namespace BYOCCore
         private bool select0Stack;
         private static readonly HashSet<string> BankFunctions = new HashSet<string> { "loadmar", "outputmar", "output", "load" };
         public const int DefaultBanks = 16;
-        public MMU(string DeviceName, string DeviceID, Bus bus, int banks = DefaultBanks, int bankSize = RomModule.DefaultSize)
+        public MMU(string DeviceName, string DeviceID, Bus bus, int banks = DefaultBanks, int bankSize = MemoryModule.DefaultSize)
         {
             if (banks < 1 || banks > 256) throw new ArgumentException($"An MMU has between 1 and 256 banks, not {banks}.");
             this.bus = bus;

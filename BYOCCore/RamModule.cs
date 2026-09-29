@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 namespace BYOCCore
 {
-    public class RamModule : RomModule, IWriteTracked
+    public class RamModule : MemoryModule, IWriteTracked
     {
         private bool load = false;
         // Counts stores, so observers can tell which modules were written in a tick.

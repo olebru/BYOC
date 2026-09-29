@@ -4,7 +4,10 @@ using System.Linq;
 using System.Text;
 namespace BYOCCore
 {
-    public class RomModule : IBusDevice
+    // Memory with its own address register: loadmar takes an address from the bus, output puts the cell there on
+    // the bus. It can not be written from the bus; RamModule adds load for that. The program is loaded into the
+    // machine's program memory with LoadProgram.
+    public class MemoryModule : IBusDevice
     {
         protected Bus connectedBus;
         // One 16 bit word per address. The cells are allocated on first write, so a large memory that is never
@@ -18,7 +21,7 @@ namespace BYOCCore
         private bool output = false;
         private bool outputMAR = false;
         public const int DefaultSize = 4096;
-        public RomModule(string DeviceName, string DeviceID, Bus ConnectedBus, int size = DefaultSize)
+        public MemoryModule(string DeviceName, string DeviceID, Bus ConnectedBus, int size = DefaultSize)
         {
             if (size < 1 || size > 65536) throw new ArgumentException($"Memory size must be between 1 and 65536 cells, not {size}.");
             deviceName = DeviceName;

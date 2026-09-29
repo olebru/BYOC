@@ -184,11 +184,14 @@ public class WordTests
     }
 
     [Fact]
-    public void ProgramCounterAdvancesWithIncAndHasNoCount()
+    public void TheProgramCounterIsAPlainRegisterThatAdvancesWithInc()
     {
         var registry = DeviceRegistry.CreateDefault();
-        Assert.DoesNotContain("count", registry.Info("programCounter").ControlLines.Select(l => l.Name));
-        Assert.DoesNotContain("count", new ProgramCounter("PC", "pc", new Bus()).SignalLines());
+        Assert.Null(registry.Info("programCounter"));
+        Assert.Null(registry.Info("rom"));
+        Assert.Equal(new[] { "load", "reset" }, registry.Info("instructionRegister").ControlLines.Select(l => l.Name));
+        Assert.Equal("register", MachineDefinition.FromJson(ExampleData.MACHINE).FindDevice("pc").Type);
+        Assert.DoesNotContain("count", new Register("PC", "pc", new Bus()).SignalLines());
         Assert.DoesNotContain(MicrocodeDefinition.FromJson(ExampleData.MICROCODE).AllInstructions.SelectMany(i => i.Steps).SelectMany(s => s.Signals), s => s == "pc.count");
         Assert.DoesNotContain("\tpc\tcount\t", ExampleData.ROMDATA);
     }
@@ -198,7 +201,7 @@ public class WordTests
     {
         var c = RunToHalt(Default("\tJMP\ttarget\n\tHLT\ntarget:\tLAI\t#7\n\tHLT"));
         Assert.Equal(7, c.Device<Register>("rega").Data);
-        Assert.Equal(c.Assembler.labelLUT["target"] + 2, c.Device<ProgramCounter>("pc").Data);
+        Assert.Equal(c.Assembler.labelLUT["target"] + 2, c.Device<Register>("pc").Data);
     }
 
     [Fact]

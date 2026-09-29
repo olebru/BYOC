@@ -59,7 +59,7 @@ namespace BYOCCore
         public static DeviceRegistry CreateDefault()
         {
             var initialValue = new ParameterInfo { Name = "initialValue", Description = "Value after power on", Max = 65535 };
-            var size = new ParameterInfo { Name = "size", Description = "Number of 16 bit cells", Min = 1, Max = 65536, Default = RomModule.DefaultSize };
+            var size = new ParameterInfo { Name = "size", Description = "Number of 16 bit cells", Min = 1, Max = 65536, Default = MemoryModule.DefaultSize };
             List<ControlLineInfo> RegisterLines() => new List<ControlLineInfo>
             {
                 ControlLineInfo.Output("output", "Put the value on the bus"),
@@ -68,7 +68,7 @@ namespace BYOCCore
                 ControlLineInfo.Internal("inc", "Add 1"),
                 ControlLineInfo.Internal("dec", "Subtract 1"),
             };
-            List<ControlLineInfo> RomLines() => new List<ControlLineInfo>
+            List<ControlLineInfo> MemoryLines() => new List<ControlLineInfo>
             {
                 ControlLineInfo.Input("loadmar", "Take the address from the bus"),
                 ControlLineInfo.Output("outputmar", "Put the address on the bus"),
@@ -76,7 +76,7 @@ namespace BYOCCore
             };
             List<ControlLineInfo> RamLines()
             {
-                var lines = RomLines();
+                var lines = MemoryLines();
                 lines.Add(ControlLineInfo.Input("load", "Store the bus value at the address"));
                 return lines;
             }
@@ -108,11 +108,13 @@ namespace BYOCCore
                 new DeviceTypeInfo
                 {
                     Category = "Control",
-                    Description = "The micro step counter. It advances every tick and, with the status flags, addresses the decoder ROM step that runs next. load jumps to an opcode's steps, reset goes back to fetch",
-                    ControlLines = RegisterLines()
+                    Description = "The decoder's micro step counter. It counts up every tick on its own and, with the status flags, addresses the decoder ROM step that runs next. load jumps to the steps of the opcode on the bus, reset clears it to 0 where fetch starts",
+                    ControlLines =
+                    {
+                        ControlLineInfo.Input("load", "Jump to the step address on the bus: the start of an opcode's steps"),
+                        ControlLineInfo.Internal("reset", "Clear to 0, the start of the fetch routine"),
+                    }
                 });
-            registry.Register("programCounter", c => new ProgramCounter(c.Name, c.Id, c.Bus()),
-                new DeviceTypeInfo { Category = "Control", Description = "Points at the next program cell in memory. inc moves it on one cell, load jumps to the address on the bus", ControlLines = RegisterLines() });
             registry.Register("clock", c => new Clock(c.Name, c.Id),
                 new DeviceTypeInfo
                 {
@@ -144,9 +146,7 @@ namespace BYOCCore
                         ControlLineInfo.Output("lsr", "Put a shifted right by b on the bus; C is the last bit out"),
                     }
                 });
-            registry.Register("rom", c => new RomModule(c.Name, c.Id, c.Bus(), c.IntParameter("size", RomModule.DefaultSize, 1, 65536)),
-                new DeviceTypeInfo { Category = "Memory", Description = "Read only memory with its own address register (MAR): loadmar takes an address from the bus, output puts that cell on the bus. A program can be loaded into it", Parameters = { size }, ControlLines = RomLines() });
-            registry.Register("ram", c => new RamModule(c.Name, c.Id, c.Bus(), c.IntParameter("size", RomModule.DefaultSize, 1, 65536)),
+            registry.Register("ram", c => new RamModule(c.Name, c.Id, c.Bus(), c.IntParameter("size", MemoryModule.DefaultSize, 1, 65536)),
                 new DeviceTypeInfo { Category = "Memory", Description = "Read/write memory with its own address register (MAR): loadmar takes an address from the bus, output reads that cell and load writes the bus value into it", Parameters = { size }, ControlLines = RamLines() });
             var mmuLines = RamLines();
             mmuLines.Add(ControlLineInfo.Input("loadcs", "Select the bank given on the bus"));
@@ -154,7 +154,7 @@ namespace BYOCCore
             mmuLines.Add(ControlLineInfo.Internal("select0stack", "Select bank 0, the stack bank"));
             registry.Register("mmu", c =>
                 {
-                    int banks = c.IntParameter("banks", MMU.DefaultBanks, 1, 256), bankSize = c.IntParameter("bankSize", RomModule.DefaultSize, 1, 65536);
+                    int banks = c.IntParameter("banks", MMU.DefaultBanks, 1, 256), bankSize = c.IntParameter("bankSize", MemoryModule.DefaultSize, 1, 65536);
                     return new MMU(c.Name, c.Id, c.Bus(), banks, bankSize);
                 },
                 new DeviceTypeInfo
@@ -164,7 +164,7 @@ namespace BYOCCore
                     Parameters =
                     {
                         new ParameterInfo { Name = "banks", Description = "Number of banks", Min = 1, Max = 256, Default = MMU.DefaultBanks },
-                        new ParameterInfo { Name = "bankSize", Description = "16 bit cells per bank", Min = 1, Max = 65536, Default = RomModule.DefaultSize },
+                        new ParameterInfo { Name = "bankSize", Description = "16 bit cells per bank", Min = 1, Max = 65536, Default = MemoryModule.DefaultSize },
                     },
                     ControlLines = mmuLines
                 });

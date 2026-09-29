@@ -223,7 +223,6 @@ public class MicrocodeTests
         var registry = DeviceRegistry.CreateDefault();
         var machine = DefaultMachine();
         machine.Buses.Add(new BusDefinition { Id = "io" });
-        machine.Devices.Add(new DeviceDefinition { Id = "rom", Type = "rom", Bus = "main" });
         machine.Devices.Add(new DeviceDefinition { Id = "bridge", Type = "dualPortRegister", Buses = { ["a"] = "main", ["b"] = "io" } });
         var built = new Machine(machine, ExampleData.MICROCODE, "");
         Assert.Equal(registry.Types.OrderBy(t => t), machine.Devices.Select(d => d.Type).Distinct().OrderBy(t => t));

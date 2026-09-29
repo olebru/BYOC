@@ -26,7 +26,7 @@ namespace WebUI.Components
         [Parameter] public EventCallback<string> ValueChanged { get; set; }
         // The instruction set the program is written for.
         [Parameter] public MicrocodeDefinition Microcode { get; set; }
-        [Parameter] public int MemorySize { get; set; } = RomModule.DefaultSize;
+        [Parameter] public int MemorySize { get; set; } = MemoryModule.DefaultSize;
 
         private StandaloneCodeEditor editor;
         private DotNetObjectReference<AssemblyEditor> self;

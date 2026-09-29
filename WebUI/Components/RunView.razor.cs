@@ -60,7 +60,7 @@ namespace WebUI.Components
                 runningSeconds = 0;
                 if (Machine != null && (memoryDevice == null || Machine.Device(memoryDevice) == null))
                 {
-                    memoryDevice = Machine.Definition.ProgramMemory ?? Machine.Devices.FirstOrDefault(d => d is RomModule || d is MMU)?.ID();
+                    memoryDevice = Machine.Definition.ProgramMemory ?? Machine.Devices.FirstOrDefault(d => d is MemoryModule || d is MMU)?.ID();
                 }
             }
         }
@@ -442,8 +442,8 @@ namespace WebUI.Components
 
         // ---- Memory view ----
 
-        private IEnumerable<IBusDevice> MemoryDevices { get { return Machine.Devices.Where(d => d is RomModule || d is MMU); } }
-        private RomModule MemoryModule
+        private IEnumerable<IBusDevice> MemoryDevices { get { return Machine.Devices.Where(d => d is MemoryModule || d is MMU); } }
+        private MemoryModule MemoryModule
         {
             get
             {
@@ -451,7 +451,7 @@ namespace WebUI.Components
                 return device switch
                 {
                     MMU mmu => mmu.RamBanks[Math.Clamp(memoryBank, 0, mmu.RamBanks.Length - 1)],
-                    RomModule rom => rom,
+                    MemoryModule rom => rom,
                     _ => null,
                 };
             }
@@ -459,15 +459,29 @@ namespace WebUI.Components
         private int Bank { get { return Machine.Device(memoryDevice) is MMU ? memoryBank : -1; } }
         private const int PageSize = 256;
         private int memoryPage;
-        private int PageCount(RomModule module) => (module.Size + PageSize - 1) / PageSize;
-        private int Page(RomModule module) => Math.Clamp(memoryPage, 0, PageCount(module) - 1);
-        private void GoToMar(RomModule module) { memoryPage = module.memoryAddress / PageSize; }
-        private static int AddressDigits(RomModule module) => Math.Max(2, ((int)Math.Ceiling(Math.Log2(Math.Max(2, module.Size))) + 3) / 4);
+        private int PageCount(MemoryModule module) => (module.Size + PageSize - 1) / PageSize;
+        private int Page(MemoryModule module) => Math.Clamp(memoryPage, 0, PageCount(module) - 1);
+        private void GoToMar(MemoryModule module) { memoryPage = module.memoryAddress / PageSize; }
+        private static int AddressDigits(MemoryModule module) => Math.Max(2, ((int)Math.Ceiling(Math.Log2(Math.Max(2, module.Size))) + 3) / 4);
         // Widest listing line, in cells, to size the listing's cell column.
         private int ListingCellColumns { get { return Math.Min(4, Machine.Assembler.Listing.Select(l => l.Cells.Length).DefaultIfEmpty(1).Max()); } }
+        // The program counter is whichever register the fetch routine puts on the bus to address program memory:
+        // any register can be one, its role comes from the microcode.
         private IEnumerable<int> ProgramCounterValues
         {
-            get { return Machine.Devices.OfType<ProgramCounter>().Select(p => (int)p.Data); }
+            get
+            {
+                var memory = Machine.Definition.ProgramMemory;
+                var fetch = Machine.DecoderRom.Microcode?.Fetch;
+                if (memory == null || fetch == null) yield break;
+                foreach (var step in fetch.Steps.Where(s => s.Signals.Contains($"{memory}.loadmar")))
+                {
+                    foreach (var signal in step.Signals.Where(s => s.EndsWith(".output")))
+                    {
+                        if (Machine.Device(signal.Substring(0, signal.Length - ".output".Length)) is Register register) yield return register.Data;
+                    }
+                }
+            }
         }
         // What the memory panel highlights, worked out once per render: PC values, the current instruction's cells,
         // and the cells written in the last tick and in the ticks just before it.
@@ -478,7 +492,7 @@ namespace WebUI.Components
             public readonly HashSet<int> Written = new HashSet<int>();
             public readonly HashSet<int> Recent = new HashSet<int>();
         }
-        private MemoryMarks MarksFor(RomModule module)
+        private MemoryMarks MarksFor(MemoryModule module)
         {
             var marks = new MemoryMarks();
             if (memoryDevice == Machine.Definition.ProgramMemory)
@@ -502,7 +516,7 @@ namespace WebUI.Components
             }
             return marks;
         }
-        private static string CellClass(int address, RomModule module, MemoryMarks marks)
+        private static string CellClass(int address, MemoryModule module, MemoryMarks marks)
         {
             var classes = "";
             if (module.memoryAddress == address) classes += " mar";

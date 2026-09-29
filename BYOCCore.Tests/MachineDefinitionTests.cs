@@ -16,13 +16,13 @@ public class MachineDefinitionTests
           "name": "mini",
           "buses": [ { "id": "main" } ],
           "devices": [
-            { "id": "pc", "type": "programCounter", "bus": "main" },
+            { "id": "pc", "type": "register", "bus": "main" },
             { "id": "mem", "type": "ram", "bus": "main" },
             { "id": "ir", "type": "instructionRegister", "bus": "main" },
             { "id": "st", "type": "statusRegister", "bus": "main" },
             { "id": "clk", "type": "clock" }
           ],
-          "decoder": { "status": "st", "instruction": "ir" },
+          "decoder": { "status": "st", "instructionRegister": "ir" },
           "halt": "clk",
           "programMemory": "mem"
         }
@@ -39,6 +39,19 @@ public class MachineDefinitionTests
     private static MachineDefinitionException Fails(string json, string microcode = null, DeviceRegistry registry = null)
     {
         return Assert.Throws<MachineDefinitionException>(() => Machine.FromJson(json, microcode ?? FetchAndHalt, "", registry));
+    }
+
+    [Fact]
+    public void TheOldInstructionKeyStillLoadsAndIsWrittenAsInstructionRegister()
+    {
+        var old = MinimalJson.Replace("\"instructionRegister\": \"ir\"", "\"instruction\": \"ir\"");
+        Assert.Contains("\"instruction\": \"ir\"", old);
+        var definition = MachineDefinition.FromJson(old);
+        Assert.Equal("ir", definition.Decoder.InstructionRegister);
+        var json = definition.ToJson();
+        Assert.Contains("\"instructionRegister\": \"ir\"", json);
+        Assert.DoesNotContain("\"instruction\":", json);
+        Assert.IsType<InstructionRegister>(Machine.FromJson(old, FetchAndHalt, "\tHLT").Device("ir"));
     }
 
     [Fact]
@@ -110,7 +123,7 @@ public class MachineDefinitionTests
         Assert.Contains(errors, e => e.Contains("unknown type 'flux-capacitor'"));
         Assert.Contains(errors, e => e.Contains("unknown device 'ghost'"));
         Assert.Contains(errors, e => e.Contains("\"decoder.status\" refers to unknown device 'missing'"));
-        Assert.Contains(errors, e => e.Contains("\"decoder.instruction\" is required"));
+        Assert.Contains(errors, e => e.Contains("\"decoder.instructionRegister\" is required"));
         Assert.Contains(errors, e => e.Contains("\"halt\" refers to unknown device 'nope'"));
     }
 
@@ -169,10 +182,10 @@ public class MachineDefinitionTests
     public void CustomDeviceTypesCanBeRegistered()
     {
         var registry = DeviceRegistry.CreateDefault();
-        registry.Register("counter", c => new ProgramCounter(c.Name, c.Id, c.Bus()));
-        var json = MinimalJson.Replace("\"type\": \"programCounter\"", "\"type\": \"counter\"");
+        registry.Register("counter", c => new CountingRegister(c.Name, c.Id, c.Bus()));
+        var json = MinimalJson.Replace("{ \"id\": \"pc\", \"type\": \"register\"", "{ \"id\": \"pc\", \"type\": \"counter\"");
         var c = Machine.FromJson(json, FetchAndHalt, "\tHLT", registry);
-        Assert.IsType<ProgramCounter>(c.Device("pc"));
+        Assert.IsType<CountingRegister>(c.Device("pc"));
     }
 
     [Fact]
@@ -182,7 +195,7 @@ public class MachineDefinitionTests
             {
               "buses": [ { "id": "main" }, { "id": "io" } ],
               "devices": [
-                { "id": "pc", "type": "programCounter", "bus": "main" },
+                { "id": "pc", "type": "register", "bus": "main" },
                 { "id": "mem", "type": "ram", "bus": "main" },
                 { "id": "ir", "type": "instructionRegister", "bus": "main" },
                 { "id": "st", "type": "statusRegister", "bus": "main" },
@@ -191,7 +204,7 @@ public class MachineDefinitionTests
                 { "id": "out", "type": "register", "bus": "io" },
                 { "id": "clk", "type": "clock" }
               ],
-              "decoder": { "status": "st", "instruction": "ir" },
+              "decoder": { "status": "st", "instructionRegister": "ir" },
               "halt": "clk",
               "programMemory": "mem"
             }
@@ -217,10 +230,23 @@ public class MachineDefinitionTests
     [Fact]
     public void BusConflictInMicrocodeIsRejectedAtLoad()
     {
-        var microcode = FetchAndHalt + "\n" + Row("p", "pc", "output", "BAD") + "\n" + Row("s", "ir", "output", "BAD");
+        var microcode = FetchAndHalt + "\n" + Row("p", "pc", "output", "BAD") + "\n" + Row("s", "mem", "output", "BAD");
         var e = Fails(MinimalJson, microcode);
         Assert.Contains("bus 'main'", e.Message);
         Assert.Contains("pc.output", e.Message);
-        Assert.Contains("ir.output", e.Message);
+        Assert.Contains("mem.output", e.Message);
+    }
+
+    [Fact]
+    public void TheDecoderNeedsAnInstructionRegister()
+    {
+        var json = MinimalJson.Replace("{ \"id\": \"ir\", \"type\": \"instructionRegister\"", "{ \"id\": \"ir\", \"type\": \"register\"");
+        var e = Fails(json, FetchAndHalt);
+        Assert.Contains("\"decoder.instructionRegister\" must name an InstructionRegister", e.Message);
+    }
+
+    private class CountingRegister : Register
+    {
+        public CountingRegister(string name, string id, Bus bus) : base(name, id, bus) { }
     }
 }

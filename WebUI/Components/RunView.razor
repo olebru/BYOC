@@ -108,7 +108,7 @@
                         var port = driver.Ports().First(p => p.Value == bus.Id).Key;
                         var x = PortAnchor(driver, LayoutOf(driver, driverIndex), port).X;
                         var y = BusY(bus.Id);
-                        <g class="bus-value" @key="Last.Cycle">
+                        <g class="bus-value" @key="@($"{Last.Cycle}:{bus.Id}")">
                             <rect x="@N(x - 26)" y="@N(y - 11)" width="52" height="22" rx="2" stroke="@BusColor(bus.Id)" stroke-width="1.5" />
                             <text x="@N(x)" y="@N(y + 5)" text-anchor="middle" fill="@BusColor(bus.Id)">@Hex(transfer.Value)</text>
                         </g>
@@ -129,7 +129,7 @@
                             <span class="dev-id">@device.Id</span>
                             <span class="dev-type">@(device.Name ?? device.Type)</span>
                         </div>
-                        <div class="dev-body @(built is RomModule || built is MMU || built is Clock || built is ALU || built is CharacterDisplay || built is Framebuffer ? "stacked" : "") @(Changed(device.Id) ? "changed" : "")" @key="(Changed(device.Id) ? Last.Cycle : 0)">
+                        <div class="dev-body @(built is MemoryModule || built is MMU || built is Clock || built is ALU || built is CharacterDisplay || built is Framebuffer ? "stacked" : "") @(Changed(device.Id) ? "changed" : "")" @key="(Changed(device.Id) ? Last.Cycle : 0)">
                             @switch (built)
                             {
                                 case StatusRegister status:
@@ -140,9 +140,9 @@
                                         <span class="lamp @(status.Zero1 ? "on" : "")">Z</span>
                                     </span>
                                     break;
-                                case InstructionRegister ir:
+                                case InstructionRegister counter:
                                     var located = Machine.NextStep;
-                                    <span class="value">@Hex(ir.Data)</span>
+                                    <span class="value">@Hex(counter.Data)</span>
                                     <span class="sub">@(located == null ? "no microcode" : $"{located.Value.Instruction.Mnemonic}.{located.Value.Offset + 1}")</span>
                                     break;
                                 case Register register:
@@ -153,7 +153,7 @@
                                     <span class="value">@Hex(dual.Data)</span>
                                     <span class="sub">@dual.Data</span>
                                     break;
-                                case RomModule memory:
+                                case MemoryModule memory:
                                     <span class="mem">MAR <strong>@Hex(memory.memoryAddress)</strong></span>
                                     <span class="sub">[@Hex(memory.memoryAddress)] = @Hex(memory.ValueAt(memory.memoryAddress))</span>
                                     break;
@@ -193,9 +193,9 @@
                                     break;
                             }
                         </div>
-                        @if (built is DualPortRegister || (built is Register && built is not StatusRegister))
+                        @if (built is DualPortRegister || built is InstructionRegister || (built is Register && built is not StatusRegister))
                         {
-                            var word = built is DualPortRegister dualWord ? dualWord.Data : ((Register)built).Data;
+                            var word = built switch { DualPortRegister dualWord => dualWord.Data, InstructionRegister stepWord => stepWord.Data, _ => ((Register)built).Data };
                             <div class="dev-bits" title="@($"bits 15..0 = {Convert.ToString(word & 0xFFFF, 2).PadLeft(16, '0')}")">
                                 @for (int bit = 15; bit >= 0; bit--)
                                 {
@@ -374,7 +374,7 @@
                         <button class="btab small" @onclick="() => memoryBank = mmuDevice.SelectedBankNumber">selected (@mmuDevice.SelectedBankNumber)</button>
                     </label>
                 }
-                @if (MemoryModule is RomModule paged && PageCount(paged) > 1)
+                @if (MemoryModule is MemoryModule paged && PageCount(paged) > 1)
                 {
                     <span class="pager">
                         <button class="btab small" disabled="@(Page(paged) == 0)" @onclick="() => memoryPage = Page(paged) - 1">‹</button>

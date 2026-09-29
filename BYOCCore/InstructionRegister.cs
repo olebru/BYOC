@@ -1,29 +1,49 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 namespace BYOCCore
 {
-   public  class InstructionRegister : Register
+    // The decoder's micro step counter, called the instruction register. It counts up by one every tick on its own, so the decoder ROM moves on to
+    // the next micro step without the microcode asking. load takes a step address from the bus (an opcode, which is
+    // where that instruction's steps start) and reset clears it to 0, where the fetch routine starts.
+    public class InstructionRegister : IBusDevice
     {
-        public string Instruction = "N/A";
-        public InstructionRegister(string DeviceName, string DeviceID, Bus bus) : base(DeviceName, DeviceID, bus)
+        public int Data { get; set; }
+        private readonly Bus bus;
+        private readonly string deviceID;
+        private readonly string deviceName;
+        private bool load, reset;
+
+        public InstructionRegister(string DeviceName, string DeviceID, Bus bus)
+        {
+            deviceName = DeviceName;
+            deviceID = DeviceID;
+            this.bus = bus;
+        }
+
+        public void Drive()
         {
         }
-        // Acts as the micro step counter: advances every tick unless loaded or reset.
-        public override void Latch()
+        public void Latch()
         {
-            increment();
-            base.Latch();
+            if (reset) Data = 0;
+            else if (load) Data = bus.Data & Bus.Mask;
+            else Data = (Data + 1) & Bus.Mask;
+            load = reset = false;
         }
-        public override string ToString(int firstColumnPaddedWidth)
+
+        public string DisplayName() { return deviceName; }
+        public void Enable(string function)
         {
-            return $"{base.deviceName} Value".PadRight(firstColumnPaddedWidth, ' ') + $"= {Data.ToString("X4")}";
+            switch (function)
+            {
+                case "load": load = true; break;
+                case "reset": reset = true; break;
+                default:
+                    throw new Exception("Unable to enable the unknown function: " + function);
+            }
         }
-        private void increment()
-        {
-            Data = (Data + 1) & Bus.Mask;
-        }
+        public string ID() { return deviceID; }
+        public bool IsOutputEnabled() { return false; }
+        public List<string> SignalLines() { return new List<string> { "load", "reset" }; }
     }
 }

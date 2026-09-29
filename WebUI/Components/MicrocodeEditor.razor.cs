@@ -232,7 +232,7 @@ namespace WebUI.Components
         {
             var mnemonic = "NEW";
             for (int i = 2; Microcode.FindInstruction(mnemonic) != null; i++) mnemonic = $"NEW{i}";
-            var stepRegister = Machine?.Decoder?.Instruction;
+            var stepRegister = Machine?.Decoder?.InstructionRegister;
             var instruction = new InstructionDefinition { Mnemonic = mnemonic, Operands = 0, Steps = { new MicroStep() } };
             if (stepRegister != null) instruction.Steps[0].Signals.Add($"{stepRegister}.reset");
             await Mutate(() => Microcode.Instructions.Add(instruction));

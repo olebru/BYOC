@@ -4,6 +4,7 @@ using System.Linq;
 using System.IO;
 using System.Threading.Tasks;
 using BYOCCore;
+using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.JSInterop;
 using WebUI.Components;
@@ -53,9 +54,9 @@ namespace WebUI.Pages
         {
             get
             {
-                if (C?.Definition.ProgramMemory != null && C.Device<RomModule>(C.Definition.ProgramMemory) is RomModule memory) return memory.Size;
+                if (C?.Definition.ProgramMemory != null && C.Device<MemoryModule>(C.Definition.ProgramMemory) is MemoryModule memory) return memory.Size;
                 var device = Definition.FindDevice(Definition.ProgramMemory ?? "");
-                return device != null && device.Parameters.TryGetValue("size", out var size) && size.TryGetInt32(out var cells) ? cells : RomModule.DefaultSize;
+                return device != null && device.Parameters.TryGetValue("size", out var size) && size.TryGetInt32(out var cells) ? cells : MemoryModule.DefaultSize;
             }
         }
 
@@ -96,6 +97,56 @@ namespace WebUI.Pages
             History.Record();
             LoadPackage(BuiltInPackages.Get(name));
         }
+        // ---- New machine ----
+        private static readonly (string Value, string Title, string Description)[] NewStarts =
+        {
+            ("minimal", "Minimal CPU", "A bus, program counter, memory, instruction register, status register and clock, with fetch, NOP, JMP and HLT. It runs straight away."),
+            ("empty", "Empty", "One bus and nothing else. Add the devices, decoder and microcode yourself."),
+            ("copy", "Copy of the current machine", "Everything in the machine you have open now, with its programs, under the new name."),
+        };
+        private bool newDialog;
+        private string newName = "My machine";
+        private string newStart = "minimal";
+        private Microsoft.AspNetCore.Components.ElementReference newNameInput;
+        private bool focusNewName;
+
+        private void OpenNewDialog()
+        {
+            newDialog = true;
+            focusNewName = true;
+        }
+        protected override async Task OnAfterRenderAsync(bool firstRender)
+        {
+            if (focusNewName && newDialog)
+            {
+                focusNewName = false;
+                await newNameInput.FocusAsync();
+            }
+        }
+        private void NewDialogKey(Microsoft.AspNetCore.Components.Web.KeyboardEventArgs e)
+        {
+            if (e.Key == "Escape") newDialog = false;
+            else if (e.Key == "Enter") CreateMachine();
+        }
+        // Undoable, like switching packages. A name already used by a built in package gets a number.
+        private void CreateMachine()
+        {
+            var name = string.IsNullOrWhiteSpace(newName) ? "My machine" : newName.Trim();
+            var unique = name;
+            for (int n = 2; BuiltInPackages.All.Any(p => p.Name == unique); n++) unique = $"{name} {n}";
+            var package = newStart switch
+            {
+                "empty" => MachineTemplates.Empty(unique),
+                "copy" => MachineTemplates.CopyOf(new MachinePackage { Name = Package.Name, Description = Package.Description, Machine = Definition.Clone(), Programs = Package.Programs }, unique),
+                _ => MachineTemplates.Minimal(unique),
+            };
+            History.Record();
+            LoadPackage(package);
+            if (newStart == "minimal") { Program = MachineTemplates.StarterProgram; Rebuild(); }
+            newDialog = false;
+            ActiveTab = "Design";
+        }
+
         private void ResetPackage()
         {
             History.Record();

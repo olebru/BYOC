@@ -14,7 +14,7 @@
                         var index = row * Display.Columns + column;
                         var value = Display.Cells[index];
                         <span class="lcd-cell @(index == Display.Cursor ? "cursor" : "") @(index == LastWritten ? "fresh" : "")"
-                              @key="(index == LastWritten ? Cycle : 0) * 10000 + index" title="@($"{index}: 0x{value:X2}")">@CharacterDisplay.ToChar(value)</span>
+                              @key="@(index == LastWritten ? $"{index}@{Cycle}" : index.ToString())" title="@($"{index}: 0x{value:X2}")">@CharacterDisplay.ToChar(value)</span>
                     }
                 </div>
             }

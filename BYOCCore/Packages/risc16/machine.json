@@ -16,7 +16,7 @@
     },
     {
       "id": "pc",
-      "type": "programCounter",
+      "type": "register",
       "name": "PC",
       "bus": "main",
       "layout": { "x": 216, "y": 50 }
@@ -125,7 +125,7 @@
   ],
   "decoder": {
     "status": "cpsr",
-    "instruction": "ir",
+    "instructionRegister": "ir",
     "microcode": {
       "name": "RISC-16 microcode",
       "fetch": {

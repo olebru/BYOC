@@ -12,7 +12,7 @@ namespace BYOCCore
         private readonly DecoderRom rom;
         private readonly Assembler assembler;
 
-        public AssemblyLanguage(MicrocodeDefinition microcode, int memorySize = RomModule.DefaultSize)
+        public AssemblyLanguage(MicrocodeDefinition microcode, int memorySize = MemoryModule.DefaultSize)
         {
             this.microcode = microcode ?? new MicrocodeDefinition();
             try { rom = new DecoderRom(this.microcode); }

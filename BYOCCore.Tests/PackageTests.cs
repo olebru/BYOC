@@ -24,7 +24,7 @@ public class PackageTests
     [Fact]
     public void BuiltInPackagesLoadWithTheDefaultFirst()
     {
-        Assert.Equal(new[] { "BYOC-16", "RISC-16" }, BuiltInPackages.All.Select(p => p.Name));
+        Assert.Equal(new[] { "BYOC-16", "HARVARD-16", "RISC-16" }, BuiltInPackages.All.Select(p => p.Name));
         Assert.Same(BuiltInPackages.All[0], BuiltInPackages.Default);
         foreach (var package in BuiltInPackages.All)
         {
@@ -34,8 +34,8 @@ public class PackageTests
         }
     }
 
-    // These loop for ever on purpose: the long running demo and the interactive sketch.
-    private static readonly string[] LoopingPrograms = { "Stack and memory", "Sketch with the arrow keys" };
+    // These loop for ever on purpose: the long running demo and the interactive programs.
+    private static readonly string[] LoopingPrograms = { "Stack and memory", "Sketch with the arrow keys", "Paddle game" };
 
     [Fact]
     public void EveryProgramInEveryPackageAssemblesWithoutWarningsAndHalts()
@@ -68,7 +68,7 @@ public class PackageTests
         copy.Programs.Clear();
         copy.Machine.Devices.Clear();
         Assert.NotEmpty(BuiltInPackages.Get("RISC-16").Programs);
-        Assert.NotEmpty(BuiltInPackages.All[1].Machine.Devices);
+        Assert.NotEmpty(BuiltInPackages.All.Single(p => p.Name == "RISC-16").Machine.Devices);
         Assert.Throws<ArgumentException>(() => BuiltInPackages.Get("nope"));
     }
 

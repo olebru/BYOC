@@ -142,7 +142,7 @@ namespace BYOCCore
         private static void ValidateFlow(InstructionDefinition instruction, MachineDefinition machine,
             Action<DiagnosticSeverity, InstructionDefinition, int?, string, string> add)
         {
-            var stepRegister = machine.Decoder?.Instruction;
+            var stepRegister = machine.Decoder?.InstructionRegister;
             if (stepRegister == null || instruction.Steps.Count == 0) return;
             var clocks = new HashSet<string>(machine.Devices.Where(d => d.Type == "clock").Select(d => d.Id));
             bool Ends(MicroStep step) => step.Signals.Any(s => Signal.TryParse(s, out var signal)

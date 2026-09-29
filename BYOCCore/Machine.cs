@@ -17,11 +17,11 @@ namespace BYOCCore
         public List<MicroInstruction> CurrentMicroCode { get; private set; }
         public int Cycles { get; private set; }
         private readonly Dictionary<string, IBusDevice> devicesByID;
-        private readonly Register instructionRegister;
+        private readonly InstructionRegister instructionRegister;
         private readonly Register statusRegister;
         private readonly Clock halt;
         private readonly DeviceRegistry registry;
-        private readonly RomModule programMemory;
+        private readonly MemoryModule programMemory;
         private readonly RingBuffer<TickRecord> history = new RingBuffer<TickRecord>(HistoryLimit);
         public const int HistoryLimit = 500;
 
@@ -56,9 +56,9 @@ namespace BYOCCore
             }
 
             statusRegister = Device<Register>(definition.Decoder.Status, "decoder.status");
-            instructionRegister = Device<Register>(definition.Decoder.Instruction, "decoder.instruction");
+            instructionRegister = Device<InstructionRegister>(definition.Decoder.InstructionRegister, "decoder.instructionRegister");
             if (definition.Halt != null) halt = Device<Clock>(definition.Halt, "halt");
-            if (definition.ProgramMemory != null) programMemory = Device<RomModule>(definition.ProgramMemory, "programMemory");
+            if (definition.ProgramMemory != null) programMemory = Device<MemoryModule>(definition.ProgramMemory, "programMemory");
 
             microcode ??= definition.Decoder.Microcode
                 ?? throw new MachineDefinitionException("\"decoder.microcode\" is required: the fetch routine and instructions for this machine.");
@@ -68,7 +68,7 @@ namespace BYOCCore
             MicrocodeWarnings = diagnostics.Where(d => d.Severity == DiagnosticSeverity.Warning).ToList();
 
             DecoderRom = new DecoderRom(microcode);
-            Assembler = new Assembler(DecoderRom, programMemory?.Size ?? RomModule.DefaultSize);
+            Assembler = new Assembler(DecoderRom, programMemory?.Size ?? MemoryModule.DefaultSize);
             ProgramByteCode = Assembler.Assemble(source ?? string.Empty);
             if (ProgramByteCode.Length > 0)
             {
@@ -76,7 +76,7 @@ namespace BYOCCore
                 {
                     throw new MachineDefinitionException("\"programMemory\" must be set to load a program.");
                 }
-                Device<RomModule>(definition.ProgramMemory).LoadProgram(ProgramByteCode);
+                Device<MemoryModule>(definition.ProgramMemory).LoadProgram(ProgramByteCode);
             }
             CurrentMicroCode = DecoderRom.FetchInstruction(statusRegister.Data, instructionRegister.Data);
         }
@@ -194,7 +194,7 @@ namespace BYOCCore
                 Devices = microCode.Select(m => devicesByID[m.DeviceID]).ToArray(),
                 Functions = microCode.Select(m => m.Function).ToArray(),
                 Signals = microCode.Select(m => $"{m.DeviceID}.{m.Function}").ToArray(),
-                LoadsInstruction = microCode.Any(m => m.DeviceID == Definition.Decoder.Instruction && m.Function == "load"),
+                LoadsInstruction = microCode.Any(m => m.DeviceID == Definition.Decoder.InstructionRegister && m.Function == "load"),
             };
             plan.ReadersByBus = Buses.Keys.ToDictionary(id => id, id => ReadersOf(id, plan.Signals));
             var located = DecoderRom.Locate(status, step);
@@ -286,9 +286,10 @@ namespace BYOCCore
                 {
                     case Register register: values[device.ID()] = register.Data; break;
                     case DualPortRegister dualPort: values[device.ID()] = dualPort.Data; break;
-                    case RomModule memory: values[device.ID() + ".mar"] = memory.memoryAddress; break;
+                    case MemoryModule memory: values[device.ID() + ".mar"] = memory.memoryAddress; break;
                     case CharacterDisplay display: values[device.ID() + ".cursor"] = display.Cursor; break;
                     case Keypad keypad: values[device.ID()] = keypad.Data; break;
+                    case InstructionRegister counter: values[device.ID()] = counter.Data; break;
                     case Framebuffer framebuffer:
                         values[device.ID() + ".x"] = framebuffer.X;
                         values[device.ID() + ".y"] = framebuffer.Y;
@@ -317,8 +318,9 @@ namespace BYOCCore
         private T Device<T>(string id, string setting) where T : class, IBusDevice
         {
             var device = Device(id);
+            string Article(string name) => "AEIOU".Contains(name[0]) ? "an" : "a";
             return device as T ?? throw new MachineDefinitionException(
-                $"\"{setting}\" must name a {typeof(T).Name} device, but '{id}' is a {device.GetType().Name}.");
+                $"\"{setting}\" must name {Article(typeof(T).Name)} {typeof(T).Name} device, but '{id}' is {Article(device.GetType().Name)} {device.GetType().Name}.");
         }
 
         private static void Validate(MachineDefinition definition, DeviceRegistry registry)
@@ -357,12 +359,12 @@ namespace BYOCCore
             }
             if (definition.Decoder == null)
             {
-                errors.Add("\"decoder\" with \"status\" and \"instruction\" is required.");
+                errors.Add("\"decoder\" with \"status\" and \"instructionRegister\" is required.");
             }
             else
             {
                 CheckReference(errors, deviceIds, definition.Decoder.Status, "decoder.status", required: true);
-                CheckReference(errors, deviceIds, definition.Decoder.Instruction, "decoder.instruction", required: true);
+                CheckReference(errors, deviceIds, definition.Decoder.InstructionRegister, "decoder.instructionRegister", required: true);
             }
             CheckReference(errors, deviceIds, definition.Halt, "halt", required: false);
             CheckReference(errors, deviceIds, definition.ProgramMemory, "programMemory", required: false);

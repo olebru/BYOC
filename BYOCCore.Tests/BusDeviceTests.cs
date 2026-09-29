@@ -89,19 +89,42 @@ public class BusDeviceTests
     }
 
     [Fact]
-    public void OutputtingDeviceIsClockedOncePerCycle()
+    public void InstructionRegisterCountsEveryTickAndObeysLoadAndReset()
     {
         var bus = new Bus();
-        var ir = new InstructionRegister("IR", "regi", bus);
-        var target = new Register("DST", "dst", bus);
-        bus.devices.Add(ir);
-        bus.devices.Add(target);
+        var step = new InstructionRegister("STEP", "step", bus);
+        var source = new Register("SRC", "src", bus);
+        bus.devices.Add(step);
+        bus.devices.Add(source);
+        Assert.Equal(new[] { "load", "reset" }, step.SignalLines());
+        Assert.False(step.IsOutputEnabled());
 
-        ir.Enable("output");
-        target.Enable("load");
         bus.Clk();
+        bus.Clk();
+        Assert.Equal(2, step.Data);
 
-        Assert.Equal(1, ir.Data);
+        source.Data = 0x40;
+        source.Enable("output");
+        step.Enable("load");
+        bus.Clk();
+        Assert.Equal(0x40, step.Data);
+        bus.Clk();
+        Assert.Equal(0x41, step.Data);
+
+        step.Enable("reset");
+        bus.Clk();
+        Assert.Equal(0, step.Data);
+
+        // reset wins over load in the same tick, and the count wraps at 16 bits.
+        source.Enable("output");
+        step.Enable("load");
+        step.Enable("reset");
+        bus.Clk();
+        Assert.Equal(0, step.Data);
+        step.Data = 0xFFFF;
+        bus.Clk();
+        Assert.Equal(0, step.Data);
+        Assert.Throws<Exception>(() => step.Enable("output"));
     }
 
     [Fact]
@@ -112,10 +135,10 @@ public class BusDeviceTests
     }
 
     [Fact]
-    public void ProgramCounterWrapsAtSixteenBits()
+    public void RegisterIncrementWrapsAtSixteenBits()
     {
         var bus = new Bus();
-        var pc = new ProgramCounter("PC", "pc", bus);
+        var pc = new Register("PC", "pc", bus);
         bus.devices.Add(pc);
         pc.Data = 0xFFFF;
         pc.Enable("inc");

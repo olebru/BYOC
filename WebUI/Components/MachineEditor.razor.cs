@@ -234,7 +234,6 @@ namespace WebUI.Components
                 "register" => "reg",
                 "statusRegister" => "status",
                 "instructionRegister" => "ir",
-                "programCounter" => "pc",
                 "dualPortRegister" => "bridge",
                 "clock" => "clk",
                 _ => type.ToLowerInvariant(),

@@ -18,7 +18,7 @@ namespace BYOCCore
         private readonly Func<string, int, OperandType?> operandTypeOf;
 
         // Mnemonics are matched without regard to case.
-        public Assembler(DecoderRom completeDecoderRom, int memorySize = RomModule.DefaultSize)
+        public Assembler(DecoderRom completeDecoderRom, int memorySize = MemoryModule.DefaultSize)
             : this(mnemonic => TryOpcode(completeDecoderRom, mnemonic),
                    mnemonic => completeDecoderRom.OperandCount(Canonical(completeDecoderRom.Microcode, mnemonic)), memorySize,
                    (mnemonic, index) => completeDecoderRom.Microcode.FindInstruction(Canonical(completeDecoderRom.Microcode, mnemonic))?.OperandTypeAt(index))
@@ -35,7 +35,7 @@ namespace BYOCCore
 
         // opcodeOf returns null for an unknown mnemonic; operandCountOf and operandTypeOf return null when an
         // instruction does not say.
-        public Assembler(Func<string, int?> opcodeOf, Func<string, int?> operandCountOf, int memorySize = RomModule.DefaultSize,
+        public Assembler(Func<string, int?> opcodeOf, Func<string, int?> operandCountOf, int memorySize = MemoryModule.DefaultSize,
                          Func<string, int, OperandType?> operandTypeOf = null)
         {
             this.opcodeOf = opcodeOf;

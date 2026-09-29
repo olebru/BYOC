@@ -104,8 +104,15 @@ namespace BYOCCore
     {
         // Register whose low 4 bits (NVCZ) select the status variant of a micro instruction.
         public string Status { get; set; }
-        // Register holding the current micro instruction address.
-        public string Instruction { get; set; }
+        // The micro step counter: holds the decoder ROM step address that runs next.
+        public string InstructionRegister { get; set; }
+        // Machine files from before the rename call it "instruction"; read it, never write it.
+        [JsonPropertyName("instruction")]
+        public string LegacyInstruction
+        {
+            get { return null; }
+            set { if (value != null) InstructionRegister ??= value; }
+        }
         // The decoder ROM contents: the fetch routine and the instruction set, driving this machine's control lines.
         public MicrocodeDefinition Microcode { get; set; }
     }

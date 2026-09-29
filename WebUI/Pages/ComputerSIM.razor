@@ -30,9 +30,10 @@
             }
             @if (!BuiltInPackages.All.Any(p => p.Name == PackageName))
             {
-                <option value="@PackageName">@PackageName (opened)</option>
+                <option value="@PackageName">@PackageName (custom)</option>
             }
         </select>
+        <button class="btn btn-sm btn-outline-secondary" @onclick="OpenNewDialog" title="Start a new machine of your own">New…</button>
         <button class="btn btn-sm btn-outline-secondary" @onclick="ResetPackage" title="Load the package's machine and first program again">Reset</button>
         <label class="btn btn-sm btn-outline-secondary mb-0" title="Open a package file: a machine with its microcode and programs">
             Open…<InputFile OnChange="OpenPackage" accept=".json" class="d-none" />
@@ -40,6 +41,30 @@
         <button class="btn btn-sm btn-outline-secondary" @onclick="DownloadPackage" title="Save the machine, its microcode and the programs as one file">Download</button>
     </div>
 </div>
+
+@if (newDialog)
+{
+    <div class="new-backdrop" @onclick="() => newDialog = false">
+        <div class="new-dialog" @onclick:stopPropagation @onkeydown="NewDialogKey">
+            <div class="new-title">New machine</div>
+            <label class="silk" for="new-name">Name</label>
+            <input id="new-name" class="form-control form-control-sm" @bind="newName" @bind:event="oninput" @ref="newNameInput" />
+            <div class="silk new-start-label">Start from</div>
+            @foreach (var (value, title, description) in NewStarts)
+            {
+                <label class="new-start @(newStart == value ? "chosen" : "")">
+                    <input type="radio" name="new-start" checked="@(newStart == value)" @onchange="() => newStart = value" />
+                    <span><strong>@title</strong><small>@description</small></span>
+                </label>
+            }
+            <div class="new-note">The new machine lives in this page until you download it; Download saves it as a package file you can open again.</div>
+            <div class="new-actions">
+                <button class="btn btn-sm btn-outline-secondary" @onclick="() => newDialog = false">Cancel</button>
+                <button class="btn btn-sm btn-primary" @onclick="CreateMachine">Create</button>
+            </div>
+        </div>
+    </div>
+}
 
 @if (ActiveTab == "Design")
 {
@@ -63,6 +88,8 @@ else if (ActiveTab == "Microcode")
 }
 else if (ActiveTab == "Program")
 {
+    @if (Package.Programs.Count > 0)
+    {
     <div class="examples">
         <span class="examples-label silk">Examples · @PackageName</span>
         @foreach (var example in Package.Programs)
@@ -70,6 +97,7 @@ else if (ActiveTab == "Program")
             <button class="btn btn-sm @(Program == example.Source ? "btn-primary" : "btn-outline-primary")" title="@example.Description" @onclick="() => LoadExample(example.Source)">@example.Name</button>
         }
     </div>
+    }
     <AssemblyEditor Value="@Program" ValueChanged="OnProgramChanged" Microcode="Definition.Decoder?.Microcode" MemorySize="ProgramMemorySize" />
     <ErrorList Errors="@ProgramErrors.Where(e => !e.StartsWith("Line ")).ToList()" />
 }

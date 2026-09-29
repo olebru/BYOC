@@ -5,7 +5,7 @@
   ],
   "devices": [
     { "id": "regi", "type": "instructionRegister", "name": "REGINSTR", "bus": "main" },
-    { "id": "pc", "type": "programCounter", "name": "PCOUNT", "bus": "main" },
+    { "id": "pc", "type": "register", "name": "PCOUNT", "bus": "main" },
     {
       "id": "regsp",
       "type": "register",
@@ -52,7 +52,7 @@
   ],
   "decoder": {
     "status": "regsta",
-    "instruction": "regi",
+    "instructionRegister": "regi",
     "microcode": {
       "name": "BYOC-16 microcode",
       "fetch": {
