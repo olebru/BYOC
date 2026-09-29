@@ -32,3 +32,13 @@
     align-items: center;
     gap: 6px;
 }
+
+.package-label {
+    font-size: 0.8rem;
+    color: #7a8599;
+    margin: 0;
+}
+
+.package-select {
+    width: auto;
+}

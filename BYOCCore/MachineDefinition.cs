@@ -130,6 +130,8 @@ namespace BYOCCore
     [JsonSerializable(typeof(MachineDefinition))]
     [JsonSerializable(typeof(MicrocodeDefinition))]
     [JsonSerializable(typeof(OperandType))]
+    [JsonSerializable(typeof(MachinePackage))]
+    [JsonSerializable(typeof(PackageManifest))]
     [JsonSerializable(typeof(string))]
     internal partial class MachineDefinitionJsonContext : JsonSerializerContext
     {

@@ -2,18 +2,23 @@ using System;
 using System.Collections.Generic;
 namespace BYOCCore
 {
+    // 16 bit ALU working on two registers (a and b) and writing its flags to a status register.
+    //   add: a + b. Z when 0, C when the sum carries out, V on signed overflow.
+    //   sub: a - b; cmp sets the same flags without driving the bus. Z when equal, N and C when a < b unsigned
+    //        (C is borrow), V on signed overflow.
+    //   and, orr, eor: bitwise. Z when 0, N from the top bit.
+    //   lsl, lsr: a shifted left or right by b (0-15). Z when 0, N from the top bit, C the last bit shifted out.
     public class ALU : IBusDevice
     {
         private Register a;
-        private bool add;
         private Register b;
         private Bus bus;
-        private bool cmp;
         private string deviceID;
         private string deviceName;
         private Register sta;
-        private bool sub;
+        private string pending;
         private int? pendingStatus;
+        private static readonly string[] Operations = { "add", "sub", "cmp", "and", "orr", "eor", "lsl", "lsr" };
         public ALU(string DeviceName, string DeviceID, Register rega, Register regb, Register regsta, Bus Bus)
         {
             deviceID = DeviceID;
@@ -26,29 +31,46 @@ namespace BYOCCore
         // Operands are read in the drive phase, before any register latches a new value this tick.
         public void Drive()
         {
-            if (add)
+            if (pending == null) return;
+            int x = a.Data & Mask, y = b.Data & Mask;
+            int result;
+            int status = 0;
+            switch (pending)
             {
-                int x = a.Data & Mask, y = b.Data & Mask;
-                int sum = x + y;
-                int result = sum & Mask;
-                int status = 0;
-                if (result == 0) status |= StatusRegister.ZeroFlag;
-                if (sum > Mask) status |= StatusRegister.CarryFlag;
-                if (((x ^ result) & (y ^ result) & SignBit) != 0) status |= StatusRegister.OverflowFlag;
-                bus.Data = result;
-                pendingStatus = status;
-                add = false;
+                case "add":
+                    int sum = x + y;
+                    result = sum & Mask;
+                    if (sum > Mask) status |= StatusRegister.CarryFlag;
+                    if (((x ^ result) & (y ^ result) & SignBit) != 0) status |= StatusRegister.OverflowFlag;
+                    break;
+                case "sub":
+                case "cmp":
+                    result = (x - y) & Mask;
+                    if (x < y) status |= StatusRegister.NegativeFlag | StatusRegister.CarryFlag;
+                    if (((x ^ y) & (x ^ result) & SignBit) != 0) status |= StatusRegister.OverflowFlag;
+                    break;
+                case "and": result = x & y; status |= Sign(result); break;
+                case "orr": result = x | y; status |= Sign(result); break;
+                case "eor": result = x ^ y; status |= Sign(result); break;
+                case "lsl":
+                    int left = y & 15;
+                    result = (x << left) & Mask;
+                    if (left > 0 && ((x >> (16 - left)) & 1) != 0) status |= StatusRegister.CarryFlag;
+                    status |= Sign(result);
+                    break;
+                case "lsr":
+                    int right = y & 15;
+                    result = x >> right;
+                    if (right > 0 && ((x >> (right - 1)) & 1) != 0) status |= StatusRegister.CarryFlag;
+                    status |= Sign(result);
+                    break;
+                default:
+                    throw new InvalidOperationException(pending);
             }
-            if (sub)
-            {
-                bus.Data = subtract();
-                sub = false;
-            }
-            if (cmp)
-            {
-                subtract();
-                cmp = false;
-            }
+            if (result == 0) status |= StatusRegister.ZeroFlag;
+            if (pending != "cmp") bus.Data = result;
+            pendingStatus = status;
+            pending = null;
         }
         public void Latch()
         {
@@ -58,60 +80,30 @@ namespace BYOCCore
                 pendingStatus = null;
             }
         }
+        private static int Sign(int result) { return (result & SignBit) != 0 ? StatusRegister.NegativeFlag : 0; }
         public string DisplayName() { return deviceName; }
         public void Enable(string function)
         {
-            switch (function)
-            {
-                case "add":
-                    add = true;
-                    break;
-                case "sub":
-                    sub = true;
-                    break;
-                case "cmp":
-                    cmp = true;
-                    break;
-                default:
-                    throw new Exception("Unable to enable the unknown function: " + function);
-            }
+            if (Array.IndexOf(Operations, function) < 0) throw new Exception("Unable to enable the unknown function: " + function);
+            if (pending != null && pending != function) throw new Exception($"{deviceID}: '{pending}' and '{function}' can not run in the same tick.");
+            pending = function;
         }
         public string ID() { return deviceID; }
         public bool IsOutputEnabled()
         {
-            return add || sub ;
+            return pending != null && pending != "cmp";
         }
         public string OperationsOnNextClock()
         {
-            string next = "";
-            if (add) next = $"{next}add";
-            if (sub) next = $"{next}sub";
-            if (cmp) next = $"{next}cmp";
-            return $"{next}";
+            return pending ?? "";
         }
         public List<String> SignalLines()
         {
-            var lines = new List<String>();
-            lines.Add("add");
-            lines.Add("sub");
-            lines.Add("cmp");
-            return lines;
+            return new List<string>(Operations);
         }
         public new string ToString()
         {
             return deviceName;
-        }
-        // Computes a - b and the resulting status. Negative and carry (borrow) are set when a < b unsigned.
-        private int subtract()
-        {
-            int x = a.Data & Mask, y = b.Data & Mask;
-            int result = (x - y) & Mask;
-            int status = 0;
-            if (result == 0) status |= StatusRegister.ZeroFlag;
-            if (x < y) status |= StatusRegister.NegativeFlag | StatusRegister.CarryFlag;
-            if (((x ^ y) & (x ^ result) & SignBit) != 0) status |= StatusRegister.OverflowFlag;
-            pendingStatus = status;
-            return result;
         }
         // 16 bit arithmetic; the top bit is the sign bit for overflow.
         private const int Mask = Bus.Mask;

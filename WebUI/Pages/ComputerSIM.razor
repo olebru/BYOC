@@ -1,5 +1,10 @@
 @page "/"
 
+@if (PackageError != null)
+{
+    <div class="alert alert-danger alert-dismissible">@PackageError <button type="button" class="close" @onclick="() => PackageError = null">&times;</button></div>
+}
+
 <div class="workspace-header">
     <ul class="nav nav-tabs">
         @foreach (var tab in Tabs)
@@ -17,7 +22,22 @@
         }
     </ul>
     <div class="workspace-actions">
-        <button class="btn btn-sm btn-outline-secondary" @onclick="ResetToDefault">Reset to default</button>
+        <label class="package-label" for="package-select">Package</label>
+        <select id="package-select" class="form-control form-control-sm package-select" value="@PackageName" @onchange="SelectPackage" title="@Package.Description">
+            @foreach (var package in BuiltInPackages.All)
+            {
+                <option value="@package.Name">@package.Name</option>
+            }
+            @if (!BuiltInPackages.All.Any(p => p.Name == PackageName))
+            {
+                <option value="@PackageName">@PackageName (opened)</option>
+            }
+        </select>
+        <button class="btn btn-sm btn-outline-secondary" @onclick="ResetPackage" title="Load the package's machine and first program again">Reset</button>
+        <label class="btn btn-sm btn-outline-secondary mb-0" title="Open a package file: a machine with its microcode and programs">
+            Open…<InputFile OnChange="OpenPackage" accept=".json" class="d-none" />
+        </label>
+        <button class="btn btn-sm btn-outline-secondary" @onclick="DownloadPackage" title="Save the machine, its microcode and the programs as one file">Download</button>
     </div>
 </div>
 
@@ -44,10 +64,10 @@ else if (ActiveTab == "Microcode")
 else if (ActiveTab == "Program")
 {
     <div class="examples">
-        <span class="examples-label">Example programs for the default machine</span>
-        @foreach (var example in ExampleData.Programs)
+        <span class="examples-label">Example programs in @PackageName</span>
+        @foreach (var example in Package.Programs)
         {
-            <button class="btn btn-sm @(Program == example.Source ? "btn-primary" : "btn-outline-primary")" @onclick="() => LoadExample(example.Source)">@example.Name</button>
+            <button class="btn btn-sm @(Program == example.Source ? "btn-primary" : "btn-outline-primary")" title="@example.Description" @onclick="() => LoadExample(example.Source)">@example.Name</button>
         }
     </div>
     <AssemblyEditor Value="@Program" ValueChanged="OnProgramChanged" Microcode="Definition.Decoder?.Microcode" MemorySize="ProgramMemorySize" />

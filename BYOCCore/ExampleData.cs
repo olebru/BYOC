@@ -1,241 +1,25 @@
 using System;
+using System.Linq;
 
 namespace BYOCCore 
 {
     public class ExampleData
     {
-        // The default machine definition, BYOC-16: 16 bit buses, registers and memory.
-        public static string MACHINE { get { return ReadResource("BYOCCore.Machines.byoc16.json"); } }
+        // The default package's machine definition (with its microcode) as JSON.
+        public static string MACHINE { get { return BuiltInPackages.Default.Machine.ToJson(); } }
         // The default machine's microcode (its decoder.microcode) on its own. ROMDATA below is the same
         // microcode in the legacy tab separated format.
-        public static string MICROCODE { get { return MachineDefinition.FromJson(MACHINE).Decoder.Microcode.ToJson(); } }
-        // Pushes values on the stack, loads two bytes from memory, adds them and pushes the result.
-        public static readonly string SRC = AssemblyLanguage.Format(string.Join("\n", new[]
+        public static string MICROCODE { get { return BuiltInPackages.Default.Machine.Decoder.Microcode.ToJson(); } }
+
+        // The default package's example programs.
+        public static string SRC { get { return BuiltInPackages.Default.Program("Stack and memory").Source; } }
+        public static string HELLO { get { return BuiltInPackages.Default.Program("Hello, world on the LCD").Source; } }
+        public static string FIBONACCI { get { return BuiltInPackages.Default.Program("Fibonacci on the LCD").Source; } }
+        public static string BANDS { get { return BuiltInPackages.Default.Program("Colour bands on the screen").Source; } }
+        public static string GRADIENT { get { return BuiltInPackages.Default.Program("Colour gradient on the screen").Source; } }
+        public static (string Name, string Source)[] Programs
         {
-            "; Stack and memory",
-            "; Pushes values on the stack in MMU bank 0 and adds two bytes stored after the code.",
-            "LAI #15 ; A = 15",
-            "PSA ; push A",
-            "PSA ; and again",
-            "LRA letter ; A = the byte at 'letter'",
-            "LRB one ; B = the byte at 'one'",
-            "PSA",
-            "loop: ADD ; A = A + B",
-            "PSA ; push the sum",
-            "letter: .BYTE #65 ; 'A'",
-            "one: .BYTE #1",
-        }));
-
-        // Prints "HELLO, WORLD!" by looping over a string in memory (B is the index), then a line feed and
-        // Norwegian letters from the Latin-1 range.
-        public static readonly string HELLO = AssemblyLanguage.Format(string.Join("\n", new[]
-        {
-            "; Hello, world on the LCD",
-            "; B indexes the string, A holds each character.",
-            "DCL ; clear the display",
-            "LBI #0 ; B = 0",
-            "loop: LNA msg ; A = msg[B]",
-            "DWA ; print A",
-            "INB ; next character",
-            "LAI #13 ; length of the string",
-            "CMP ; Z is set when B = 13",
-            "JNE loop",
-            "DWI #'\\n' ; new line",
-            "DWI #'Æ'",
-            "DWI #'Ø'",
-            "DWI #'Å'",
-            "DWI #' '",
-            "DWI #'æ'",
-            "DWI #'ø'",
-            "DWI #'å'",
-            "HLT",
-            "msg: .BYTE \"HELLO, WORLD!\"",
-        }));
-
-        // Prints the Fibonacci numbers that fit in 16 bits in decimal on the display: 1 1 2 3 5 8 ... 46368.
-        public static readonly string FIBONACCI = FibonacciProgram(new[] { 10000, 1000, 100, 10 });
-
-        // Builds a Fibonacci program that prints in decimal until ADD overflows. Variables live in the selected
-        // MMU bank: a at 0, b at 1, next at 2, the value being printed at 3, the digit being counted at 4 and
-        // "a digit was printed" at 5. There is no divide, so each digit is found by subtracting its place value
-        // until SUB borrows, which sets carry for JC. Leading zeros are not printed.
-        private static string FibonacciProgram(int[] placeValues)
-        {
-            var lines = new System.Collections.Generic.List<string>
-            {
-                "; Fibonacci on the LCD",
-                "; Prints each Fibonacci number in decimal until the next one does not fit in 16 bits.",
-                "; Variables in the MMU bank: 0 a, 1 b, 2 next, 3 value to print, 4 digit, 5 digit printed.",
-                "DCL",
-                "LAI #0",
-                "STA #0 ; a = 0",
-                "LAI #1",
-                "STA #1 ; b = 1",
-                "next: LDA #1 ; print b",
-                "STA #3",
-                "LAI #0",
-                "STA #5 ; nothing printed yet",
-            };
-            for (int k = 0; k < placeValues.Length; k++)
-            {
-                lines.AddRange(new[]
-                {
-                    $"; digit for {placeValues[k]}s: count how often it can be subtracted",
-                    "LAI #'0'",
-                    "STA #4",
-                    $"count{k}: LDA #3",
-                    $"LBI #{placeValues[k]}",
-                    "SUB",
-                    $"JC digit{k} ; borrow: value < place value",
-                    "STA #3",
-                    "LDA #4",
-                    "INA",
-                    "STA #4",
-                    $"JMP count{k}",
-                    $"digit{k}: LDA #4",
-                    "LBI #'0'",
-                    "CMP",
-                    $"JNE print{k} ; not a zero: print it",
-                    "LDA #5",
-                    "LBI #1",
-                    "CMP",
-                    $"JNE skip{k} ; leading zero: skip it",
-                    $"print{k}: LDA #4",
-                    "DWA",
-                    "LAI #1",
-                    "STA #5",
-                    $"skip{k}:",
-                });
-            }
-            lines.AddRange(new[]
-            {
-                "; units digit, then a space",
-                "LDA #3",
-                "LBI #'0'",
-                "ADD",
-                "DWA",
-                "DWI #' '",
-                "; next = a + b, stop when it does not fit",
-                "LDA #0",
-                "LDB #1",
-                "ADD",
-                "JC done",
-                "STA #2",
-                "LDA #1",
-                "STA #0 ; a = b",
-                "LDA #2",
-                "STA #1 ; b = next",
-                "JMP next",
-                "done: HLT",
-            });
-            return AssemblyLanguage.Format(string.Join("\n", lines));
-        }
-
-        // Draws eight colour bands across the middle of the screen, then halts.
-        public static readonly string BANDS = BandsProgram(rowsPerBand: 4, top: 224);
-
-        private static string BandsProgram(int rowsPerBand, int top)
-        {
-            var colours = new[] { ("red", 0xF800), ("orange", 0xFD20), ("yellow", 0xFFE0), ("green", 0x07E0), ("cyan", 0x07FF), ("blue", 0x001F), ("magenta", 0xF81F), ("white", 0xFFFF) };
-            int pixels = Framebuffer.Width * rowsPerBand;
-            var lines = new System.Collections.Generic.List<string>
-            {
-                "; Colour bands on the screen",
-                $"; Draws {colours.Length} bands of {rowsPerBand} rows. The cursor moves right after each plot and wraps",
-                "; to the next row, so a band is just a count of pixels. B counts them.",
-                "GCL",
-                $"GYI {top} ; first row",
-                "GXI 0",
-            };
-            foreach (var (name, _) in colours)
-            {
-                lines.AddRange(new[]
-                {
-                    $"; {name}",
-                    "LBI 0",
-                    $"{name}_band: LRA {name} ; A = the colour",
-                    "GPA ; plot it",
-                    "INB",
-                    $"LAI {pixels} ; pixels in a band",
-                    "CMP",
-                    $"JNE {name}_band",
-                });
-            }
-            lines.Add("HLT");
-            lines.Add("; RGB565 colours");
-            foreach (var (name, value) in colours) lines.Add($"{name}: .WORD 0x{value:X4}");
-            return AssemblyLanguage.Format(string.Join("\n", lines));
-        }
-
-        // A smooth gradient over the whole screen: red grows left to right, green top to bottom. Halts when done.
-        public static readonly string GRADIENT = GradientProgram();
-
-        // Red is the top 5 bits of an RGB565 colour, so adding 0x0800 is one red level; after 32 levels the add
-        // carries out, which ends the row. Each level covers 20 pixels (32 x 20 = 640), plotted with 20 GPAs in
-        // a row so most pixels cost one instruction. Green goes up one level every 8 rows (60 levels over 480).
-        private static string GradientProgram()
-        {
-            var lines = new System.Collections.Generic.List<string>
-            {
-                "; Colour gradient on the screen",
-                "; Red grows from left to right and green from top to bottom, with a little blue.",
-                "; Variables in the MMU bank: 0 the row's colour, 1 rows drawn, 2 rows since green last changed.",
-                "GCL",
-                "LAI 0x0010 ; blue at half, red and green at 0",
-                "STA 0",
-                "LAI 0",
-                "STA 1",
-                "STA 2",
-                "row: LDA 0 ; A = colour at the left edge",
-                "level: GPA ; 20 pixels of this red level",
-            };
-            for (int i = 1; i < 20; i++) lines.Add("GPA");
-            lines.AddRange(new[]
-            {
-                "LBI 0x0800 ; one red level",
-                "ADD",
-                "JC next_row ; carry: the 32nd level wrapped, the row is full",
-                "JMP level",
-                "next_row: LDA 1",
-                "INA",
-                "STA 1 ; rows drawn",
-                "LBI 480",
-                "CMP",
-                "JEQ done",
-                "LDA 2",
-                "INA",
-                "STA 2",
-                "LBI 8 ; every 8 rows",
-                "CMP",
-                "JNE row",
-                "LAI 0",
-                "STA 2",
-                "LDA 0",
-                "LBI 0x0020 ; one green level",
-                "ADD",
-                "STA 0",
-                "JMP row",
-                "done: HLT",
-            });
-            return AssemblyLanguage.Format(string.Join("\n", lines));
-        }
-
-        // Example programs for the default machine, by name. The first is loaded by default.
-        public static readonly (string Name, string Source)[] Programs =
-        {
-            ("Stack and memory", SRC),
-            ("Hello, world on the LCD", HELLO),
-            ("Fibonacci on the LCD", FIBONACCI),
-            ("Colour bands on the screen", BANDS),
-            ("Colour gradient on the screen", GRADIENT),
-        };
-
-        private static string ReadResource(string name)
-        {
-            using var stream = typeof(ExampleData).Assembly.GetManifestResourceStream(name)
-                ?? throw new InvalidOperationException($"Embedded resource '{name}' is missing.");
-            using var reader = new System.IO.StreamReader(stream);
-            return reader.ReadToEnd();
+            get { return BuiltInPackages.Default.Programs.Select(p => (p.Name, p.Source)).ToArray(); }
         }
 
         public const string ROMDATA = @"p	pc	output	FTC	x	x	x	x

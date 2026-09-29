@@ -21,7 +21,7 @@ namespace BYOCCore
         private static void Write(StringBuilder builder, JsonElement element, int depth)
         {
             var inline = Inline(element);
-            if (inline != null && inline.Length + depth * 2 <= MaxInlineLength)
+            if (inline != null && (!IsContainer(element) || inline.Length + depth * 2 <= MaxInlineLength))
             {
                 builder.Append(inline);
                 return;

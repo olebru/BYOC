@@ -1,7 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.IO;
+using System.Threading.Tasks;
 using BYOCCore;
+using Microsoft.AspNetCore.Components.Forms;
+using Microsoft.JSInterop;
 using WebUI.Components;
 
 namespace WebUI.Pages
@@ -11,7 +15,13 @@ namespace WebUI.Pages
         private static readonly string[] Tabs = { "Design", "Microcode", "Program", "JSON", "Run" };
         private static readonly DeviceRegistry Registry = DeviceRegistry.CreateDefault();
 
+        [Microsoft.AspNetCore.Components.Inject] private IJSRuntime JS { get; set; }
+
         private string ActiveTab = "Design";
+        // The package the machine and the example programs came from, as it was loaded.
+        private MachinePackage Package;
+        private string PackageName { get { return Package.Name; } }
+        private string PackageError;
         private Machine C;
         // The whole machine, microcode included (Definition.Decoder.Microcode).
         private MachineDefinition Definition;
@@ -35,8 +45,7 @@ namespace WebUI.Pages
                 StateHasChanged();
                 return System.Threading.Tasks.Task.CompletedTask;
             });
-            Program = ExampleData.Programs[0].Source;
-            ApplyDefinition(MachineDefinition.FromJson(ExampleData.MACHINE));
+            LoadPackage(BuiltInPackages.Get(BuiltInPackages.Default.Name));
         }
 
         // Cells in the program memory, from the machine when it builds, otherwise its size parameter.
@@ -71,12 +80,52 @@ namespace WebUI.Pages
             Rebuild();
         }
 
-        // Undoable, like any other edit.
-        private void ResetToDefault()
+        private void LoadPackage(MachinePackage package)
+        {
+            Package = package;
+            PackageError = null;
+            Program = package.Programs.FirstOrDefault()?.Source ?? "";
+            ApplyDefinition(package.Machine.Clone());
+        }
+
+        // Switching or resetting the machine is undoable, like any other edit of it.
+        private void SelectPackage(Microsoft.AspNetCore.Components.ChangeEventArgs e)
+        {
+            var name = e.Value?.ToString();
+            if (name == PackageName || !BuiltInPackages.All.Any(p => p.Name == name)) return;
+            History.Record();
+            LoadPackage(BuiltInPackages.Get(name));
+        }
+        private void ResetPackage()
         {
             History.Record();
-            Program = ExampleData.Programs[0].Source;
-            ApplyDefinition(MachineDefinition.FromJson(ExampleData.MACHINE));
+            LoadPackage(Package.Clone());
+        }
+
+        private async Task OpenPackage(InputFileChangeEventArgs e)
+        {
+            try
+            {
+                using var reader = new StreamReader(e.File.OpenReadStream(maxAllowedSize: 16 * 1024 * 1024));
+                var package = MachinePackage.FromJson(await reader.ReadToEndAsync());
+                if (string.IsNullOrWhiteSpace(package.Name)) package.Name = Path.GetFileNameWithoutExtension(e.File.Name);
+                History.Record();
+                LoadPackage(package);
+            }
+            catch (Exception ex) when (ex is MachineDefinitionException || ex is IOException)
+            {
+                PackageError = $"Could not open {e.File.Name}: {ex.Message}";
+            }
+        }
+
+        // The machine as it is now, with the package's programs; a program that is not one of them is added.
+        private async Task DownloadPackage()
+        {
+            var package = Package.Clone();
+            package.Machine = Definition.Clone();
+            if (!string.IsNullOrWhiteSpace(Program) && !package.Programs.Any(p => p.Source == Program))
+                package.Programs.Add(new PackageProgram { Name = "My program", Source = Program });
+            await JS.InvokeVoidAsync("byocEditor.download", $"{package.Name}.json", package.ToJson());
         }
 
         private void OnDesignChanged(MachineDefinition definition)

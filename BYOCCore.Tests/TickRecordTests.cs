@@ -83,7 +83,7 @@ public class TickRecordTests
     {
         var c = Default();
         var listing = c.Assembler.Listing;
-        Assert.Equal(10, listing.Count);
+        Assert.Equal(11, listing.Count);
         Assert.Equal((0, "LAI", 2), (listing[0].Address, listing[0].Mnemonic, listing[0].Cells.Length));
         var loop = listing.Single(l => l.Label == "loop");
         Assert.Equal(9, loop.Address);

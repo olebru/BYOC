@@ -125,7 +125,7 @@ namespace BYOCCore
                 new DeviceTypeInfo
                 {
                     Category = "Arithmetic",
-                    Description = "add, sub and cmp on two registers, writes flags to a status register",
+                    Description = "add, sub, cmp, and, orr, eor, lsl and lsr on two registers, writes flags to a status register",
                     Connections =
                     {
                         new ConnectionInfo { Name = "a", Description = "First operand register" },
@@ -137,6 +137,11 @@ namespace BYOCCore
                         ControlLineInfo.Output("add", "Put a + b on the bus and set flags"),
                         ControlLineInfo.Output("sub", "Put a - b on the bus and set flags"),
                         ControlLineInfo.Internal("cmp", "Set flags for a - b"),
+                        ControlLineInfo.Output("and", "Put a AND b on the bus and set Z and N"),
+                        ControlLineInfo.Output("orr", "Put a OR b on the bus and set Z and N"),
+                        ControlLineInfo.Output("eor", "Put a XOR b on the bus and set Z and N"),
+                        ControlLineInfo.Output("lsl", "Put a shifted left by b on the bus; C is the last bit out"),
+                        ControlLineInfo.Output("lsr", "Put a shifted right by b on the bus; C is the last bit out"),
                     }
                 });
             registry.Register("rom", c => new RomModule(c.Name, c.Id, c.Bus(), c.IntParameter("size", RomModule.DefaultSize, 1, 65536)),

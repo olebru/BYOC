@@ -1,0 +1,12 @@
+{
+  "name": "BYOC-16",
+  "description": "The original accumulator machine: registers A and B, an ALU, a stack in the MMU, an LCD and a colour screen. Instructions work on A and B.",
+  "machine": "machine.json",
+  "programs": [
+    { "name": "Stack and memory", "description": "Pushes values and adds two bytes stored after the code", "file": "stack.asm" },
+    { "name": "Hello, world on the LCD", "description": "Loops over a string with an index in B", "file": "hello.asm" },
+    { "name": "Fibonacci on the LCD", "description": "Prints the 16 bit Fibonacci numbers in decimal", "file": "fibonacci.asm" },
+    { "name": "Colour bands on the screen", "description": "Eight full width colour bands", "file": "bands.asm" },
+    { "name": "Colour gradient on the screen", "description": "Red left to right, green top to bottom", "file": "gradient.asm" }
+  ]
+}

@@ -16,8 +16,8 @@ public class AssemblerTests
         Assert.Equal(new int[]
         {
             Op("LAI"), 15, Op("PSA"), Op("PSA"),
-            Op("LRA"), 11, Op("LRB"), 12,
-            Op("PSA"), Op("ADD"), Op("PSA"),
+            Op("LRA"), 13, Op("LRB"), 14,
+            Op("PSA"), Op("ADD"), Op("PSA"), Op("JMP"), 9,
             65, 1
         }, bytes);
     }
