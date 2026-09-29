@@ -46,7 +46,7 @@ public class MachineDefinitionTests
     {
         var c = Machine.CreateDefault();
         Assert.Equal("BYOC-16", c.Definition.Name);
-        Assert.Equal(new[] { "regi", "pc", "regsp", "rega", "regb", "regc", "regs", "alu", "regsta", "mem", "mmu", "clk", "lcd" },
+        Assert.Equal(new[] { "regi", "pc", "regsp", "rega", "regb", "regc", "regs", "alu", "regsta", "mem", "mmu", "clk", "lcd", "fb" },
             c.Devices.Select(d => d.ID()));
         Assert.Equal(4095, c.Device<Register>("regsp").Data);
         Assert.Equal("REGSP", c.Device<Register>("regsp").DisplayName());

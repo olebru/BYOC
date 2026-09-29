@@ -1,0 +1,68 @@
+.screen-frame {
+    background: #1b1e24;
+    border-radius: 10px;
+    padding: 8px 10px 10px;
+    box-shadow: inset 0 0 0 2px #111317;
+}
+
+.screen-head {
+    display: flex;
+    gap: 8px;
+    font-size: 0.68rem;
+    color: #8f98a8;
+    margin-bottom: 6px;
+    letter-spacing: 0.04em;
+}
+
+.screen-name {
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.screen-info {
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    margin-left: auto;
+}
+
+.screen-hint {
+    display: none;
+}
+
+/* In the panel the 640 x 480 picture is scaled down; smooth scaling keeps it looking like a smaller copy
+   instead of dropping rows and columns. */
+.screen-canvas {
+    display: block;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    background: #000;
+    border-radius: 4px;
+    image-rendering: auto;
+    cursor: zoom-in;
+}
+
+/* Actual size, over the page. */
+.screen.large {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: rgba(10, 12, 16, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    outline: none;
+}
+
+    .screen.large .screen-frame {
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    }
+
+    .screen.large .screen-canvas {
+        width: 640px;
+        max-width: 90vw;
+        image-rendering: pixelated;
+        cursor: zoom-out;
+    }
+
+    .screen.large .screen-hint {
+        display: inline;
+    }

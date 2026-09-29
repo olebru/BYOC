@@ -180,6 +180,19 @@ namespace BYOCCore
                         ControlLineInfo.Internal("clear", "Blank the display and move the cursor home"),
                     }
                 });
+            registry.Register("framebuffer", c => new Framebuffer(c.Name, c.Id, c.Bus()),
+                new DeviceTypeInfo
+                {
+                    Category = "I/O",
+                    Description = "640 x 480 colour display, one RGB565 word per pixel. plot writes at the cursor and moves right",
+                    ControlLines =
+                    {
+                        ControlLineInfo.Input("loadx", "Set the cursor column from the bus (0-639)"),
+                        ControlLineInfo.Input("loady", "Set the cursor row from the bus (0-479)"),
+                        ControlLineInfo.Input("plot", "Write the RGB565 colour on the bus at the cursor, then move right"),
+                        ControlLineInfo.Internal("clear", "Blank the screen and move the cursor home"),
+                    }
+                });
             return registry;
         }
 

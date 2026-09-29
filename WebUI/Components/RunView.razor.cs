@@ -34,9 +34,10 @@ namespace WebUI.Components
         private Machine shown;
         private bool running;
         private string runtimeError;
-        private int speedSlider = 40;
+        // Speed settings last for the session, so they survive switching tabs.
+        private static int speedSlider = 40;
         // Ignore the slider and run as many ticks as the browser allows.
-        private bool maxSpeed;
+        private static bool maxSpeed;
         // Measured clock speed while running: (seconds of running time, ticks per second).
         private readonly List<(double Seconds, double Hz)> speedSamples = new List<(double, double)>();
         private double runningSeconds;

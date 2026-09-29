@@ -46,7 +46,8 @@
       "name": "LCD",
       "bus": "main",
       "parameters": { "columns": 32, "rows": 4 }
-    }
+    },
+    { "id": "fb", "type": "framebuffer", "name": "SCREEN", "bus": "main" }
   ],
   "decoder": {
     "status": "regsta",
@@ -656,6 +657,107 @@
             },
             {
               "signals": ["mem.output", "lcd.load", "regi.reset", "pc.inc"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "GCL",
+          "description": "Clear the screen and move its cursor to 0, 0",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": ["fb.clear", "regi.reset", "pc.inc"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "GXI",
+          "description": "Move the screen cursor to column x (0-639)",
+          "operands": 1,
+          "operandTypes": ["value"],
+          "steps": [
+            {
+              "signals": ["pc.inc"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "fb.loadx", "regi.reset", "pc.inc"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "GYI",
+          "description": "Move the screen cursor to row y (0-479)",
+          "operands": 1,
+          "operandTypes": ["value"],
+          "steps": [
+            {
+              "signals": ["pc.inc"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "fb.loady", "regi.reset", "pc.inc"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "GXA",
+          "description": "Move the screen cursor to the column in A",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": ["rega.output", "fb.loadx", "regi.reset", "pc.inc"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "GYA",
+          "description": "Move the screen cursor to the row in A",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": ["rega.output", "fb.loady", "regi.reset", "pc.inc"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "GPI",
+          "description": "Plot the RGB565 colour at the cursor and move right",
+          "operands": 1,
+          "operandTypes": ["value"],
+          "steps": [
+            {
+              "signals": ["pc.inc"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "fb.plot", "regi.reset", "pc.inc"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "GPA",
+          "description": "Plot the RGB565 colour in A at the cursor and move right",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": ["rega.output", "fb.plot", "regi.reset", "pc.inc"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "GPB",
+          "description": "Plot the RGB565 colour in B at the cursor and move right",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": ["regb.output", "fb.plot", "regi.reset", "pc.inc"]
             }
           ]
         }

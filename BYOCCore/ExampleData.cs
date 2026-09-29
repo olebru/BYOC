@@ -131,12 +131,103 @@ namespace BYOCCore
             return AssemblyLanguage.Format(string.Join("\n", lines));
         }
 
+        // Draws eight colour bands across the middle of the screen, then halts.
+        public static readonly string BANDS = BandsProgram(rowsPerBand: 4, top: 224);
+
+        private static string BandsProgram(int rowsPerBand, int top)
+        {
+            var colours = new[] { ("red", 0xF800), ("orange", 0xFD20), ("yellow", 0xFFE0), ("green", 0x07E0), ("cyan", 0x07FF), ("blue", 0x001F), ("magenta", 0xF81F), ("white", 0xFFFF) };
+            int pixels = Framebuffer.Width * rowsPerBand;
+            var lines = new System.Collections.Generic.List<string>
+            {
+                "; Colour bands on the screen",
+                $"; Draws {colours.Length} bands of {rowsPerBand} rows. The cursor moves right after each plot and wraps",
+                "; to the next row, so a band is just a count of pixels. B counts them.",
+                "GCL",
+                $"GYI {top} ; first row",
+                "GXI 0",
+            };
+            foreach (var (name, _) in colours)
+            {
+                lines.AddRange(new[]
+                {
+                    $"; {name}",
+                    "LBI 0",
+                    $"{name}_band: LRA {name} ; A = the colour",
+                    "GPA ; plot it",
+                    "INB",
+                    $"LAI {pixels} ; pixels in a band",
+                    "CMP",
+                    $"JNE {name}_band",
+                });
+            }
+            lines.Add("HLT");
+            lines.Add("; RGB565 colours");
+            foreach (var (name, value) in colours) lines.Add($"{name}: .WORD 0x{value:X4}");
+            return AssemblyLanguage.Format(string.Join("\n", lines));
+        }
+
+        // A smooth gradient over the whole screen: red grows left to right, green top to bottom. Halts when done.
+        public static readonly string GRADIENT = GradientProgram();
+
+        // Red is the top 5 bits of an RGB565 colour, so adding 0x0800 is one red level; after 32 levels the add
+        // carries out, which ends the row. Each level covers 20 pixels (32 x 20 = 640), plotted with 20 GPAs in
+        // a row so most pixels cost one instruction. Green goes up one level every 8 rows (60 levels over 480).
+        private static string GradientProgram()
+        {
+            var lines = new System.Collections.Generic.List<string>
+            {
+                "; Colour gradient on the screen",
+                "; Red grows from left to right and green from top to bottom, with a little blue.",
+                "; Variables in the MMU bank: 0 the row's colour, 1 rows drawn, 2 rows since green last changed.",
+                "GCL",
+                "LAI 0x0010 ; blue at half, red and green at 0",
+                "STA 0",
+                "LAI 0",
+                "STA 1",
+                "STA 2",
+                "row: LDA 0 ; A = colour at the left edge",
+                "level: GPA ; 20 pixels of this red level",
+            };
+            for (int i = 1; i < 20; i++) lines.Add("GPA");
+            lines.AddRange(new[]
+            {
+                "LBI 0x0800 ; one red level",
+                "ADD",
+                "JC next_row ; carry: the 32nd level wrapped, the row is full",
+                "JMP level",
+                "next_row: LDA 1",
+                "INA",
+                "STA 1 ; rows drawn",
+                "LBI 480",
+                "CMP",
+                "JEQ done",
+                "LDA 2",
+                "INA",
+                "STA 2",
+                "LBI 8 ; every 8 rows",
+                "CMP",
+                "JNE row",
+                "LAI 0",
+                "STA 2",
+                "LDA 0",
+                "LBI 0x0020 ; one green level",
+                "ADD",
+                "STA 0",
+                "JMP row",
+                "done: HLT",
+            });
+            return AssemblyLanguage.Format(string.Join("\n", lines));
+        }
+
         // Example programs for the default machine, by name. The first is loaded by default.
         public static readonly (string Name, string Source)[] Programs =
         {
             ("Stack and memory", SRC),
             ("Hello, world on the LCD", HELLO),
             ("Fibonacci on the LCD", FIBONACCI),
+            ("Colour bands on the screen", BANDS),
+            ("Colour gradient on the screen", GRADIENT),
         };
 
         private static string ReadResource(string name)

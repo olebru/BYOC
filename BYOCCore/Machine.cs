@@ -288,6 +288,10 @@ namespace BYOCCore
                     case DualPortRegister dualPort: values[device.ID()] = dualPort.Data; break;
                     case RomModule memory: values[device.ID() + ".mar"] = memory.memoryAddress; break;
                     case CharacterDisplay display: values[device.ID() + ".cursor"] = display.Cursor; break;
+                    case Framebuffer framebuffer:
+                        values[device.ID() + ".x"] = framebuffer.X;
+                        values[device.ID() + ".y"] = framebuffer.Y;
+                        break;
                     case MMU mmu:
                         values[device.ID() + ".cs"] = mmu.ChipSelectRegister.Data;
                         values[device.ID() + ".mar"] = mmu.SelectedBank.memoryAddress;

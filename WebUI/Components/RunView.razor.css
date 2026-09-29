@@ -1087,3 +1087,12 @@
     color: var(--muted);
     font-family: var(--mono);
 }
+
+.swatch {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    border: 1px solid #c9d0db;
+    vertical-align: -1px;
+}
