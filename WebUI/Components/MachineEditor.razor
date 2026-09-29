@@ -281,6 +281,12 @@
                     @foreach (var device in Definition.Devices.Where(d => d.Type == "instructionRegister" || d.Id == Definition.Decoder?.InstructionRegister)) { <option value="@device.Id">@device.Id (@device.Type)</option> }
                 </select>
 
+                <label>Interrupts <span class="muted">controller for the I condition, optional</span></label>
+                <select class="form-control form-control-sm" value="@(Definition.Decoder?.Interrupts ?? "")" @onchange="e => SetDecoder(d => d.Interrupts = Blank((string)e.Value))">
+                    <option value="">— none —</option>
+                    @foreach (var device in Definition.Devices.Where(d => d.Type == "interruptController" || d.Id == Definition.Decoder?.Interrupts)) { <option value="@device.Id">@device.Id (@device.Type)</option> }
+                </select>
+
                 <div class="section">Program</div>
                 <label>Program memory</label>
                 <select class="form-control form-control-sm" value="@(Definition.ProgramMemory ?? "")" @onchange="e => Mutate(() => Definition.ProgramMemory = Blank((string)e.Value))">

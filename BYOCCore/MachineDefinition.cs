@@ -106,6 +106,8 @@ namespace BYOCCore
         public string Status { get; set; }
         // The micro step counter: holds the decoder ROM step address that runs next.
         public string InstructionRegister { get; set; }
+        // Optional interrupt controller: its request is the I condition microcode steps can test.
+        public string Interrupts { get; set; }
         // Machine files from before the rename call it "instruction"; read it, never write it.
         [JsonPropertyName("instruction")]
         public string LegacyInstruction

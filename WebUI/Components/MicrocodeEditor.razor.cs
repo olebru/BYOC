@@ -15,6 +15,7 @@ namespace WebUI.Components
         private static readonly (string Name, int Flag)[] Flags =
         {
             ("N", StatusRegister.NegativeFlag), ("V", StatusRegister.OverflowFlag), ("C", StatusRegister.CarryFlag), ("Z", StatusRegister.ZeroFlag),
+            ("I", FlagCondition.InterruptBit),
         };
 
         [Inject] private IJSRuntime JS { get; set; }

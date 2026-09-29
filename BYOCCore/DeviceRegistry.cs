@@ -215,6 +215,42 @@ namespace BYOCCore
                         ControlLineInfo.Output("status", "Put 1 on the host bus while busy, 0 when idle", "host"),
                     }
                 });
+            registry.Register("interruptController", c => new InterruptController(c.Name, c.Id, c.Bus(),
+                    Enumerable.Range(0, InterruptController.Sources).Select(i => c.InterruptSource($"irq{i}")).ToList()),
+                new DeviceTypeInfo
+                {
+                    Category = "Control",
+                    Description = "Collects interrupt requests from up to four devices (irq0 to irq3) into pending bits. Name it as decoder.interrupts and microcode can test the I condition: 1 when interrupts are enabled and an unmasked request is pending",
+                    Connections =
+                    {
+                        new ConnectionInfo { Name = "irq0", Description = "Interrupt source for pending bit 0 (a timer, keypad or blitter)" },
+                        new ConnectionInfo { Name = "irq1", Description = "Interrupt source for pending bit 1" },
+                        new ConnectionInfo { Name = "irq2", Description = "Interrupt source for pending bit 2" },
+                        new ConnectionInfo { Name = "irq3", Description = "Interrupt source for pending bit 3" },
+                    },
+                    ControlLines =
+                    {
+                        ControlLineInfo.Internal("enable", "Allow interrupts"),
+                        ControlLineInfo.Internal("disable", "Hold interrupts off"),
+                        ControlLineInfo.Input("loadmask", "Take the mask from the bus: bit n set lets irq n interrupt"),
+                        ControlLineInfo.Output("output", "Put the pending, unmasked request bits on the bus"),
+                        ControlLineInfo.Input("ack", "Clear the pending bits that are set in the bus value"),
+                    }
+                });
+            registry.Register("timer", c => new TickTimer(c.Name, c.Id, c.Bus(), c.IntParameter("period", 1000, 0, 65535)),
+                new DeviceTypeInfo
+                {
+                    Category = "I/O",
+                    Description = "Counts clock ticks and raises an interrupt request every period ticks while it runs, a steady beat that does not depend on the program. Connect it to an interrupt controller",
+                    Parameters = { new ParameterInfo { Name = "period", Description = "Ticks between interrupt requests", Min = 0, Max = 65535, Default = 1000 } },
+                    ControlLines =
+                    {
+                        ControlLineInfo.Input("loadperiod", "Take the period, in ticks, from the bus"),
+                        ControlLineInfo.Internal("start", "Start counting from 0"),
+                        ControlLineInfo.Internal("stop", "Stop counting"),
+                        ControlLineInfo.Output("output", "Put the current count on the bus"),
+                    }
+                });
             registry.Register("keypad", c => new Keypad(c.Name, c.Id, c.Bus()),
                 new DeviceTypeInfo
                 {
@@ -287,6 +323,13 @@ namespace BYOCCore
             }
             var target = resolveDevice(targetId);
             return target as T ?? throw Error($"connection '{name}' must be a {typeof(T).Name}, but '{targetId}' is a {target.GetType().Name}");
+        }
+        // An interrupt source connected by name, or null when the connection is not set.
+        public IInterruptSource InterruptSource(string name)
+        {
+            if (!definition.Connections.TryGetValue(name, out var targetId)) return null;
+            var target = resolveDevice(targetId);
+            return target as IInterruptSource ?? throw Error($"connection '{name}' must be a device that raises interrupts (a timer, keypad or blitter), but '{targetId}' is a {target.GetType().Name}");
         }
         public int IntParameter(string name, int defaultValue, int min, int max)
         {

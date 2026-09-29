@@ -5,7 +5,7 @@ namespace BYOCCore
     // Five keys, the arrows and space, read like a register: output puts one bit per key on the bus.
     // A key reads as down while it is held, and also once after a press that was released before the CPU
     // looked, so a short tap is not lost at a slow clock. Reading clears those remembered presses.
-    public class Keypad : IBusDevice
+    public class Keypad : IBusDevice, IInterruptSource
     {
         [Flags]
         public enum Keys { None = 0, Up = 1, Down = 2, Left = 4, Right = 8, Space = 16 }
@@ -16,7 +16,7 @@ namespace BYOCCore
         private readonly string deviceName;
         private Keys held;
         private Keys pressed;
-        private bool output, read;
+        private bool output, read, interruptRequest;
 
         public Keypad(string DeviceName, string DeviceID, Bus bus)
         {
@@ -31,8 +31,16 @@ namespace BYOCCore
 
         public void Press(Keys key)
         {
+            // A key going down asks for an interrupt; holding it (or key repeat) does not ask again.
+            if ((held & key) == 0) interruptRequest = true;
             held |= key;
             pressed |= key;
+        }
+        public bool TakeInterruptRequest()
+        {
+            var taken = interruptRequest;
+            interruptRequest = false;
+            return taken;
         }
         public void Release(Keys key)
         {

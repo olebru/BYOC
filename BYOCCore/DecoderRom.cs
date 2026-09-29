@@ -11,7 +11,9 @@ namespace BYOCCore
         // The micro step register is 16 bits, so there are 2^16 step addresses per flag value.
         public const int StepBits = 16;
         public const int AddressSpace = 1 << StepBits;
-        public const int StatusVariants = 16;
+        // The four flags and the interrupt request: bits 0 to 4 of the decoder status.
+        public const int StatusVariants = 32;
+        public const int StatusMask = StatusVariants - 1;
         private List<MicroInstruction> completeROM;
         private Dictionary<int, List<MicroInstruction>> romByOpCode;
         private Dictionary<string, int> baseAddressByMnemonic;
@@ -69,8 +71,8 @@ namespace BYOCCore
         }
 
         public MicrocodeDefinition Microcode { get; }
-        // Full ROM address for a status value and micro step: (status & 0x0F) << StepBits | step.
-        public static int RomAddress(int status, int step) { return ((status & 0x0F) << StepBits) | (step & (AddressSpace - 1)); }
+        // Full ROM address for a decoder status and micro step: (status & 0x1F) << StepBits | step.
+        public static int RomAddress(int status, int step) { return ((status & StatusMask) << StepBits) | (step & (AddressSpace - 1)); }
         // Each instruction's block of micro step addresses, in address order.
         public IReadOnlyList<(InstructionDefinition Instruction, int Base, int Count)> Blocks { get { return ranges; } }
         public IReadOnlyList<MicroInstruction> MicroInstructions { get { return completeROM; } }
@@ -85,7 +87,7 @@ namespace BYOCCore
                 var range = ranges[i];
                 if (instructionRegisterValue < range.Base || instructionRegisterValue >= range.Base + range.Count) continue;
                 int offset = instructionRegisterValue - range.Base;
-                var variant = variants[i][statusRegisterValue & 0x0F];
+                var variant = variants[i][statusRegisterValue & StatusMask];
                 return (range.Instruction, offset < variant.Count ? variant[offset] : null, offset);
             }
             return null;

@@ -105,11 +105,16 @@ public class MicrocodeTests
     [InlineData("xx0x", StatusRegister.CarryFlag, false)]
     [InlineData("1xx0", StatusRegister.NegativeFlag, true)]
     [InlineData("1xx0", StatusRegister.NegativeFlag | StatusRegister.ZeroFlag, false)]
+    [InlineData("xxxx1", FlagCondition.InterruptBit, true)]
+    [InlineData("xxxx1", StatusRegister.ZeroFlag, false)]
+    [InlineData("xxx10", StatusRegister.ZeroFlag, true)]
+    [InlineData("xxx10", StatusRegister.ZeroFlag | FlagCondition.InterruptBit, false)]
     public void FlagConditionMatches(string pattern, int status, bool expected)
     {
         var condition = FlagCondition.FromPattern(pattern);
         Assert.Equal(expected, condition == null || condition.Matches(status));
-        Assert.Equal(pattern, FlagCondition.ToPattern(condition));
+        // Four character patterns leave the interrupt condition out.
+        Assert.Equal(pattern.PadRight(5, 'x'), FlagCondition.ToPattern(condition));
     }
 
     [Fact]
@@ -225,6 +230,8 @@ public class MicrocodeTests
         machine.Buses.Add(new BusDefinition { Id = "io" });
         machine.Devices.Add(new DeviceDefinition { Id = "bridge", Type = "dualPortRegister", Buses = { ["a"] = "main", ["b"] = "io" } });
         machine.Devices.Add(new DeviceDefinition { Id = "blit", Type = "blitter", Buses = { ["host"] = "main", ["video"] = "io" }, Connections = { ["screen"] = "fb" } });
+        machine.Devices.Add(new DeviceDefinition { Id = "tick", Type = "timer", Bus = "main" });
+        machine.Devices.Add(new DeviceDefinition { Id = "pic", Type = "interruptController", Bus = "main", Connections = { ["irq0"] = "tick", ["irq1"] = "blit" } });
         var built = new Machine(machine, ExampleData.MICROCODE, "");
         Assert.Equal(registry.Types.OrderBy(t => t), machine.Devices.Select(d => d.Type).Distinct().OrderBy(t => t));
         foreach (var device in machine.Devices)

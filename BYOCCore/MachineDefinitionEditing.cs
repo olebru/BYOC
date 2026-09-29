@@ -43,6 +43,7 @@ namespace BYOCCore
             {
                 if (definition.Decoder.Status == oldId) definition.Decoder.Status = newId;
                 if (definition.Decoder.InstructionRegister == oldId) definition.Decoder.InstructionRegister = newId;
+                if (definition.Decoder.Interrupts == oldId) definition.Decoder.Interrupts = newId;
             }
             if (definition.Halt == oldId) definition.Halt = newId;
             if (definition.ProgramMemory == oldId) definition.ProgramMemory = newId;
@@ -110,6 +111,7 @@ namespace BYOCCore
             {
                 if (definition.Decoder.Status == id) definition.Decoder.Status = null;
                 if (definition.Decoder.InstructionRegister == id) definition.Decoder.InstructionRegister = null;
+                if (definition.Decoder.Interrupts == id) definition.Decoder.Interrupts = null;
             }
             if (definition.Halt == id) definition.Halt = null;
             if (definition.ProgramMemory == id) definition.ProgramMemory = null;

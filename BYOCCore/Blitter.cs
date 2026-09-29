@@ -16,7 +16,7 @@ namespace BYOCCore
     // this by putting the value on the video bus and enabling the framebuffer's loadx, loady or plot line, as
     // microcode would. The CPU carries on with its own program and can read status (1 busy, 0 idle) on the host bus.
     // There is no clipping: a rectangle past the right edge wraps like the framebuffer's cursor does.
-    public class Blitter : IBusDevice, IBusMaster
+    public class Blitter : IBusDevice, IBusMaster, IInterruptSource
     {
         public int X { get; private set; }
         public int Y { get; private set; }
@@ -39,6 +39,15 @@ namespace BYOCCore
         private Phase phase;
         private bool loadX, loadY, loadW, loadH, loadColour, start, status;
         private string lastReader;
+        private bool interruptRequest;
+
+        // Asks for an interrupt when a job is finished.
+        public bool TakeInterruptRequest()
+        {
+            var taken = interruptRequest;
+            interruptRequest = false;
+            return taken;
+        }
 
         public Blitter(string DeviceName, string DeviceID, Bus host, Bus video, Framebuffer screen)
         {
@@ -85,6 +94,7 @@ namespace BYOCCore
                         {
                             Busy = false;
                             JobsDone++;
+                            interruptRequest = true;
                         }
                     }
                     break;

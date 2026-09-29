@@ -379,7 +379,7 @@ namespace WebUI.Components
             {
                 if (Last?.Instruction != null) return (InstructionNamed(Last.Instruction), Last.Status, Last.StepIndex);
                 var next = Machine.NextStep;
-                return (next?.Instruction, Machine.Status, null);
+                return (next?.Instruction, Machine.NextDecoderStatus, null);
             }
         }
 
@@ -549,9 +549,9 @@ namespace WebUI.Components
         {
             return Last?.Signals.Contains($"{deviceId}.{line}") == true;
         }
-        private int DecoderStatus { get { return (Last?.Status ?? Machine.Status) & 0x0F; } }
+        private int DecoderStatus { get { return (Last?.Status ?? Machine.NextDecoderStatus) & DecoderRom.StatusMask; } }
         private int DecoderStep { get { return Last?.MicroStep ?? Machine.MicroStepRegister; } }
-        private int NextAddress { get { return DecoderRom.RomAddress(Machine.Status, Machine.MicroStepRegister); } }
+        private int NextAddress { get { return DecoderRom.RomAddress(Machine.NextDecoderStatus, Machine.MicroStepRegister); } }
         private const int StepBits = DecoderRom.StepBits;
         private static string RomHex(int address) => address.ToString("X5");
 

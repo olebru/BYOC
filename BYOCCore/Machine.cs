@@ -19,6 +19,10 @@ namespace BYOCCore
         private readonly Dictionary<string, IBusDevice> devicesByID;
         private readonly InstructionRegister instructionRegister;
         private readonly Register statusRegister;
+        private readonly InterruptController interrupts;
+        // The interrupt request as the decoder sees it: sampled when a fetch starts (micro step 0) and held for the
+        // whole instruction, so a request can not switch micro routines halfway through one.
+        private bool interruptSampled;
         private readonly Clock halt;
         private readonly DeviceRegistry registry;
         private readonly MemoryModule programMemory;
@@ -56,6 +60,7 @@ namespace BYOCCore
             }
 
             statusRegister = Device<Register>(definition.Decoder.Status, "decoder.status");
+            if (definition.Decoder.Interrupts != null) interrupts = Device<InterruptController>(definition.Decoder.Interrupts, "decoder.interrupts");
             instructionRegister = Device<InstructionRegister>(definition.Decoder.InstructionRegister, "decoder.instructionRegister");
             if (definition.Halt != null) halt = Device<Clock>(definition.Halt, "halt");
             if (definition.ProgramMemory != null) programMemory = Device<MemoryModule>(definition.ProgramMemory, "programMemory");
@@ -78,7 +83,7 @@ namespace BYOCCore
                 }
                 Device<MemoryModule>(definition.ProgramMemory).LoadProgram(ProgramByteCode);
             }
-            CurrentMicroCode = DecoderRom.FetchInstruction(statusRegister.Data, instructionRegister.Data);
+            CurrentMicroCode = DecoderRom.FetchInstruction(NextDecoderStatus, instructionRegister.Data);
         }
 
         public static Machine FromJson(string definitionJson, string microcode, string source, DeviceRegistry registry = null)
@@ -156,11 +161,24 @@ namespace BYOCCore
         // Program memory address of the opcode last fetched into the micro step register.
         public int? CurrentInstructionAddress { get; private set; }
         public int Status { get { return statusRegister.Data; } }
+        // What the decoder combines into the ROM address: the four flags in bits 0 to 3 and the sampled interrupt
+        // request in bit 4 (FlagCondition.InterruptBit).
+        public int DecoderStatus { get { return (statusRegister.Data & 0x0F) | (interruptSampled ? FlagCondition.InterruptBit : 0); } }
+        // The decoder status the next tick will use: at micro step 0 the interrupt request is sampled afresh.
+        public int NextDecoderStatus
+        {
+            get
+            {
+                bool request = instructionRegister.Data == 0 ? interrupts?.Requesting == true : interruptSampled;
+                return (statusRegister.Data & 0x0F) | (request ? FlagCondition.InterruptBit : 0);
+            }
+        }
+        public InterruptController Interrupts { get { return interrupts; } }
         public int MicroStepRegister { get { return instructionRegister.Data; } }
         // The instruction and micro step the next tick will run.
         public (InstructionDefinition Instruction, MicroStep Step, int Offset)? NextStep
         {
-            get { return DecoderRom.Locate(statusRegister.Data, instructionRegister.Data); }
+            get { return DecoderRom.Locate(NextDecoderStatus, instructionRegister.Data); }
         }
 
         // Everything a tick at one decoder ROM address needs, worked out the first time the address is used.
@@ -213,7 +231,8 @@ namespace BYOCCore
             busArray ??= Buses.Values.ToArray();
             deviceArray ??= Devices.ToArray();
             busMasters ??= Devices.OfType<IBusMaster>().ToArray();
-            int status = statusRegister.Data, step = instructionRegister.Data;
+            if (instructionRegister.Data == 0) interruptSampled = interrupts?.Requesting == true;
+            int status = DecoderStatus, step = instructionRegister.Data;
             var plan = PlanFor(status, step);
             var record = new TickRecord
             {
@@ -297,6 +316,11 @@ namespace BYOCCore
                     case MemoryModule memory: values[device.ID() + ".mar"] = memory.memoryAddress; break;
                     case CharacterDisplay display: values[device.ID() + ".cursor"] = display.Cursor; break;
                     case Keypad keypad: values[device.ID()] = keypad.Data; break;
+                    case InterruptController controller:
+                        values[device.ID() + ".pending"] = controller.Pending;
+                        values[device.ID() + ".enabled"] = controller.Enabled ? 1 : 0;
+                        break;
+                    case TickTimer timer: values[device.ID() + ".count"] = timer.Count; break;
                     case Blitter blitter:
                         values[device.ID() + ".busy"] = blitter.Busy ? 1 : 0;
                         values[device.ID() + ".row"] = blitter.Row;
@@ -378,6 +402,7 @@ namespace BYOCCore
                 CheckReference(errors, deviceIds, definition.Decoder.Status, "decoder.status", required: true);
                 CheckReference(errors, deviceIds, definition.Decoder.InstructionRegister, "decoder.instructionRegister", required: true);
             }
+            if (definition.Decoder != null) CheckReference(errors, deviceIds, definition.Decoder.Interrupts, "decoder.interrupts", required: false);
             CheckReference(errors, deviceIds, definition.Halt, "halt", required: false);
             CheckReference(errors, deviceIds, definition.ProgramMemory, "programMemory", required: false);
             if (errors.Count > 0) throw new MachineDefinitionException(errors);

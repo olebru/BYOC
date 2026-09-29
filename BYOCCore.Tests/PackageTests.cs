@@ -24,7 +24,7 @@ public class PackageTests
     [Fact]
     public void BuiltInPackagesLoadWithTheDefaultFirst()
     {
-        Assert.Equal(new[] { "BYOC-16", "COPRO-16", "HARVARD-16", "MOVE-16", "RISC-16" }, BuiltInPackages.All.Select(p => p.Name));
+        Assert.Equal(new[] { "BYOC-16", "COPRO-16", "HARVARD-16", "IRQ-16", "MOVE-16", "RISC-16" }, BuiltInPackages.All.Select(p => p.Name));
         Assert.Same(BuiltInPackages.All[0], BuiltInPackages.Default);
         foreach (var package in BuiltInPackages.All)
         {
@@ -35,7 +35,7 @@ public class PackageTests
     }
 
     // These loop for ever on purpose: the long running demo and the interactive programs.
-    private static readonly string[] LoopingPrograms = { "Stack and memory", "Sketch with the arrow keys", "Paddle game" };
+    private static readonly string[] LoopingPrograms = { "Stack and memory", "Sketch with the arrow keys", "Paddle game", "Three things at once" };
 
     [Fact]
     public void EveryProgramInEveryPackageAssemblesWithoutWarningsAndHalts()

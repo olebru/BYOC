@@ -184,33 +184,40 @@ namespace BYOCCore
         [JsonPropertyName("V")] public bool? V { get; set; }
         [JsonPropertyName("C")] public bool? C { get; set; }
         [JsonPropertyName("Z")] public bool? Z { get; set; }
+        // An interrupt request, from the machine's interrupt controller (decoder.interrupts).
+        [JsonPropertyName("I")] public bool? I { get; set; }
+
+        // Bit 4 of the decoder status: the four flags are bits 0 to 3.
+        public const int InterruptBit = 0x10;
 
         [JsonIgnore]
-        public bool IsAlways { get { return N == null && V == null && C == null && Z == null; } }
+        public bool IsAlways { get { return N == null && V == null && C == null && Z == null && I == null; } }
 
         public bool Matches(int status)
         {
             return Matches(N, status, StatusRegister.NegativeFlag)
                 && Matches(V, status, StatusRegister.OverflowFlag)
                 && Matches(C, status, StatusRegister.CarryFlag)
-                && Matches(Z, status, StatusRegister.ZeroFlag);
+                && Matches(Z, status, StatusRegister.ZeroFlag)
+                && Matches(I, status, InterruptBit);
         }
         private static bool Matches(bool? required, int status, int flag)
         {
             return required == null || required.Value == ((status & flag) != 0);
         }
 
-        // Pattern of four characters for N, V, C, Z, each 0, 1 or x. Returns null for xxxx.
+        // Pattern of characters for N, V, C, Z and I, each 0, 1 or x. A four character pattern leaves I out.
+        // Returns null when every condition is x.
         public static FlagCondition FromPattern(string pattern)
         {
-            bool? Flag(char c) => c == 'x' ? null : c == '1';
-            var condition = new FlagCondition { N = Flag(pattern[0]), V = Flag(pattern[1]), C = Flag(pattern[2]), Z = Flag(pattern[3]) };
+            bool? Flag(int i) => i >= pattern.Length || pattern[i] == 'x' ? null : pattern[i] == '1';
+            var condition = new FlagCondition { N = Flag(0), V = Flag(1), C = Flag(2), Z = Flag(3), I = Flag(4) };
             return condition.IsAlways ? null : condition;
         }
         public static string ToPattern(FlagCondition condition)
         {
             char Flag(bool? f) => f == null ? 'x' : f.Value ? '1' : '0';
-            return condition == null ? "xxxx" : $"{Flag(condition.N)}{Flag(condition.V)}{Flag(condition.C)}{Flag(condition.Z)}";
+            return condition == null ? "xxxxx" : $"{Flag(condition.N)}{Flag(condition.V)}{Flag(condition.C)}{Flag(condition.Z)}{Flag(condition.I)}";
         }
         public static bool AreEqual(FlagCondition a, FlagCondition b)
         {
@@ -223,6 +230,7 @@ namespace BYOCCore
             if (V != null) parts.Add($"V={(V.Value ? 1 : 0)}");
             if (C != null) parts.Add($"C={(C.Value ? 1 : 0)}");
             if (Z != null) parts.Add($"Z={(Z.Value ? 1 : 0)}");
+            if (I != null) parts.Add($"I={(I.Value ? 1 : 0)}");
             return parts.Count == 0 ? "always" : string.Join(" ", parts);
         }
     }

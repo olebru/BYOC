@@ -129,7 +129,7 @@
                             <span class="dev-id">@device.Id</span>
                             <span class="dev-type">@(device.Name ?? device.Type)</span>
                         </div>
-                        <div class="dev-body @(built is MemoryModule || built is MMU || built is Clock || built is ALU || built is CharacterDisplay || built is Framebuffer || built is Blitter ? "stacked" : "") @(Changed(device.Id) ? "changed" : "")" @key="(Changed(device.Id) ? Last.Cycle : 0)">
+                        <div class="dev-body @(built is MemoryModule || built is MMU || built is Clock || built is ALU || built is CharacterDisplay || built is Framebuffer || built is Blitter || built is InterruptController || built is TickTimer ? "stacked" : "") @(Changed(device.Id) ? "changed" : "")" @key="(Changed(device.Id) ? Last.Cycle : 0)">
                             @switch (built)
                             {
                                 case StatusRegister status:
@@ -176,6 +176,14 @@
                                     var (pr, pg, pb) = Framebuffer.ToRgb(lastPixel);
                                     <span class="mem">cursor <strong>@screenDevice.X, @screenDevice.Y</strong></span>
                                     <span class="sub"><span class="swatch" style="background:rgb(@pr,@pg,@pb)"></span> last @Hex(lastPixel)</span>
+                                    break;
+                                case InterruptController controller:
+                                    <span class="mem" title="@($"{controller.Requests} requests so far")">@(controller.Enabled ? "on" : "off") · pending @Bits(controller.Pending, 4)</span>
+                                    <span class="sub">mask @Bits(controller.Mask, 4)</span>
+                                    break;
+                                case TickTimer timer:
+                                    <span class="mem">@(timer.Running ? $"{timer.Count} / {timer.Period}" : "stopped")</span>
+                                    <span class="sub">@timer.Expired expired</span>
                                     break;
                                 case Blitter blitter:
                                     <span class="mem" title="@($"{blitter.JobsDone} jobs done, {blitter.PixelsDrawn} pixels")">@(blitter.Busy ? $"busy {blitter.Row + 1}/{blitter.Height}" : "idle")</span>
@@ -362,7 +370,7 @@
             {
                 <span class="sep"></span>
                 <label class="bank"><input type="checkbox" @bind="wholeRom" /> whole ROM</label>
-                <span class="legend muted">@Machine.DecoderRom.OpCodesUsed of @DecoderRom.AddressSpace step addresses used · rows shown for status @Bits(DecoderStatus, 4)</span>
+                <span class="legend muted">@Machine.DecoderRom.OpCodesUsed of @DecoderRom.AddressSpace step addresses used · rows shown for status @Bits(DecoderStatus, 5) (INVCZ)</span>
             }
             @if (bottomTab == "Memory")
             {
@@ -429,7 +437,7 @@
                     <div class="address-title">decoder address</div>
                     <div class="address-bits">
                         <span class="field status">
-                            @for (int i = 0; i < 4; i++) { <span class="bit @(Bits(DecoderStatus, 4)[i] == '1' ? "one" : "")">@("NVCZ"[i])<br />@Bits(DecoderStatus, 4)[i]</span> }
+                            @for (int i = 0; i < 5; i++) { <span class="bit @(Bits(DecoderStatus, 5)[i] == '1' ? "one" : "")" title="@(i == 0 ? "I: an interrupt request, sampled when an instruction starts" : "")">@("INVCZ"[i])<br />@Bits(DecoderStatus, 5)[i]</span> }
                             <span class="field-name">status</span>
                         </span>
                         <span class="field step">

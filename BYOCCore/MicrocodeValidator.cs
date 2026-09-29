@@ -175,7 +175,8 @@ namespace BYOCCore
             var used = new[] { ("N", StatusRegister.NegativeFlag, instruction.Steps.Any(s => s.When?.N != null)),
                                ("V", StatusRegister.OverflowFlag, instruction.Steps.Any(s => s.When?.V != null)),
                                ("C", StatusRegister.CarryFlag, instruction.Steps.Any(s => s.When?.C != null)),
-                               ("Z", StatusRegister.ZeroFlag, instruction.Steps.Any(s => s.When?.Z != null)) };
+                               ("Z", StatusRegister.ZeroFlag, instruction.Steps.Any(s => s.When?.Z != null)),
+                               ("I", FlagCondition.InterruptBit, instruction.Steps.Any(s => s.When?.I != null)) };
             return "when " + string.Join(" ", used.Where(u => u.Item3).Select(u => $"{u.Item1}={((status & u.Item2) != 0 ? 1 : 0)}")) + ": ";
         }
     }
