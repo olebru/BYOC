@@ -116,15 +116,52 @@ namespace BYOCCore
     {
         public string Mnemonic { get; set; }
         public string Description { get; set; }
-        // Number of operand bytes following the opcode. When set, the assembler checks it.
+        // Number of operand cells following the opcode. When set, the assembler checks it.
         public int? Operands { get; set; }
+        // What each operand means: a value used as it is, or an address to read, write or jump to. Optional;
+        // when given there is one per operand.
+        public List<OperandType> OperandTypes { get; set; }
         public List<MicroStep> Steps { get; set; } = new List<MicroStep>();
+
+        // The operand count, from Operands or else from OperandTypes.
+        [JsonIgnore]
+        public int? OperandCount { get { return Operands ?? OperandTypes?.Count; } }
+        // The type of the operand at an index, or null when the instruction does not say.
+        public OperandType? OperandTypeAt(int index)
+        {
+            return OperandTypes != null && index >= 0 && index < OperandTypes.Count ? OperandTypes[index] : null;
+        }
+        // "LDA address" style usage, or the operand count when the types are not given.
+        [JsonIgnore]
+        public string Signature
+        {
+            get
+            {
+                if (OperandTypes != null && OperandTypes.Count > 0) return Mnemonic + " " + string.Join(", ", OperandTypes.Select(t => t == OperandType.Address ? "address" : "value"));
+                return OperandCount switch
+                {
+                    null => Mnemonic,
+                    0 => Mnemonic,
+                    1 => Mnemonic + " operand",
+                    var n => Mnemonic + " " + string.Join(", ", Enumerable.Range(1, n.Value).Select(i => $"operand{i}")),
+                };
+            }
+        }
 
         // The steps that run when the status register holds the given flags, in order.
         public List<MicroStep> StepsFor(int status)
         {
             return Steps.Where(s => s.AppliesTo(status)).ToList();
         }
+    }
+
+    [JsonConverter(typeof(JsonStringEnumConverter<OperandType>))]
+    public enum OperandType
+    {
+        // Used as it is, for example the number to load.
+        [JsonStringEnumMemberName("value")] Value,
+        // A memory address to read, write or jump to.
+        [JsonStringEnumMemberName("address")] Address,
     }
 
     public class MicroStep

@@ -15,10 +15,11 @@
         <button class="ctl" title="Run until the machine halts" disabled="@(running || Machine.IsHalted || runtimeError != null)" @onclick="RunToHalt">Run to halt</button>
         <button class="ctl" title="Reload the program and reset every device (R)" @onclick="Restart">⟲ Reset</button>
         <span class="sep"></span>
-        <label class="speed" title="Clock speed while running">
-            <input type="range" min="0" max="100" @bind="speedSlider" @bind:event="oninput" />
-            <span>@Hz Hz</span>
+        <label class="speed @(maxSpeed ? "off" : "")" title="Clock speed while running">
+            <input type="range" min="0" max="100" disabled="@maxSpeed" @bind="speedSlider" @bind:event="oninput" />
+            <span>@(maxSpeed ? "max" : $"{Hz} Hz")</span>
         </label>
+        <button class="ctl @(maxSpeed ? "on" : "")" title="Run as fast as the browser allows, ignoring the slider (M)" @onclick="() => maxSpeed = !maxSpeed">⚡ Max</button>
         <span class="grow"></span>
         <span class="cycle">cycle <strong>@Machine.Cycles</strong></span>
         <span class="state state-@State">@State</span>
@@ -185,6 +186,26 @@
 
         <!-- Side panel -->
         <div class="side">
+            <div class="panel clock-panel">
+                <div class="clock-head">
+                    <span class="panel-title">Clock speed</span>
+                    <span class="clock-now">@(running || speedSamples.Count > 0 ? FormatHz(CurrentHz) : "—")</span>
+                    <span class="muted">@(maxSpeed ? "target: max" : $"target {FormatHz(Hz)}") · peak @FormatHz(PeakHz)</span>
+                </div>
+                <svg class="clock-chart" viewBox="0 0 @N(ChartWidth) @N(ChartHeight)" preserveAspectRatio="none">
+                    <line class="grid" x1="0" y1="@N(ChartHeight / 2)" x2="@N(ChartWidth)" y2="@N(ChartHeight / 2)" />
+                    @if (!maxSpeed)
+                    {
+                        <line class="target" x1="0" y1="@N(TargetY)" x2="@N(ChartWidth)" y2="@N(TargetY)" />
+                    }
+                    @if (speedSamples.Count > 0)
+                    {
+                        <polygon class="area" points="@SpeedPoints(true)" />
+                        <polyline class="line" points="@SpeedPoints(false)" />
+                    }
+                </svg>
+                <div class="clock-axis"><span>@FormatHz(ChartMax)</span><span>last @((int)Math.Round(ChartSpan)) s of running</span></div>
+            </div>
             @foreach (var display in Machine.Devices.OfType<CharacterDisplay>())
             {
                 var write = Last?.Writes.FirstOrDefault(w => w.Device == display.ID());

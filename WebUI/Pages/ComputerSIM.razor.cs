@@ -39,6 +39,17 @@ namespace WebUI.Pages
             ApplyDefinition(MachineDefinition.FromJson(ExampleData.MACHINE));
         }
 
+        // Cells in the program memory, from the machine when it builds, otherwise its size parameter.
+        private int ProgramMemorySize
+        {
+            get
+            {
+                if (C?.Definition.ProgramMemory != null && C.Device<RomModule>(C.Definition.ProgramMemory) is RomModule memory) return memory.Size;
+                var device = Definition.FindDevice(Definition.ProgramMemory ?? "");
+                return device != null && device.Parameters.TryGetValue("size", out var size) && size.TryGetInt32(out var cells) ? cells : RomModule.DefaultSize;
+            }
+        }
+
         private int MicrocodeErrorCount { get { return MicrocodeDiagnostics.Count(d => d.Severity == DiagnosticSeverity.Error); } }
         private int MicrocodeWarningCount { get { return MicrocodeDiagnostics.Count(d => d.Severity == DiagnosticSeverity.Warning); } }
         private IEnumerable<string> AllErrors

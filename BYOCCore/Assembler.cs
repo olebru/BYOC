@@ -1,192 +1,213 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 namespace BYOCCore
 {
-    // Two pass assembler. Each opcode and operand takes one 16 bit memory cell.
+    // Two pass assembler. Each opcode and operand takes one 16 bit memory cell; a string in .BYTE or .WORD takes
+    // one cell per character. See AssemblyParser for the syntax.
     public class Assembler
     {
         public Dictionary<String, int> labelLUT;
         // One entry per source line that has a label or emits cells, in address order.
         public List<ListingLine> Listing { get; private set; } = new List<ListingLine>();
-        private List<String> assemblerDirectives;
-        private List<int> cells;
-        private DecoderRom completeDecoderRom;
-        private readonly int memorySize;
-        private const int cellWidth = Bus.Width;
+        public static readonly string[] Directives = { ".BYTE", ".WORD" };
         private const int cellMask = Bus.Mask;
+        private readonly int memorySize;
+        private readonly Func<string, int?> opcodeOf;
+        private readonly Func<string, int?> operandCountOf;
+        private readonly Func<string, int, OperandType?> operandTypeOf;
 
+        // Mnemonics are matched without regard to case.
         public Assembler(DecoderRom completeDecoderRom, int memorySize = RomModule.DefaultSize)
+            : this(mnemonic => TryOpcode(completeDecoderRom, mnemonic),
+                   mnemonic => completeDecoderRom.OperandCount(Canonical(completeDecoderRom.Microcode, mnemonic)), memorySize,
+                   (mnemonic, index) => completeDecoderRom.Microcode.FindInstruction(Canonical(completeDecoderRom.Microcode, mnemonic))?.OperandTypeAt(index))
         {
-            this.completeDecoderRom = completeDecoderRom;
+        }
+
+        // The instruction set's own spelling of a mnemonic, matched without regard to case.
+        public static string Canonical(MicrocodeDefinition microcode, string mnemonic)
+        {
+            return microcode.Instructions.FirstOrDefault(i => i.Mnemonic == mnemonic)?.Mnemonic
+                ?? microcode.Instructions.FirstOrDefault(i => string.Equals(i.Mnemonic, mnemonic, StringComparison.OrdinalIgnoreCase))?.Mnemonic
+                ?? mnemonic;
+        }
+
+        // opcodeOf returns null for an unknown mnemonic; operandCountOf and operandTypeOf return null when an
+        // instruction does not say.
+        public Assembler(Func<string, int?> opcodeOf, Func<string, int?> operandCountOf, int memorySize = RomModule.DefaultSize,
+                         Func<string, int, OperandType?> operandTypeOf = null)
+        {
+            this.opcodeOf = opcodeOf;
+            this.operandCountOf = operandCountOf;
+            this.operandTypeOf = operandTypeOf ?? ((mnemonic, index) => null);
             this.memorySize = memorySize;
-            cells = new List<int>();
-            assemblerDirectives = new List<string>();
-            assemblerDirectives.Add(".BYTE");
-            assemblerDirectives.Add(".WORD");
             labelLUT = new Dictionary<String, int>();
         }
 
+        private static int? TryOpcode(DecoderRom rom, string mnemonic)
+        {
+            try { return rom.FetchByteCodeFromMnemonic(Canonical(rom.Microcode, mnemonic)); }
+            catch (ArgumentException) { return null; }
+        }
+
+        // Assembles, throwing a FormatException for the first error. Warnings do not stop it.
         public int[] Assemble(string source)
         {
-            cells = new List<int>();
-            labelLUT = new Dictionary<String, int>();
-            Listing = new List<ListingLine>();
-            var lines = SourceText.SplitLines(source)
-                                  .Select((text, index) => new SourceLine(text, index + 1))
-                                  .ToList();
-            //First pass
-            int address = 0;
-            foreach (var line in lines)
+            var result = Analyze(source);
+            var error = result.Diagnostics.FirstOrDefault(d => d.Severity == DiagnosticSeverity.Error);
+            if (error != null) throw new FormatException(error.ToString());
+            return result.Cells;
+        }
+
+        // Assembles as far as possible and reports every problem with its position; never throws.
+        public AssemblyResult Analyze(string source)
+        {
+            var result = new AssemblyResult { Lines = AssemblyParser.Parse(source) };
+            var diagnostics = result.Diagnostics;
+            void Warning(ParsedLine line, SourceToken token, string message)
             {
+                diagnostics.Add(new AssemblyDiagnostic
+                {
+                    Severity = DiagnosticSeverity.Warning,
+                    Line = line.Number,
+                    StartColumn = token.Start,
+                    EndColumn = token.End,
+                    Message = message,
+                    Text = line.Text,
+                });
+            }
+            void Error(ParsedLine line, SourceToken token, string message)
+            {
+                diagnostics.Add(new AssemblyDiagnostic
+                {
+                    Line = line.Number,
+                    StartColumn = token?.Start ?? 1,
+                    EndColumn = token?.End ?? Math.Max(2, line.Text.Length + 1),
+                    Message = message,
+                    Text = line.Text,
+                });
+            }
+
+            //First pass: label addresses.
+            labelLUT = new Dictionary<String, int>();
+            int address = 0;
+            foreach (var line in result.Lines)
+            {
+                diagnostics.AddRange(line.SyntaxErrors);
                 if (line.Label != null)
                 {
-                    if (labelLUT.ContainsKey(line.Label))
-                    {
-                        throw line.Error($"label '{line.Label}' is defined more than once");
-                    }
-                    labelLUT.Add(line.Label, address);
+                    if (labelLUT.ContainsKey(line.Label.Name)) Error(line, line.Label, $"label '{line.Label.Name}' is defined more than once");
+                    else labelLUT[line.Label.Name] = address;
                 }
-                if (line.Mnemonic == null) continue;
-                if (line.IsDirective)
-                {
-                    if (!assemblerDirectives.Contains(line.Mnemonic))
-                    {
-                        throw line.Error($"unknown directive '{line.Mnemonic}'");
-                    }
-                }
-                else
-                {
-                    address++;
-                }
-                address += line.Operands.Length;
+                address += CellCount(line);
             }
-            if (address > memorySize)
-            {
-                throw new FormatException($"Program is {address} cells, but program memory only holds {memorySize}.");
-            }
-            //Second pass
-            foreach (var line in lines)
+
+            //Second pass: cells.
+            var cells = new List<int>();
+            Listing = new List<ListingLine>();
+            foreach (var line in result.Lines)
             {
                 int start = cells.Count;
                 if (line.Mnemonic == null)
                 {
-                    if (line.Label != null) Listing.Add(line.ToListing(start, new int[0]));
+                    if (line.Label != null) Listing.Add(ToListing(line, start, new int[0]));
                     continue;
                 }
-                if (!line.IsDirective)
+                if (line.IsDirective)
                 {
-                    int opcode;
-                    try
+                    if (!Directives.Contains(line.Mnemonic.Text.ToUpperInvariant())) Error(line, line.Mnemonic, $"unknown directive '{line.Mnemonic.Text}'");
+                }
+                else
+                {
+                    var opcode = opcodeOf(line.Mnemonic.Text);
+                    if (opcode == null) Error(line, line.Mnemonic, $"unknown mnemonic '{line.Mnemonic.Text}'");
+                    cells.Add(opcode ?? 0);
+                    var expected = operandCountOf(line.Mnemonic.Text);
+                    if (opcode != null && expected.HasValue && expected.Value != line.Operands.Count)
                     {
-                        opcode = completeDecoderRom.FetchByteCodeFromMnemonic(line.Mnemonic);
-                    }
-                    catch (ArgumentException e)
-                    {
-                        throw line.Error(e.Message);
-                    }
-                    if (opcode > cellMask)
-                    {
-                        throw line.Error($"{line.Mnemonic} has opcode {opcode}, which does not fit in a {cellWidth} bit memory cell");
-                    }
-                    cells.Add(opcode);
-                    var expectedOperands = completeDecoderRom.OperandCount(line.Mnemonic);
-                    if (expectedOperands.HasValue && expectedOperands.Value != line.Operands.Length)
-                    {
-                        throw line.Error($"{line.Mnemonic} takes {expectedOperands} operand{(expectedOperands == 1 ? "" : "s")}, found {line.Operands.Length}");
+                        Error(line, line.Mnemonic, $"{line.Mnemonic.Text} takes {expected} operand{(expected == 1 ? "" : "s")}, found {line.Operands.Count}");
                     }
                 }
-                foreach (var operandToken in line.Operands)
+                for (int index = 0; index < line.Operands.Count; index++)
                 {
-                    if (operandToken.StartsWith("#"))
+                    var operand = line.Operands[index];
+                    switch (operand.Kind)
                     {
-                        if (!TryParseNumber(operandToken.Substring(1), out var value) || value > cellMask)
-                        {
-                            throw line.Error($"'{operandToken}' is not a number between 0 and {cellMask}");
-                        }
-                        cells.Add(value);
-                    }
-                    else
-                    {
-                        if (!labelLUT.TryGetValue(operandToken, out var labelAddress))
-                        {
-                            throw line.Error($"unknown label '{operandToken}'");
-                        }
-                        if (labelAddress > cellMask)
-                        {
-                            throw line.Error($"label '{operandToken}' is at {labelAddress}, which does not fit in a {cellWidth} bit memory cell");
-                        }
-                        cells.Add(labelAddress);
+                        case TokenKind.Number:
+                        case TokenKind.Character:
+                            if (operand.Values[0] > cellMask) Error(line, operand, $"'{operand.Text}' is not a number between 0 and {cellMask}");
+                            cells.Add(operand.Values[0] & cellMask);
+                            break;
+                        case TokenKind.String:
+                            if (!line.IsDirective) Error(line, operand, "a string is only allowed in .BYTE and .WORD");
+                            cells.AddRange(operand.Values);
+                            break;
+                        case TokenKind.LabelReference:
+                            if (labelLUT.TryGetValue(operand.Name, out var labelAddress))
+                            {
+                                cells.Add(labelAddress);
+                                if (!line.IsDirective && operandTypeOf(line.Mnemonic.Text, index) == OperandType.Value)
+                                {
+                                    Warning(line, operand, $"{line.Mnemonic.Text} takes a value here, and '{operand.Name}' is the address of a label (0x{labelAddress:X4}). Use a number, or an instruction that takes an address.");
+                                }
+                            }
+                            else
+                            {
+                                Error(line, operand, $"unknown label '{operand.Name}'");
+                                cells.Add(0);
+                            }
+                            break;
                     }
                 }
-                Listing.Add(line.ToListing(start, cells.Skip(start).ToArray()));
+                if (cells.Count > memorySize && start <= memorySize)
+                {
+                    Error(line, line.Mnemonic, $"the program is {address} cells, but program memory only holds {memorySize}");
+                }
+                Listing.Add(ToListing(line, start, cells.Skip(start).ToArray()));
             }
-            return cells.ToArray();
+            result.Cells = cells.ToArray();
+            result.Listing = Listing;
+            result.Labels = new Dictionary<string, int>(labelLUT);
+            diagnostics.Sort((a, b) => a.Line != b.Line ? a.Line.CompareTo(b.Line) : a.StartColumn.CompareTo(b.StartColumn));
+            return result;
         }
 
-        // Decimal, or hexadecimal with a 0x prefix.
-        private static bool TryParseNumber(string text, out int value)
+        // Cells a line takes: opcode plus one per operand, and one per character for strings.
+        private static int CellCount(ParsedLine line)
         {
-            if (text.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
-            {
-                return int.TryParse(text.Substring(2), NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out value) && value >= 0;
-            }
-            return int.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out value);
+            if (line.Mnemonic == null) return 0;
+            int operands = line.Operands.Sum(o => o.Kind == TokenKind.String ? o.Values.Length : 1);
+            return (line.IsDirective ? 0 : 1) + operands;
         }
 
-        // A source line is: [label:] TAB mnemonic [TAB operand[,operand...]]
-        private class SourceLine
+        private static ListingLine ToListing(ParsedLine line, int address, int[] cells)
         {
-            public readonly string Label;
-            public readonly string Mnemonic;
-            public readonly string[] Operands = new string[0];
-            private readonly int lineNumber;
-            private readonly string text;
-            public SourceLine(string text, int lineNumber)
+            return new ListingLine
             {
-                this.text = text;
-                this.lineNumber = lineNumber;
-                var tokens = text.Split('\t').Select(t => t.Trim()).ToList();
-                while (tokens.Count > 0 && tokens.Last().Length == 0) tokens.RemoveAt(tokens.Count - 1);
-                if (tokens.Count == 0) return;
-                if (tokens[0].Length > 0)
-                {
-                    if (!tokens[0].EndsWith(":"))
-                    {
-                        throw Error($"'{tokens[0]}' in the label column must end with ':'");
-                    }
-                    Label = tokens[0].TrimEnd(':');
-                }
-                if (tokens.Count > 1 && tokens[1].Length > 0) Mnemonic = tokens[1];
-                if (tokens.Count > 2)
-                {
-                    if (Mnemonic == null) throw Error("operands without a mnemonic");
-                    Operands = tokens[2].Split(',').Select(o => o.Trim()).ToArray();
-                    if (Operands.Any(o => o.Length == 0)) throw Error("empty operand");
-                }
-                if (tokens.Count > 3) throw Error("too many columns");
-            }
-            public bool IsDirective { get { return Mnemonic != null && Mnemonic.StartsWith("."); } }
-            public ListingLine ToListing(int address, int[] cells)
-            {
-                return new ListingLine
-                {
-                    LineNumber = lineNumber,
-                    Text = text,
-                    Label = Label,
-                    Mnemonic = Mnemonic,
-                    Operands = Operands,
-                    Address = address,
-                    Cells = cells,
-                    IsInstruction = Mnemonic != null && !IsDirective,
-                };
-            }
-            public FormatException Error(string message)
-            {
-                return new FormatException($"Line {lineNumber}: {message}: '{text}'");
-            }
+                LineNumber = line.Number,
+                Text = line.Text,
+                Label = line.Label?.Name,
+                Mnemonic = line.Mnemonic?.Text,
+                Operands = line.Operands.Select(o => o.Text).ToArray(),
+                Address = address,
+                Cells = cells,
+                IsInstruction = line.Mnemonic != null && !line.IsDirective,
+            };
         }
+    }
+
+    public class AssemblyResult
+    {
+        public List<ParsedLine> Lines { get; set; } = new List<ParsedLine>();
+        public int[] Cells { get; set; } = Array.Empty<int>();
+        public List<ListingLine> Listing { get; set; } = new List<ListingLine>();
+        public Dictionary<string, int> Labels { get; set; } = new Dictionary<string, int>();
+        public List<AssemblyDiagnostic> Diagnostics { get; } = new List<AssemblyDiagnostic>();
+        // True when there are no errors; warnings are allowed.
+        public bool Success { get { return !Diagnostics.Any(d => d.Severity == DiagnosticSeverity.Error); } }
+        public IEnumerable<AssemblyDiagnostic> Errors { get { return Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error); } }
+        public IEnumerable<AssemblyDiagnostic> Warnings { get { return Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Warning); } }
     }
 
     public class ListingLine

@@ -1,0 +1,103 @@
+.asm {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #e3e7ee;
+    border-radius: 10px;
+    background: #fff;
+    overflow: hidden;
+    height: calc(100vh - 205px);
+    min-height: 420px;
+}
+
+.asm-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-bottom: 1px solid #e3e7ee;
+    background: #f8f9fb;
+}
+
+.tool {
+    border: 1px solid transparent;
+    background: transparent;
+    border-radius: 6px;
+    padding: 3px 9px;
+    font-size: 0.85rem;
+}
+
+    .tool:hover {
+        background: #e9eef6;
+        border-color: #d5dde9;
+    }
+
+.sep {
+    width: 1px;
+    height: 20px;
+    background: #e3e7ee;
+    margin: 0 4px;
+}
+
+.grow {
+    flex: 1;
+}
+
+.status {
+    font-size: 0.85rem;
+    border-radius: 999px;
+    padding: 2px 12px;
+}
+
+    .status.ok {
+        background: #e7f6ec;
+        color: #1e7b3d;
+    }
+
+    .status.bad {
+        background: #fdecec;
+        color: #b42318;
+    }
+
+    .status.warn {
+        background: #fff4e0;
+        color: #8a5300;
+    }
+
+.hint {
+    font-size: 0.75rem;
+    color: #7a8599;
+}
+
+::deep .asm-monaco {
+    flex: 1;
+    min-height: 0;
+}
+
+.asm-problems {
+    max-height: 140px;
+    overflow: auto;
+    border-top: 1px solid #f5c2c2;
+    background: #fff8f8;
+    font-size: 0.8rem;
+    padding: 4px 12px;
+}
+
+.asm-problem {
+    color: #8a1c14;
+    padding: 1px 0;
+    cursor: pointer;
+}
+
+    .asm-problem:hover {
+        text-decoration: underline;
+    }
+
+    .asm-problem.warning, .asm-problem.warning .where {
+        color: #8a5300;
+    }
+
+    .asm-problem .where {
+        font-family: ui-monospace, Menlo, monospace;
+        color: #b42318;
+        margin-right: 6px;
+    }

@@ -13,6 +13,7 @@ namespace BYOCCore
         private List<string> pendingBankFunctions = new List<string>();
         private bool select0Stack;
         public const int MaxCells = 1 << 20;
+        private static readonly HashSet<string> BankFunctions = new HashSet<string> { "loadmar", "outputmar", "output", "load" };
         public const int DefaultBanks = 16;
         public MMU(string DeviceName, string DeviceID, Bus bus, int banks = DefaultBanks, int bankSize = RomModule.DefaultSize)
         {
@@ -78,7 +79,7 @@ namespace BYOCCore
                     ChipSelectRegister.Enable("output");
                     break;
                 default:
-                    if (!this.RamBanks[0].SignalLines().Contains(function))
+                    if (!BankFunctions.Contains(function))
                     {
                         throw new Exception("Unable to enable the unknown function: " + function);
                     }

@@ -16,15 +16,13 @@ namespace BYOCCore
         public int[] ProgramByteCode { get; }
         public List<MicroInstruction> CurrentMicroCode { get; private set; }
         public int Cycles { get; private set; }
-        public double ObservedClockSpeed { get; private set; }
         private readonly Dictionary<string, IBusDevice> devicesByID;
         private readonly Register instructionRegister;
         private readonly Register statusRegister;
         private readonly Clock halt;
-        private readonly Stopwatch stopwatch = new Stopwatch();
         private readonly DeviceRegistry registry;
         private readonly RomModule programMemory;
-        private readonly List<TickRecord> history = new List<TickRecord>();
+        private readonly RingBuffer<TickRecord> history = new RingBuffer<TickRecord>(HistoryLimit);
         public const int HistoryLimit = 500;
 
         public Machine(MachineDefinition definition, string microcode, string source, DeviceRegistry registry = null)
@@ -80,7 +78,7 @@ namespace BYOCCore
                 }
                 Device<RomModule>(definition.ProgramMemory).LoadProgram(ProgramByteCode);
             }
-            CurrentMicroCode = FetchMicroCode();
+            CurrentMicroCode = DecoderRom.FetchInstruction(statusRegister.Data, instructionRegister.Data);
         }
 
         public static Machine FromJson(string definitionJson, string microcode, string source, DeviceRegistry registry = null)
@@ -165,66 +163,109 @@ namespace BYOCCore
             get { return DecoderRom.Locate(statusRegister.Data, instructionRegister.Data); }
         }
 
+        // Everything a tick at one decoder ROM address needs, worked out the first time the address is used.
+        private class TickPlan
+        {
+            public List<MicroInstruction> MicroCode;
+            public IBusDevice[] Devices;
+            public string[] Functions;
+            public string[] Signals;
+            public Dictionary<string, List<string>> ReadersByBus;
+            public bool LoadsInstruction;
+            public string Instruction;
+            public int? StepIndex;
+        }
+        private readonly Dictionary<int, TickPlan> plans = new Dictionary<int, TickPlan>();
+        private Bus[] busArray;
+        private IBusDevice[] deviceArray;
+
+        // When false, ticks skip the detail kept for display (bus transfers, value changes, memory writes and the
+        // history), which makes running much faster. LastTick, breakpoints and CurrentInstructionAddress still work.
+        public bool RecordHistory { get; set; } = true;
+
+        private TickPlan PlanFor(int status, int step)
+        {
+            int address = DecoderRom.RomAddress(status, step);
+            if (plans.TryGetValue(address, out var plan)) return plan;
+            var microCode = DecoderRom.FetchInstruction(status, step);
+            plan = new TickPlan
+            {
+                MicroCode = microCode,
+                Devices = microCode.Select(m => devicesByID[m.DeviceID]).ToArray(),
+                Functions = microCode.Select(m => m.Function).ToArray(),
+                Signals = microCode.Select(m => $"{m.DeviceID}.{m.Function}").ToArray(),
+                LoadsInstruction = microCode.Any(m => m.DeviceID == Definition.Decoder.Instruction && m.Function == "load"),
+            };
+            plan.ReadersByBus = Buses.Keys.ToDictionary(id => id, id => ReadersOf(id, plan.Signals));
+            var located = DecoderRom.Locate(status, step);
+            if (located != null)
+            {
+                plan.Instruction = located.Value.Instruction.Mnemonic;
+                if (located.Value.Step != null) plan.StepIndex = located.Value.Instruction.Steps.IndexOf(located.Value.Step);
+            }
+            plans[address] = plan;
+            return plan;
+        }
+
         private void Step()
         {
+            busArray ??= Buses.Values.ToArray();
+            deviceArray ??= Devices.ToArray();
+            int status = statusRegister.Data, step = instructionRegister.Data;
+            var plan = PlanFor(status, step);
             var record = new TickRecord
             {
                 Cycle = Cycles + 1,
-                Status = statusRegister.Data,
-                MicroStep = instructionRegister.Data,
-                RomAddress = DecoderRom.RomAddress(statusRegister.Data, instructionRegister.Data),
+                Status = status,
+                MicroStep = step,
+                RomAddress = DecoderRom.RomAddress(status, step),
+                Instruction = plan.Instruction,
+                StepIndex = plan.StepIndex,
             };
-            var located = NextStep;
-            if (located != null)
-            {
-                record.Instruction = located.Value.Instruction.Mnemonic;
-                if (located.Value.Step != null) record.StepIndex = located.Value.Instruction.Steps.IndexOf(located.Value.Step);
-            }
-            var valuesBefore = SnapshotValues();
-            var writesBefore = SnapshotWrites();
+            bool detailed = RecordHistory;
+            var valuesBefore = detailed ? SnapshotValues() : null;
+            var writesBefore = detailed ? SnapshotWrites() : null;
 
-            CurrentMicroCode = FetchMicroCode();
-            foreach (var microCode in CurrentMicroCode)
+            CurrentMicroCode = plan.MicroCode;
+            for (int i = 0; i < plan.Devices.Length; i++)
             {
-                devicesByID[microCode.DeviceID].Enable(microCode.Function);
+                plan.Devices[i].Enable(plan.Functions[i]);
             }
-            record.Signals = CurrentMicroCode.Select(m => $"{m.DeviceID}.{m.Function}").ToList();
-            Clocking.Tick(Buses.Values.ToList(), Devices);
+            Clocking.Tick(busArray, deviceArray);
             Cycles++;
 
-            foreach (var bus in Buses.Values)
-            {
-                record.Transfers.Add(new BusTransfer { Bus = bus.ID, Driver = bus.Writer?.ID(), Value = bus.Data, Readers = ReadersOf(bus.ID, record.Signals) });
-            }
-            var valuesAfter = SnapshotValues();
-            foreach (var value in valuesAfter)
-            {
-                if (valuesBefore.TryGetValue(value.Key, out var before) && before != value.Value)
-                {
-                    record.Changes.Add(new ValueChange { Device = value.Key, Before = before, After = value.Value });
-                }
-            }
-            foreach (var (deviceId, bank, module, count) in writesBefore)
-            {
-                if (module.WriteCount != count)
-                {
-                    record.Writes.Add(new MemoryWrite { Device = deviceId, Bank = bank, Address = module.LastWriteAddress, Value = module.ValueAt(module.LastWriteAddress) });
-                }
-            }
-            if (record.Signals.Contains($"{Definition.Decoder.Instruction}.load") && programMemory != null)
+            if (plan.LoadsInstruction && programMemory != null)
             {
                 record.FetchedFromAddress = programMemory.memoryAddress;
                 CurrentInstructionAddress = programMemory.memoryAddress;
             }
+            if (detailed)
+            {
+                record.Signals = plan.Signals.ToList();
+                foreach (var bus in busArray)
+                {
+                    record.Transfers.Add(new BusTransfer { Bus = bus.ID, Driver = bus.Writer?.ID(), Value = bus.Data, Readers = plan.ReadersByBus[bus.ID] });
+                }
+                var valuesAfter = SnapshotValues();
+                foreach (var value in valuesAfter)
+                {
+                    if (valuesBefore.TryGetValue(value.Key, out var before) && before != value.Value)
+                    {
+                        record.Changes.Add(new ValueChange { Device = value.Key, Before = before, After = value.Value });
+                    }
+                }
+                foreach (var (deviceId, bank, module, count) in writesBefore)
+                {
+                    if (module.WriteCount != count)
+                    {
+                        record.Writes.Add(new MemoryWrite { Device = deviceId, Bank = bank, Address = module.LastWriteAddress, Value = module.ValueAt(module.LastWriteAddress) });
+                    }
+                }
+                history.Add(record);
+            }
             LastTick = record;
-            history.Add(record);
-            if (history.Count > HistoryLimit) history.RemoveAt(0);
-
-            stopwatch.Stop();
-            if (stopwatch.Elapsed.TotalMilliseconds > 0) ObservedClockSpeed = 1000 / stopwatch.Elapsed.TotalMilliseconds;
-            stopwatch.Restart();
         }
-        private List<string> ReadersOf(string busId, List<string> signals)
+        private List<string> ReadersOf(string busId, IEnumerable<string> signals)
         {
             var readers = new List<string>();
             foreach (var text in signals)
@@ -267,10 +308,6 @@ namespace BYOCCore
                 }
             }
             return writes;
-        }
-        private List<MicroInstruction> FetchMicroCode()
-        {
-            return DecoderRom.FetchInstruction(statusRegister.Data, instructionRegister.Data);
         }
         private T Device<T>(string id, string setting) where T : class, IBusDevice
         {

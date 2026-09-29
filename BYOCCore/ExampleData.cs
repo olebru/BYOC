@@ -9,27 +9,48 @@ namespace BYOCCore
         // The default machine's microcode (its decoder.microcode) on its own. ROMDATA below is the same
         // microcode in the legacy tab separated format.
         public static string MICROCODE { get { return MachineDefinition.FromJson(MACHINE).Decoder.Microcode.ToJson(); } }
+        // Pushes values on the stack, loads two bytes from memory, adds them and pushes the result.
+        public static readonly string SRC = AssemblyLanguage.Format(string.Join("\n", new[]
+        {
+            "; Stack and memory",
+            "; Pushes values on the stack in MMU bank 0 and adds two bytes stored after the code.",
+            "LAI #15 ; A = 15",
+            "PSA ; push A",
+            "PSA ; and again",
+            "LRA letter ; A = the byte at 'letter'",
+            "LRB one ; B = the byte at 'one'",
+            "PSA",
+            "loop: ADD ; A = A + B",
+            "PSA ; push the sum",
+            "letter: .BYTE #65 ; 'A'",
+            "one: .BYTE #1",
+        }));
+
         // Prints "HELLO, WORLD!" by looping over a string in memory (B is the index), then a line feed and
         // Norwegian letters from the Latin-1 range.
-        public const string HELLO =
-            "\tDCL\n" +
-            "\tLBI\t#0\n" +
-            "loop:\tLNA\tmsg\n" +
-            "\tDWA\n" +
-            "\tINB\n" +
-            "\tLAI\t#13\n" +
-            "\tCMP\n" +
-            "\tJNE\tloop\n" +
-            "\tDWI\t#10\n" +
-            "\tDWI\t#198\n" +
-            "\tDWI\t#216\n" +
-            "\tDWI\t#197\n" +
-            "\tDWI\t#32\n" +
-            "\tDWI\t#230\n" +
-            "\tDWI\t#248\n" +
-            "\tDWI\t#229\n" +
-            "\tHLT\n" +
-            "msg:\t.BYTE\t#72,#69,#76,#76,#79,#44,#32,#87,#79,#82,#76,#68,#33";
+        public static readonly string HELLO = AssemblyLanguage.Format(string.Join("\n", new[]
+        {
+            "; Hello, world on the LCD",
+            "; B indexes the string, A holds each character.",
+            "DCL ; clear the display",
+            "LBI #0 ; B = 0",
+            "loop: LNA msg ; A = msg[B]",
+            "DWA ; print A",
+            "INB ; next character",
+            "LAI #13 ; length of the string",
+            "CMP ; Z is set when B = 13",
+            "JNE loop",
+            "DWI #'\\n' ; new line",
+            "DWI #'Æ'",
+            "DWI #'Ø'",
+            "DWI #'Å'",
+            "DWI #' '",
+            "DWI #'æ'",
+            "DWI #'ø'",
+            "DWI #'å'",
+            "HLT",
+            "msg: .BYTE \"HELLO, WORLD!\"",
+        }));
 
         // Prints the Fibonacci numbers that fit in 16 bits in decimal on the display: 1 1 2 3 5 8 ... 46368.
         public static readonly string FIBONACCI = FibonacciProgram(new[] { 10000, 1000, 100, 10 });
@@ -42,66 +63,72 @@ namespace BYOCCore
         {
             var lines = new System.Collections.Generic.List<string>
             {
-                "\tDCL",
-                "\tLAI\t#0",
-                "\tSTA\t#0",
-                "\tLAI\t#1",
-                "\tSTA\t#1",
-                "next:\tLDA\t#1",
-                "\tSTA\t#3",
-                "\tLAI\t#0",
-                "\tSTA\t#5",
+                "; Fibonacci on the LCD",
+                "; Prints each Fibonacci number in decimal until the next one does not fit in 16 bits.",
+                "; Variables in the MMU bank: 0 a, 1 b, 2 next, 3 value to print, 4 digit, 5 digit printed.",
+                "DCL",
+                "LAI #0",
+                "STA #0 ; a = 0",
+                "LAI #1",
+                "STA #1 ; b = 1",
+                "next: LDA #1 ; print b",
+                "STA #3",
+                "LAI #0",
+                "STA #5 ; nothing printed yet",
             };
             for (int k = 0; k < placeValues.Length; k++)
             {
                 lines.AddRange(new[]
                 {
-                    "\tLAI\t#48",
-                    "\tSTA\t#4",
-                    $"count{k}:\tLDA\t#3",
-                    $"\tLBI\t#{placeValues[k]}",
-                    "\tSUB",
-                    $"\tJC\tdigit{k}",
-                    "\tSTA\t#3",
-                    "\tLDA\t#4",
-                    "\tINA",
-                    "\tSTA\t#4",
-                    $"\tJMP\tcount{k}",
-                    $"digit{k}:\tLDA\t#4",
-                    "\tLBI\t#48",
-                    "\tCMP",
-                    $"\tJNE\tprint{k}",
-                    "\tLDA\t#5",
-                    "\tLBI\t#1",
-                    "\tCMP",
-                    $"\tJNE\tskip{k}",
-                    $"print{k}:\tLDA\t#4",
-                    "\tDWA",
-                    "\tLAI\t#1",
-                    "\tSTA\t#5",
+                    $"; digit for {placeValues[k]}s: count how often it can be subtracted",
+                    "LAI #'0'",
+                    "STA #4",
+                    $"count{k}: LDA #3",
+                    $"LBI #{placeValues[k]}",
+                    "SUB",
+                    $"JC digit{k} ; borrow: value < place value",
+                    "STA #3",
+                    "LDA #4",
+                    "INA",
+                    "STA #4",
+                    $"JMP count{k}",
+                    $"digit{k}: LDA #4",
+                    "LBI #'0'",
+                    "CMP",
+                    $"JNE print{k} ; not a zero: print it",
+                    "LDA #5",
+                    "LBI #1",
+                    "CMP",
+                    $"JNE skip{k} ; leading zero: skip it",
+                    $"print{k}: LDA #4",
+                    "DWA",
+                    "LAI #1",
+                    "STA #5",
                     $"skip{k}:",
                 });
             }
             lines.AddRange(new[]
             {
-                "\tLDA\t#3",
-                "\tLBI\t#48",
-                "\tADD",
-                "\tDWA",
-                "\tDWI\t#32",
-                "\tLDA\t#0",
-                "\tLDB\t#1",
-                "\tADD",
-                "\tJC\tdone",
-                "\tSTA\t#2",
-                "\tLDA\t#1",
-                "\tSTA\t#0",
-                "\tLDA\t#2",
-                "\tSTA\t#1",
-                "\tJMP\tnext",
-                "done:\tHLT",
+                "; units digit, then a space",
+                "LDA #3",
+                "LBI #'0'",
+                "ADD",
+                "DWA",
+                "DWI #' '",
+                "; next = a + b, stop when it does not fit",
+                "LDA #0",
+                "LDB #1",
+                "ADD",
+                "JC done",
+                "STA #2",
+                "LDA #1",
+                "STA #0 ; a = b",
+                "LDA #2",
+                "STA #1 ; b = next",
+                "JMP next",
+                "done: HLT",
             });
-            return string.Join("\n", lines);
+            return AssemblyLanguage.Format(string.Join("\n", lines));
         }
 
         // Example programs for the default machine, by name. The first is loaded by default.
@@ -119,6 +146,7 @@ namespace BYOCCore
             using var reader = new System.IO.StreamReader(stream);
             return reader.ReadToEnd();
         }
+
         public const string ROMDATA = @"p	pc	output	FTC	x	x	x	x
 s	mem	loadmar	FTC	x	x	x	x
 p	mem	output	FTC	x	x	x	x
@@ -349,15 +377,5 @@ p	mem	output	SWB	x	x	x	x
 s	mmu	loadcs	SWB	x	x	x	x
 s	regi	reset	SWB	x	x	x	x
 s	pc	inc	SWB	x	x	x	x";
-        public const string SRC = @"	LAI	#15
-	PSA
-	PSA
-	LRA	letter
-	LRB	one
-	PSA
-loop:	ADD
-	PSA
-letter:	.BYTE	#65
-one:	.BYTE	#1";
     }
 }

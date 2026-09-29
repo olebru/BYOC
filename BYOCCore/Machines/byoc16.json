@@ -110,6 +110,7 @@
           "mnemonic": "STA",
           "description": "Store A in the selected memory bank at the operand address",
           "operands": 1,
+          "operandTypes": ["address"],
           "steps": [
             {
               "signals": ["pc.inc"]
@@ -129,6 +130,7 @@
           "mnemonic": "STB",
           "description": "Store B in the selected memory bank at the operand address",
           "operands": 1,
+          "operandTypes": ["address"],
           "steps": [
             {
               "signals": ["pc.inc"]
@@ -148,6 +150,7 @@
           "mnemonic": "LRA",
           "description": "Load A from base memory at the operand address",
           "operands": 1,
+          "operandTypes": ["address"],
           "steps": [
             {
               "signals": ["pc.inc"]
@@ -167,6 +170,7 @@
           "mnemonic": "LRB",
           "description": "Load B from base memory at the operand address",
           "operands": 1,
+          "operandTypes": ["address"],
           "steps": [
             {
               "signals": ["pc.inc"]
@@ -186,6 +190,7 @@
           "mnemonic": "LDA",
           "description": "Load A from the selected memory bank at the operand address",
           "operands": 1,
+          "operandTypes": ["address"],
           "steps": [
             {
               "signals": ["pc.inc"]
@@ -205,6 +210,7 @@
           "mnemonic": "LDB",
           "description": "Load B from the selected memory bank at the operand address",
           "operands": 1,
+          "operandTypes": ["address"],
           "steps": [
             {
               "signals": ["pc.inc"]
@@ -328,6 +334,7 @@
           "mnemonic": "LNA",
           "description": "Load A from base memory at the operand address \u002B B",
           "operands": 1,
+          "operandTypes": ["address"],
           "steps": [
             {
               "signals": ["pc.inc"]
@@ -360,6 +367,7 @@
           "mnemonic": "JMP",
           "description": "Jump to the operand address",
           "operands": 1,
+          "operandTypes": ["address"],
           "steps": [
             {
               "signals": ["pc.inc"]
@@ -376,6 +384,7 @@
           "mnemonic": "JEQ",
           "description": "Jump to the operand address if Z is set",
           "operands": 1,
+          "operandTypes": ["address"],
           "steps": [
             {
               "signals": ["pc.inc"]
@@ -398,6 +407,7 @@
           "mnemonic": "JNE",
           "description": "Jump to the operand address if Z is clear",
           "operands": 1,
+          "operandTypes": ["address"],
           "steps": [
             {
               "signals": ["pc.inc"]
@@ -430,6 +440,7 @@
           "mnemonic": "JC",
           "description": "Jump to the operand address if C is set",
           "operands": 1,
+          "operandTypes": ["address"],
           "steps": [
             {
               "signals": ["pc.inc"]
@@ -452,6 +463,7 @@
           "mnemonic": "LPA",
           "description": "Load A from base memory at the address stored at the operand address",
           "operands": 1,
+          "operandTypes": ["address"],
           "steps": [
             {
               "signals": ["pc.inc"]
@@ -474,6 +486,7 @@
           "mnemonic": "LPB",
           "description": "Load B from base memory at the address stored at the operand address",
           "operands": 1,
+          "operandTypes": ["address"],
           "steps": [
             {
               "signals": ["pc.inc"]
@@ -506,6 +519,7 @@
           "mnemonic": "LAI",
           "description": "Load A with the operand",
           "operands": 1,
+          "operandTypes": ["value"],
           "steps": [
             {
               "signals": ["pc.inc"]
@@ -522,6 +536,7 @@
           "mnemonic": "LBI",
           "description": "Load B with the operand",
           "operands": 1,
+          "operandTypes": ["value"],
           "steps": [
             {
               "signals": ["pc.inc"]
@@ -564,6 +579,7 @@
           "mnemonic": "SWB",
           "description": "Select the memory bank given by the operand",
           "operands": 1,
+          "operandTypes": ["value"],
           "steps": [
             {
               "signals": ["pc.inc"]
@@ -630,6 +646,7 @@
           "mnemonic": "DWI",
           "description": "Print the operand character on the display",
           "operands": 1,
+          "operandTypes": ["value"],
           "steps": [
             {
               "signals": ["pc.inc"]

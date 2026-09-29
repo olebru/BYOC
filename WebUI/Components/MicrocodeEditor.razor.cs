@@ -260,10 +260,35 @@ namespace WebUI.Components
             selectedMnemonic = mnemonic;
             renameError = null;
         }
+        // Changing the count keeps the operand types in step: extra ones are dropped, new ones start unknown.
         private Task SetOperands(string value)
         {
             var instruction = Selected;
-            return Mutate(() => instruction.Operands = int.TryParse(value, out var n) && n >= 0 ? n : null);
+            return Mutate(() =>
+            {
+                instruction.Operands = int.TryParse(value, out var n) && n >= 0 ? n : null;
+                if (instruction.OperandTypes == null) return;
+                if (instruction.Operands == null || instruction.Operands == 0) { instruction.OperandTypes = null; return; }
+                if (instruction.OperandTypes.Count > instruction.Operands) instruction.OperandTypes.RemoveRange(instruction.Operands.Value, instruction.OperandTypes.Count - instruction.Operands.Value);
+                while (instruction.OperandTypes.Count < instruction.Operands) instruction.OperandTypes.Add(OperandType.Value);
+            });
+        }
+        // Sets one operand's type. Clearing every type removes the list, so the instruction simply does not say.
+        private Task SetOperandType(int index, string value)
+        {
+            var instruction = Selected;
+            return Mutate(() =>
+            {
+                int count = instruction.OperandCount ?? 0;
+                if (!Enum.TryParse<OperandType>(value, out var type))
+                {
+                    instruction.OperandTypes = null;
+                    return;
+                }
+                instruction.OperandTypes ??= Enumerable.Repeat(OperandType.Value, count).ToList();
+                while (instruction.OperandTypes.Count < count) instruction.OperandTypes.Add(OperandType.Value);
+                instruction.OperandTypes[index] = type;
+            });
         }
         private Task SetDescription(string value)
         {

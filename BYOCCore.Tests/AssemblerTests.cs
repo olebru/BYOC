@@ -60,8 +60,8 @@ public class AssemblerTests
     [InlineData("\tLAI\t#65536", "'#65536' is not a number")]
     [InlineData("\t.DWORD\t#1", "unknown directive '.DWORD'")]
     [InlineData("a:\tNOP\na:\tNOP", "defined more than once")]
-    [InlineData("\tLAI\t#1\tcomment", "too many columns")]
-    [InlineData("label\tNOP", "must end with ':'")]
+    [InlineData("\tLAI\t#1\tcomment", "missing ',' before 'comment'")]
+    [InlineData("label\tNOP", "unknown mnemonic 'label'")]
     public void ErrorsReportLineAndCause(string src, string expected)
     {
         var e = Assert.Throws<FormatException>(() => new Assembler(rom).Assemble(src));

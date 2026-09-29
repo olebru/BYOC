@@ -59,6 +59,11 @@ namespace BYOCCore
                 {
                     Add(DiagnosticSeverity.Error, instruction, null, null, "operands can not be negative.");
                 }
+                if (instruction.Operands != null && instruction.OperandTypes != null && instruction.OperandTypes.Count != instruction.Operands)
+                {
+                    Add(DiagnosticSeverity.Error, instruction, null, null,
+                        $"declares {instruction.Operands} operand{(instruction.Operands == 1 ? "" : "s")} but {instruction.OperandTypes.Count} operand type{(instruction.OperandTypes.Count == 1 ? "" : "s")}.");
+                }
                 int longestVariant = Enumerable.Range(0, DecoderRom.StatusVariants).Max(s => instruction.StepsFor(s).Count);
                 opCodes += Math.Max(1, longestVariant);
 

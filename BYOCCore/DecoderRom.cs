@@ -17,6 +17,8 @@ namespace BYOCCore
         private Dictionary<string, int> baseAddressByMnemonic;
         private int opCodesUsed;
         private readonly List<(InstructionDefinition Instruction, int Base, int Count)> ranges = new List<(InstructionDefinition, int, int)>();
+        // The steps each instruction runs for each of the 16 status values, parallel to ranges.
+        private readonly List<List<MicroStep>[]> variants = new List<List<MicroStep>[]>();
 
         // Accepts microcode JSON, or the legacy tab separated format.
         public DecoderRom(string microcode) : this(MicrocodeDefinition.Parse(microcode))
@@ -55,6 +57,7 @@ namespace BYOCCore
                     }
                 }
                 ranges.Add((instruction, addr, steps));
+                variants.Add(Enumerable.Range(0, StatusVariants).Select(s => instruction.StepsFor(s)).ToArray());
                 addr += steps;
             }
             opCodesUsed = addr;
@@ -77,11 +80,12 @@ namespace BYOCCore
         // the given status flags (null when that flag variant has no step at this offset).
         public (InstructionDefinition Instruction, MicroStep Step, int Offset)? Locate(int statusRegisterValue, int instructionRegisterValue)
         {
-            foreach (var range in ranges)
+            for (int i = 0; i < ranges.Count; i++)
             {
+                var range = ranges[i];
                 if (instructionRegisterValue < range.Base || instructionRegisterValue >= range.Base + range.Count) continue;
                 int offset = instructionRegisterValue - range.Base;
-                var variant = range.Instruction.StepsFor(statusRegisterValue & 0x0F);
+                var variant = variants[i][statusRegisterValue & 0x0F];
                 return (range.Instruction, offset < variant.Count ? variant[offset] : null, offset);
             }
             return null;
@@ -97,7 +101,7 @@ namespace BYOCCore
         // Operand bytes the instruction declares, or null when it does not say.
         public int? OperandCount(string mnemonic)
         {
-            return Microcode.FindInstruction(mnemonic)?.Operands;
+            return Microcode.FindInstruction(mnemonic)?.OperandCount;
         }
         // The decoder only has 4 status inputs (NVCZ), so higher status bits are ignored.
         public List<MicroInstruction> FetchInstruction(int StatusRegisterValue, int InstructionRegisterValue)

@@ -129,6 +129,7 @@ namespace BYOCCore
         UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow)]
     [JsonSerializable(typeof(MachineDefinition))]
     [JsonSerializable(typeof(MicrocodeDefinition))]
+    [JsonSerializable(typeof(OperandType))]
     [JsonSerializable(typeof(string))]
     internal partial class MachineDefinitionJsonContext : JsonSerializerContext
     {

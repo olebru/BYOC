@@ -35,6 +35,13 @@ namespace WebUI.Components
         private bool running;
         private string runtimeError;
         private int speedSlider = 40;
+        // Ignore the slider and run as many ticks as the browser allows.
+        private bool maxSpeed;
+        // Measured clock speed while running: (seconds of running time, ticks per second).
+        private readonly List<(double Seconds, double Hz)> speedSamples = new List<(double, double)>();
+        private double runningSeconds;
+        private const double SampleSeconds = 0.25;
+        private const double SpeedWindowSeconds = 60;
         private readonly HashSet<int> breakpoints = new HashSet<int>();
         private string bottomTab = "Memory";
         private string memoryDevice;
@@ -56,6 +63,8 @@ namespace WebUI.Components
                 runtimeError = null;
                 lastScrolledAddress = null;
                 fitPending = true;
+                speedSamples.Clear();
+                runningSeconds = 0;
                 if (Machine != null && (memoryDevice == null || Machine.Device(memoryDevice) == null))
                 {
                     memoryDevice = Machine.Definition.ProgramMemory ?? Machine.Devices.FirstOrDefault(d => d is RomModule || d is MMU)?.ID();
@@ -146,8 +155,19 @@ namespace WebUI.Components
         private void RunToHalt()
         {
             if (running || Machine.IsHalted || runtimeError != null) return;
-            for (int i = 0; i < 100000 && Tick(); i++) { }
+            Machine.RecordHistory = false;
+            try
+            {
+                for (int i = 0; i < 1_000_000 && Tick(); i++) { }
+            }
+            finally
+            {
+                Machine.RecordHistory = true;
+            }
         }
+        // Runs until paused, halted or a breakpoint. At a set speed the ticks due are worked out from the time that
+        // has passed, so the clock keeps its rate however long a frame takes to draw; at max speed each frame runs
+        // as many ticks as fit in its time budget, then draws.
         private async Task ToggleRun()
         {
             if (running) { stopRequested = true; return; }
@@ -155,21 +175,106 @@ namespace WebUI.Components
             running = true;
             stopRequested = false;
             var machine = Machine;
-            var frame = Stopwatch.StartNew();
+            var clock = Stopwatch.StartNew();
+            var frame = new Stopwatch();
+            double owed = 0, lastFrameAt = 0, sampleAt = 0;
+            int sampleCycles = Machine.Cycles;
             while (!stopRequested && ReferenceEquals(machine, Machine))
             {
                 frame.Restart();
-                int ticks = Hz <= 60 ? 1 : Hz / 60;
+                double now = clock.Elapsed.TotalSeconds;
                 bool keepGoing = true;
-                for (int i = 0; i < ticks && keepGoing; i++) keepGoing = Tick();
+                // Fast runs skip the per tick detail and record only the last tick of the frame, the one on screen.
+                bool recordEvery = !maxSpeed && Hz <= FullRecordingHz;
+                Machine.RecordHistory = recordEvery;
+                if (maxSpeed)
+                {
+                    while (keepGoing && frame.ElapsedMilliseconds < MaxSpeedFrameMilliseconds)
+                    {
+                        for (int i = 0; i < 256 && keepGoing; i++) keepGoing = Tick();
+                    }
+                    owed = 0;
+                }
+                else
+                {
+                    owed = Math.Min(owed + Hz * (now - lastFrameAt), Hz * 0.25 + 1);
+                    while (keepGoing && owed >= (recordEvery ? 1 : 2) && frame.ElapsedMilliseconds < MaxSpeedFrameMilliseconds)
+                    {
+                        keepGoing = Tick();
+                        owed--;
+                    }
+                }
+                Machine.RecordHistory = true;
+                if (keepGoing && !recordEvery && (maxSpeed || owed >= 1))
+                {
+                    keepGoing = Tick();
+                    owed = Math.Max(0, owed - 1);
+                }
+                lastFrameAt = now;
+                if (now - sampleAt >= SampleSeconds)
+                {
+                    AddSpeedSample((Machine.Cycles - sampleCycles) / (now - sampleAt), now - sampleAt);
+                    sampleAt = now;
+                    sampleCycles = Machine.Cycles;
+                }
                 StateHasChanged();
                 if (!keepGoing) break;
-                int delay = Hz <= 60 ? 1000 / Hz : 16;
-                await Task.Delay(Math.Max(1, delay - (int)frame.ElapsedMilliseconds));
+                int delay = maxSpeed ? 1 : Math.Max(1, Math.Min(16, (int)(1000 / Math.Max(1, Hz)) - (int)frame.ElapsedMilliseconds));
+                await Task.Delay(delay);
             }
-            if (ReferenceEquals(machine, Machine)) running = false;
+            if (ReferenceEquals(machine, Machine))
+            {
+                running = false;
+                double elapsed = clock.Elapsed.TotalSeconds - sampleAt;
+                if (elapsed > 0.05) AddSpeedSample((Machine.Cycles - sampleCycles) / elapsed, elapsed);
+            }
             StateHasChanged();
         }
+        private const int MaxSpeedFrameMilliseconds = 30;
+        // At or below this speed every tick is recorded, so the trace is complete.
+        private const int FullRecordingHz = 200;
+
+        private void AddSpeedSample(double hz, double seconds)
+        {
+            runningSeconds += seconds;
+            speedSamples.Add((runningSeconds, hz));
+            while (speedSamples.Count > 0 && speedSamples[0].Seconds < runningSeconds - SpeedWindowSeconds) speedSamples.RemoveAt(0);
+        }
+        private double CurrentHz { get { return speedSamples.Count == 0 ? 0 : speedSamples[^1].Hz; } }
+        private double PeakHz { get { return speedSamples.Count == 0 ? 0 : speedSamples.Max(s => s.Hz); } }
+        private static string FormatHz(double hz)
+        {
+            if (hz >= 1_000_000) return $"{hz / 1_000_000:0.##} MHz";
+            if (hz >= 1_000) return $"{hz / 1_000:0.##} kHz";
+            return $"{hz:0.#} Hz";
+        }
+        // The chart's top value: a round number above the highest sample and the target.
+        private double ChartMax
+        {
+            get
+            {
+                double top = Math.Max(PeakHz, maxSpeed ? 0 : Hz) * 1.1;
+                if (top <= 0) return 10;
+                double magnitude = Math.Pow(10, Math.Floor(Math.Log10(top)));
+                foreach (var step in new[] { 1, 2, 2.5, 5, 10 })
+                {
+                    if (step * magnitude >= top) return step * magnitude;
+                }
+                return 10 * magnitude;
+            }
+        }
+        private const double ChartWidth = 360, ChartHeight = 70;
+        private string SpeedPoints(bool area)
+        {
+            if (speedSamples.Count == 0) return "";
+            double end = speedSamples[^1].Seconds, span = ChartSpan, start = end - span, top = ChartMax;
+            string Point(double seconds, double hz) => FormattableString.Invariant($"{(seconds - start) / span * ChartWidth:0.#},{ChartHeight - Math.Min(1, hz / top) * ChartHeight:0.#}");
+            var points = string.Join(" ", speedSamples.Select(s => Point(s.Seconds, s.Hz)));
+            return area ? $"{Point(speedSamples[0].Seconds, 0)} {points} {Point(end, 0)}" : points;
+        }
+        // Seconds across the chart: grows with the run until it reaches the window.
+        private double ChartSpan { get { return Math.Min(SpeedWindowSeconds, Math.Max(5, runningSeconds)); } }
+        private double TargetY { get { return ChartHeight - Math.Min(1, Hz / ChartMax) * ChartHeight; } }
         private async Task Restart()
         {
             stopRequested = true;
@@ -181,6 +286,7 @@ namespace WebUI.Components
             switch (e.Key)
             {
                 case " ": await ToggleRun(); break;
+                case "m": case "M": maxSpeed = !maxSpeed; break;
                 case "ArrowRight" when e.ShiftKey: StepInstruction(); break;
                 case "ArrowRight": TickOnce(); break;
                 case "r": case "R": await Restart(); break;

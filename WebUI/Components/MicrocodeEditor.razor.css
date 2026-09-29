@@ -264,6 +264,15 @@
     width: 80px;
 }
 
+.types-field .types {
+    display: flex;
+    gap: 4px;
+}
+
+    .types-field .types select {
+        width: 96px;
+    }
+
 .field.actions {
     display: flex;
     gap: 6px;

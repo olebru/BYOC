@@ -1011,3 +1011,79 @@
         box-shadow: 0 0 5px currentColor;
         transform: scale(1.25);
     }
+
+/* Clock speed */
+.ctl.on {
+    background: #fff4e0;
+    border-color: #f5a524;
+    color: #8a5300;
+    font-weight: 600;
+}
+
+.speed.off span {
+    color: #8a5300;
+    font-weight: 600;
+}
+
+.clock-panel {
+    padding: 8px 12px 6px;
+}
+
+.clock-head {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+}
+
+    .clock-head .panel-title {
+        margin: 0;
+    }
+
+.clock-now {
+    font-family: var(--mono);
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-left: auto;
+}
+
+.clock-chart {
+    width: 100%;
+    height: 70px;
+    display: block;
+    margin-top: 4px;
+    background: #f7f9fc;
+    border-radius: 6px;
+}
+
+    .clock-chart .area {
+        fill: rgba(27, 110, 194, 0.15);
+    }
+
+    .clock-chart .line {
+        fill: none;
+        stroke: var(--accent);
+        stroke-width: 1.5;
+        vector-effect: non-scaling-stroke;
+    }
+
+    .clock-chart .target {
+        stroke: #f5a524;
+        stroke-width: 1;
+        stroke-dasharray: 4 3;
+        vector-effect: non-scaling-stroke;
+    }
+
+    .clock-chart .grid {
+        stroke: #e3e7ee;
+        stroke-width: 1;
+        vector-effect: non-scaling-stroke;
+    }
+
+.clock-axis {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.68rem;
+    color: var(--muted);
+    font-family: var(--mono);
+}
