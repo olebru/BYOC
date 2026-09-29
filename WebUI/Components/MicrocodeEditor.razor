@@ -13,8 +13,8 @@
         <button class="tool" @onclick="Download">Download JSON</button>
         <span class="sep"></span>
         <span class="meter" title="Micro step addresses used, out of the 65536 a 16 bit micro step register can select">
-            <span class="meter-bar"><span class="meter-fill @(OpCodesUsed > AddressSpace ? "over" : "")" style="width:@(Math.Min(100, OpCodesUsed * 100 / AddressSpace))%"></span></span>
-            @OpCodesUsed / @AddressSpace opcodes
+            <span class="meter-bar"><span class="meter-fill @(OpCodesUsed > AddressSpace ? "over" : "")" style="width:@(Math.Max(OpCodesUsed > 0 ? 1 : 0, Math.Min(100, OpCodesUsed * 100 / AddressSpace)))%"></span></span>
+            <span class="meter-count"><strong>@OpCodesUsed</strong> / @AddressSpace</span> <span class="silk">opcodes</span>
         </span>
         <span class="grow"></span>
         @if (Diagnostics.Count == 0)
@@ -54,8 +54,10 @@
             @if (Microcode.Fetch != null)
             {
                 <div class="list-item fetch @(Selected == Microcode.Fetch ? "selected" : "")" @onclick="() => Select(Microcode.Fetch)">
+                    <span class="opcode">@OpcodeOf(Microcode.Fetch)</span>
                     <span class="mnemonic">@Microcode.Fetch.Mnemonic</span>
-                    <span class="badge-fetch">fetch · opcode 0</span>
+                    <span class="badge-fetch">Fetch</span>
+                    <span class="desc"></span>
                     <span class="marker @Marker(Microcode.Fetch)"></span>
                 </div>
             }
@@ -68,13 +70,14 @@
                 <div class="list-item @(Selected == instruction ? "selected" : "")" draggable="true"
                      @ondragstart="() => DragInstruction(index)" @ondragover:preventDefault @ondrop="() => DropOnInstruction(index)"
                      @onclick="() => Select(instruction)" title="@instruction.Description">
+                    <span class="opcode">@OpcodeOf(instruction)</span>
                     <span class="mnemonic">@instruction.Mnemonic</span>
                     @if (instruction.Operands > 0) { <span class="ops">@instruction.Operands op</span> }
                     <span class="desc">@instruction.Description</span>
                     <span class="marker @Marker(instruction)"></span>
                 </div>
             }
-            <button class="btn btn-sm btn-outline-primary btn-block mt-2" @onclick="AddInstruction">＋ Add instruction</button>
+            <button class="add-instruction" @onclick="AddInstruction">＋ Add instruction</button>
         </div>
 
         <!-- Instruction editor -->
@@ -132,7 +135,7 @@
                 }
 
                 <div class="preview">
-                    <span class="preview-label">Preview flags</span>
+                    <span class="preview-label silk">Preview flags</span>
                     <button class="flag @(previewStatus == null ? "on" : "")" @onclick="() => previewStatus = null">all steps</button>
                     @foreach (var flag in Flags)
                     {
@@ -200,8 +203,10 @@
                                     @foreach (var bus in activity)
                                     {
                                         <span class="bus-flow @(bus.Drivers.Count > 1 ? "conflict" : bus.Drivers.Count == 0 ? "floating" : "")">
-                                            <strong>@bus.Bus</strong>
-                                            @(bus.Drivers.Count == 0 ? "nothing" : string.Join(" + ", bus.Drivers)) → @(bus.Readers.Count == 0 ? "—" : string.Join(", ", bus.Readers))
+                                            <span class="bus-name">@bus.Bus</span>
+                                            <span class="bus-from">@(bus.Drivers.Count == 0 ? "nothing" : string.Join(" + ", bus.Drivers))</span>
+                                            <span class="bus-arrow">→</span>
+                                            <span class="bus-to">@(bus.Readers.Count == 0 ? "—" : string.Join(", ", bus.Readers))</span>
                                         </span>
                                     }
                                 </div>
@@ -230,7 +235,7 @@
 
         <!-- Signal palette -->
         <div class="palette">
-            <div class="palette-title">Control lines</div>
+            <div class="palette-title silk">Control lines</div>
             <div class="palette-hint">Drag onto a step, or click to add to step @(activeStep + 1). ▲ drives a bus, ▼ reads a bus. Double-click a signal in a step to show its device.</div>
             <input class="form-control form-control-sm mb-2" placeholder="Filter" @bind="paletteFilter" @bind:event="oninput" />
             @if (Machine != null)
@@ -241,9 +246,9 @@
                     if (info == null) continue;
                     var lines = info.ControlLines.Where(l => paletteFilter.Length == 0 || $"{device.Id}.{l.Name}".Contains(paletteFilter, StringComparison.OrdinalIgnoreCase)).ToList();
                     if (lines.Count == 0) continue;
-                    <div class="palette-device">
-                        <span class="dot" style="background:@(CategoryColors.TryGetValue(info.Category, out var c) ? c : "#828282")"></span>
-                        <strong>@device.Id</strong> <span class="muted">@device.Type</span>
+                    <div class="palette-device" title="@($"{device.Type}: {info.Description}")">
+                        <span class="dot" style="background:@Palette.Category(info)"></span>
+                        <span class="palette-id">@device.Id</span> <span class="palette-type">@device.Type</span>
                     </div>
                     <div class="palette-lines">
                         @foreach (var line in lines)

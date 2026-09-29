@@ -1,0 +1,20 @@
+.errors {
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--bad);
+    border-radius: var(--radius);
+    background: var(--surface);
+    padding: 6px 12px 8px;
+    margin-bottom: 12px;
+}
+
+.errors-head {
+    color: var(--bad);
+    margin-bottom: 2px;
+}
+
+.error {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--ink);
+    padding: 2px 0;
+}

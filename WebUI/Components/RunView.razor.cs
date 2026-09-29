@@ -13,17 +13,8 @@ namespace WebUI.Components
     public partial class RunView : IDisposable
     {
         private const double CardWidth = 160;
-        private const double CardHeight = 90;
+        private const double CardHeight = 96;
         private const int TraceRows = 120;
-        private static readonly string[] BusColors = { "#2f80ed", "#00a3bf", "#7b61ff", "#e8a33d", "#3fb68b", "#d6336c" };
-        private static readonly Dictionary<string, string> CategoryColors = new Dictionary<string, string>
-        {
-            ["Registers"] = "#2f80ed",
-            ["Control"] = "#9b51e0",
-            ["Arithmetic"] = "#f2994a",
-            ["Memory"] = "#27ae60",
-            ["I/O"] = "#d6336c",
-        };
 
         [Inject] private IJSRuntime JS { get; set; }
 
@@ -51,6 +42,7 @@ namespace WebUI.Components
         private double zoom = 1;
         private bool fitPending = true;
         private ElementReference schematicElement;
+        private ElementReference runElement;
         private bool stopRequested;
         private bool wholeRom;
 
@@ -104,13 +96,6 @@ namespace WebUI.Components
         private void Zoom(double factor)
         {
             zoom = Math.Clamp(Math.Round(zoom * factor, 2), 0.4, 1.6);
-        }
-        private class ElementRect
-        {
-            public double Left { get; set; }
-            public double Top { get; set; }
-            public double Width { get; set; }
-            public double Height { get; set; }
         }
 
         // ---- Controls ----
@@ -282,8 +267,50 @@ namespace WebUI.Components
             running = false;
             await OnRestart.InvokeAsync();
         }
+        // While a keypad has the keyboard, arrows and space go to it and Esc gives the keyboard back.
+        private Keypad capturedKeypad;
+        private static Keypad.Keys? KeypadKey(string key)
+        {
+            return key switch
+            {
+                "ArrowUp" => Keypad.Keys.Up,
+                "ArrowDown" => Keypad.Keys.Down,
+                "ArrowLeft" => Keypad.Keys.Left,
+                "ArrowRight" => Keypad.Keys.Right,
+                " " => Keypad.Keys.Space,
+                _ => null,
+            };
+        }
+        private async Task Capture(Keypad keypad)
+        {
+            capturedKeypad?.ReleaseAll();
+            capturedKeypad = keypad;
+            if (keypad != null) await JS.InvokeVoidAsync("byocEditor.focus", runElement);
+        }
+        private void OnKeyUp(KeyboardEventArgs e)
+        {
+            if (capturedKeypad != null && KeypadKey(e.Key) is Keypad.Keys key) capturedKeypad.Release(key);
+        }
+        private void ReleaseKeys()
+        {
+            foreach (var keypad in Machine.Devices.OfType<Keypad>()) keypad.ReleaseAll();
+        }
         private async Task OnKeyDown(KeyboardEventArgs e)
         {
+            if (capturedKeypad != null)
+            {
+                if (e.Key == "Escape")
+                {
+                    capturedKeypad.ReleaseAll();
+                    capturedKeypad = null;
+                    return;
+                }
+                if (KeypadKey(e.Key) is Keypad.Keys key)
+                {
+                    capturedKeypad.Press(key);
+                    return;
+                }
+            }
             switch (e.Key)
             {
                 case " ": await ToggleRun(); break;
@@ -378,11 +405,11 @@ namespace WebUI.Components
         private string BusColor(string busId)
         {
             var index = Machine.Definition.Buses.FindIndex(b => b.Id == busId);
-            return index < 0 ? "#999" : BusColors[index % BusColors.Length];
+            return Palette.Bus(index);
         }
         private static string CategoryColor(DeviceTypeInfo info)
         {
-            return CategoryColors.TryGetValue(info.Category, out var color) ? color : "#828282";
+            return Palette.Category(info);
         }
         private (double X, double Y) PortAnchor(DeviceDefinition device, Position position, string port)
         {
@@ -452,7 +479,7 @@ namespace WebUI.Components
             if (isProgram && current != null && address >= current.Address && address < current.Address + current.Cells.Length) classes.Add("current");
             if (Last?.Writes.Any(w => w.Device == memoryDevice && w.Bank == Bank && w.Address == address) == true) classes.Add("written");
             else if (Machine.History.Skip(Math.Max(0, Machine.History.Count - 30)).Any(t => t.Writes.Any(w => w.Device == memoryDevice && w.Bank == Bank && w.Address == address))) classes.Add("recent");
-            if (module.memory[address] == 0) classes.Add("zero");
+            if (module.ValueAt(address) == 0) classes.Add("zero");
             return string.Join(" ", classes);
         }
 

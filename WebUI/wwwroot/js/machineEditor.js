@@ -11,7 +11,14 @@ window.byocEditor = {
     },
     scrollToId: function (id) {
         const element = document.getElementById(id);
-        if (element) element.scrollIntoView({ block: 'nearest' });
+        if (!element) return;
+        // Scroll only the closest scrolling container, so outer panels and the page stay where they are.
+        let box = element.parentElement;
+        while (box && !(box.scrollHeight > box.clientHeight && /(auto|scroll)/.test(getComputedStyle(box).overflowY))) box = box.parentElement;
+        if (!box) return;
+        const e = element.getBoundingClientRect(), b = box.getBoundingClientRect();
+        if (e.top < b.top) box.scrollTop -= b.top - e.top;
+        else if (e.bottom > b.bottom) box.scrollTop += e.bottom - b.bottom;
     },
     focus: function (element) {
         element.focus({ preventScroll: true });

@@ -83,14 +83,14 @@ namespace BYOCCore
 
             var registry = new DeviceRegistry();
             registry.Register("register", c => new Register(c.Name, c.Id, c.Bus(), c.IntParameter("initialValue", 0, 0, 65535)),
-                new DeviceTypeInfo { Category = "Registers", Description = "16 bit register: output, load, reset, inc, dec", Parameters = { initialValue }, ControlLines = RegisterLines() });
+                new DeviceTypeInfo { Category = "Registers", Description = "Holds one 16 bit value between ticks. output puts it on the bus and load stores the bus value; reset, inc and dec change it in place", Parameters = { initialValue }, ControlLines = RegisterLines() });
             registry.Register("statusRegister", c => new StatusRegister(c.Name, c.Id, c.Bus()),
-                new DeviceTypeInfo { Category = "Registers", Description = "Holds the NVCZ flags written by the ALU", ControlLines = RegisterLines() });
+                new DeviceTypeInfo { Category = "Registers", Description = "Holds the four ALU flags: N negative, V overflow, C carry and Z zero. The decoder reads them to pick which steps of an instruction run", ControlLines = RegisterLines() });
             registry.Register("dualPortRegister", c => new DualPortRegister(c.Name, c.Id, c.Bus("a"), c.Bus("b"), c.IntParameter("initialValue", 0, 0, 65535)),
                 new DeviceTypeInfo
                 {
                     Category = "Registers",
-                    Description = "Register on two buses, moves values between them",
+                    Description = "A register that sits on two buses: load it from one and output it on the other to move a value between them",
                     Ports = new List<string> { "a", "b" },
                     Parameters = { initialValue },
                     ControlLines =
@@ -108,16 +108,16 @@ namespace BYOCCore
                 new DeviceTypeInfo
                 {
                     Category = "Control",
-                    Description = "Micro step counter, advances every tick unless loaded or reset. Selects one of 65536 decoder ROM step addresses",
+                    Description = "The micro step counter. It advances every tick and, with the status flags, addresses the decoder ROM step that runs next. load jumps to an opcode's steps, reset goes back to fetch",
                     ControlLines = RegisterLines()
                 });
             registry.Register("programCounter", c => new ProgramCounter(c.Name, c.Id, c.Bus()),
-                new DeviceTypeInfo { Category = "Control", Description = "Register pointing at the next program cell; inc advances it", ControlLines = RegisterLines() });
+                new DeviceTypeInfo { Category = "Control", Description = "Points at the next program cell in memory. inc moves it on one cell, load jumps to the address on the bus", ControlLines = RegisterLines() });
             registry.Register("clock", c => new Clock(c.Name, c.Id),
                 new DeviceTypeInfo
                 {
                     Category = "Control",
-                    Description = "Counts cycles, its disable line halts the machine",
+                    Description = "Drives the ticks and counts cycles. Its disable line stops the clock, which halts the machine",
                     Ports = new List<string>(),
                     ControlLines = { ControlLineInfo.Internal("disable", "Halt the machine") }
                 });
@@ -125,7 +125,7 @@ namespace BYOCCore
                 new DeviceTypeInfo
                 {
                     Category = "Arithmetic",
-                    Description = "add, sub, cmp, and, orr, eor, lsl and lsr on two registers, writes flags to a status register",
+                    Description = "Arithmetic and logic on the registers connected as a and b. add, sub, and, orr, eor, lsl and lsr put the result on the bus, cmp only compares; each sets the flags in the connected status register",
                     Connections =
                     {
                         new ConnectionInfo { Name = "a", Description = "First operand register" },
@@ -145,9 +145,9 @@ namespace BYOCCore
                     }
                 });
             registry.Register("rom", c => new RomModule(c.Name, c.Id, c.Bus(), c.IntParameter("size", RomModule.DefaultSize, 1, 65536)),
-                new DeviceTypeInfo { Category = "Memory", Description = "Read only memory with address register", Parameters = { size }, ControlLines = RomLines() });
+                new DeviceTypeInfo { Category = "Memory", Description = "Read only memory with its own address register (MAR): loadmar takes an address from the bus, output puts that cell on the bus. A program can be loaded into it", Parameters = { size }, ControlLines = RomLines() });
             registry.Register("ram", c => new RamModule(c.Name, c.Id, c.Bus(), c.IntParameter("size", RomModule.DefaultSize, 1, 65536)),
-                new DeviceTypeInfo { Category = "Memory", Description = "Memory with address register", Parameters = { size }, ControlLines = RamLines() });
+                new DeviceTypeInfo { Category = "Memory", Description = "Read/write memory with its own address register (MAR): loadmar takes an address from the bus, output reads that cell and load writes the bus value into it", Parameters = { size }, ControlLines = RamLines() });
             var mmuLines = RamLines();
             mmuLines.Add(ControlLineInfo.Input("loadcs", "Select the bank given on the bus"));
             mmuLines.Add(ControlLineInfo.Output("outputcs", "Put the selected bank number on the bus"));
@@ -155,13 +155,12 @@ namespace BYOCCore
             registry.Register("mmu", c =>
                 {
                     int banks = c.IntParameter("banks", MMU.DefaultBanks, 1, 256), bankSize = c.IntParameter("bankSize", RomModule.DefaultSize, 1, 65536);
-                    if ((long)banks * bankSize > MMU.MaxCells) throw c.Error($"{banks} banks of {bankSize} cells is more than {MMU.MaxCells} cells");
                     return new MMU(c.Name, c.Id, c.Bus(), banks, bankSize);
                 },
                 new DeviceTypeInfo
                 {
                     Category = "Memory",
-                    Description = "Banks of memory, selected by a chip select register",
+                    Description = "Banks of RAM behind a chip select register: loadcs picks a bank from the bus and the memory lines then work on that bank. select0stack picks bank 0, the stack bank",
                     Parameters =
                     {
                         new ParameterInfo { Name = "banks", Description = "Number of banks", Min = 1, Max = 256, Default = MMU.DefaultBanks },
@@ -173,7 +172,7 @@ namespace BYOCCore
                 new DeviceTypeInfo
                 {
                     Category = "I/O",
-                    Description = "Character display, 8 bit Latin-1 (ISO-8859-1). load prints the bus value at the cursor, clear blanks it",
+                    Description = "A character LCD: load prints the low 8 bits of the bus at the cursor as a Latin-1 character and moves on, clear blanks it. Line feed and carriage return move the cursor",
                     Parameters =
                     {
                         new ParameterInfo { Name = "columns", Description = "Characters per row", Min = 1, Max = 64, Default = 16 },
@@ -189,13 +188,23 @@ namespace BYOCCore
                 new DeviceTypeInfo
                 {
                     Category = "I/O",
-                    Description = "640 x 480 colour display, one RGB565 word per pixel. plot writes at the cursor and moves right",
+                    Description = "A 640 x 480 colour screen, one RGB565 word per pixel. loadx and loady move the cursor, plot writes the bus value there and moves right, clear blanks the screen",
                     ControlLines =
                     {
                         ControlLineInfo.Input("loadx", "Set the cursor column from the bus (0-639)"),
                         ControlLineInfo.Input("loady", "Set the cursor row from the bus (0-479)"),
                         ControlLineInfo.Input("plot", "Write the RGB565 colour on the bus at the cursor, then move right"),
                         ControlLineInfo.Internal("clear", "Blank the screen and move the cursor home"),
+                    }
+                });
+            registry.Register("keypad", c => new Keypad(c.Name, c.Id, c.Bus()),
+                new DeviceTypeInfo
+                {
+                    Category = "I/O",
+                    Description = "The arrow keys and space, read like a register: output puts one bit per key on the bus (1 up, 2 down, 4 left, 8 right, 16 space). A quick tap is kept until the CPU reads it",
+                    ControlLines =
+                    {
+                        ControlLineInfo.Output("output", "Put the key bits on the bus: 1 up, 2 down, 4 left, 8 right, 16 space"),
                     }
                 });
             return registry;

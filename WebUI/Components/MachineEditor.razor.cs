@@ -22,15 +22,6 @@ namespace WebUI.Components
         private const double MinCanvasWidth = 1200;
         private const double MinCanvasHeight = 560;
 
-        private static readonly string[] BusColors = { "#2f80ed", "#00a3bf", "#7b61ff", "#e8a33d", "#3fb68b", "#d6336c" };
-        private static readonly Dictionary<string, string> CategoryColors = new Dictionary<string, string>
-        {
-            ["Registers"] = "#2f80ed",
-            ["Control"] = "#9b51e0",
-            ["Arithmetic"] = "#f2994a",
-            ["Memory"] = "#27ae60",
-            ["I/O"] = "#d6336c",
-        };
 
         [Inject] private IJSRuntime JS { get; set; }
 
@@ -48,6 +39,9 @@ namespace WebUI.Components
         [Parameter] public int FocusVersion { get; set; }
 
         private ElementReference canvasElement;
+        private ElementReference paletteElement;
+        // The device type the pointer is over in the palette, and where its card goes (fixed, beside the palette).
+        private (DeviceTypeInfo Info, double Left, double Top)? tip;
         private ElementReference canvasScroller;
         private (string Id, List<(InstructionDefinition Instruction, int Step, string Signal)> Usages)? pendingDelete;
         private int focusVersionSeen;
@@ -133,11 +127,11 @@ namespace WebUI.Components
         private string BusColor(string busId)
         {
             var index = Definition.Buses.FindIndex(b => b.Id == busId);
-            return index < 0 ? "#999" : BusColors[index % BusColors.Length];
+            return Palette.Bus(index);
         }
         private static string CategoryColor(DeviceTypeInfo info)
         {
-            return CategoryColors.TryGetValue(info.Category, out var color) ? color : "#828282";
+            return Palette.Category(info);
         }
         private double BusY(string busId)
         {
@@ -461,6 +455,17 @@ namespace WebUI.Components
         {
             SelectBus(bus.Id);
             return BeginDrag(e, new Drag { Kind = DragKind.MoveBus, BusId = bus.Id, OriginY = bus.Layout.Y });
+        }
+        private async Task ShowTip(DeviceTypeInfo info, PointerEventArgs e)
+        {
+            var palette = await JS.InvokeAsync<ElementRect>("byocEditor.rect", paletteElement);
+            // OffsetY is measured from the palette item itself: its children do not take pointer events.
+            var top = Math.Max(8, e.ClientY - e.OffsetY - 8);
+            tip = (info, palette.Left + palette.Width + 8, top);
+        }
+        private void HideTip()
+        {
+            tip = null;
         }
         private Task StartNewDevice(PointerEventArgs e, string type)
         {

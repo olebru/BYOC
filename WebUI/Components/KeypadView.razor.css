@@ -1,0 +1,133 @@
+/* A small key module: key caps on a dark plate, lit in signal orange while the CPU would read them as down. */
+.keypad {
+    background: var(--line-ink);
+    border: 1px solid var(--ink);
+    border-radius: var(--radius);
+    padding: 7px 8px 8px;
+}
+
+    .keypad.captured {
+        box-shadow: 0 0 0 2px var(--signal);
+    }
+
+.keypad-head {
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin-bottom: 6px;
+}
+
+.keypad-name {
+    font-weight: 600;
+    color: var(--ink-4);
+}
+
+.keypad-bits {
+    letter-spacing: 0.04em;
+    text-transform: none;
+}
+
+.keypad-body {
+    display: flex;
+    gap: 10px;
+    align-items: stretch;
+}
+
+.keys {
+    display: grid;
+    grid-template-columns: repeat(3, 30px);
+    grid-auto-rows: 26px;
+    gap: 4px;
+}
+
+.space-row {
+    grid-column: 1 / span 3;
+    display: flex;
+}
+
+.key {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    line-height: 1;
+    color: var(--ink-4);
+    background: var(--ink);
+    border: 1px solid rgba(0, 0, 0, 0.6);
+    border-bottom-width: 2px;
+    border-radius: var(--radius-sm);
+    padding: 0;
+    cursor: pointer;
+    user-select: none;
+    touch-action: none;
+}
+
+    .key.wide {
+        flex: 1;
+        font-size: 0.62rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    .key:hover {
+        color: var(--surface);
+    }
+
+    .key.down {
+        color: var(--surface);
+        background: var(--signal);
+        border-color: var(--signal-ink);
+        border-bottom-width: 1px;
+        transform: translateY(1px);
+    }
+
+    .key:focus {
+        outline: none;
+    }
+
+.capture {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-align: left;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    line-height: 1.35;
+    color: var(--ink-4);
+    background: transparent;
+    border: 1px dashed var(--ink-2);
+    border-radius: var(--radius-sm);
+    padding: 6px 10px;
+    cursor: pointer;
+}
+
+    .capture small {
+        font-size: 0.62rem;
+        color: var(--ink-3);
+    }
+
+    .capture:hover {
+        color: var(--surface);
+        border-color: var(--ink-3);
+    }
+
+    .keypad.captured .capture {
+        color: var(--surface);
+        border-style: solid;
+        border-color: var(--signal);
+    }
+
+    .capture:focus {
+        outline: none;
+    }
+
+.dot {
+    flex-shrink: 0;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--signal);
+}

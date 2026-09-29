@@ -12,14 +12,6 @@ namespace WebUI.Components
 {
     public partial class MicrocodeEditor
     {
-        private static readonly Dictionary<string, string> CategoryColors = new Dictionary<string, string>
-        {
-            ["Registers"] = "#2f80ed",
-            ["Control"] = "#9b51e0",
-            ["Arithmetic"] = "#f2994a",
-            ["Memory"] = "#27ae60",
-            ["I/O"] = "#d6336c",
-        };
         private static readonly (string Name, int Flag)[] Flags =
         {
             ("N", StatusRegister.NegativeFlag), ("V", StatusRegister.OverflowFlag), ("C", StatusRegister.CarryFlag), ("Z", StatusRegister.ZeroFlag),
@@ -101,9 +93,9 @@ namespace WebUI.Components
         }
         private string SignalColor(string signalText)
         {
-            if (!Signal.TryParse(signalText, out var signal)) return "#e5484d";
+            if (!Signal.TryParse(signalText, out var signal)) return Palette.Error;
             var info = InfoFor(signal.Device);
-            return info != null && CategoryColors.TryGetValue(info.Category, out var color) ? color : "#828282";
+            return Palette.Category(info);
         }
         private IEnumerable<string> AllSignals()
         {
@@ -165,8 +157,24 @@ namespace WebUI.Components
         {
             get
             {
-                return Microcode.AllInstructions.Sum(i => Math.Max(1, Enumerable.Range(0, DecoderRom.StatusVariants).Max(s => i.StepsFor(s).Count)));
+                return Microcode.AllInstructions.Sum(BlockSize);
             }
+        }
+        // Micro step addresses an instruction takes: its longest flag variant, at least one.
+        private static int BlockSize(InstructionDefinition instruction)
+        {
+            return Math.Max(1, Enumerable.Range(0, DecoderRom.StatusVariants).Max(s => instruction.StepsFor(s).Count));
+        }
+        // The opcode the decoder ROM gives an instruction: blocks are laid out in order from 0.
+        private string OpcodeOf(InstructionDefinition instruction)
+        {
+            int address = 0;
+            foreach (var candidate in Microcode.AllInstructions)
+            {
+                if (candidate == instruction) return address.ToString("X4");
+                address += BlockSize(candidate);
+            }
+            return "";
         }
 
         // ---- Diagnostics ----

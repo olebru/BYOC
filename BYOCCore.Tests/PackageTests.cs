@@ -34,7 +34,9 @@ public class PackageTests
         }
     }
 
-    // Stack and memory loops for ever on purpose; it is the long running demo.
+    // These loop for ever on purpose: the long running demo and the interactive sketch.
+    private static readonly string[] LoopingPrograms = { "Stack and memory", "Sketch with the arrow keys" };
+
     [Fact]
     public void EveryProgramInEveryPackageAssemblesWithoutWarningsAndHalts()
     {
@@ -46,7 +48,7 @@ public class PackageTests
                 var result = language.Analyze(program.Source);
                 Assert.True(result.Success && result.Diagnostics.Count == 0, $"{package.Name} / {program.Name}: {string.Join(" | ", result.Diagnostics)}");
                 Assert.Equal(program.Source, language.FormatDocument(program.Source));
-                if (program.Name == "Stack and memory")
+                if (LoopingPrograms.Contains(program.Name))
                 {
                     var looping = new Machine(package.Machine, program.Source) { RecordHistory = false };
                     for (int i = 0; i < 10000; i++) looping.SingleStep();

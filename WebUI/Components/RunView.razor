@@ -3,7 +3,7 @@
     var definition = Machine.Definition;
     var timeline = TimelineInstruction;
     var current = ListingAt(Machine.CurrentInstructionAddress);
-<div class="run" tabindex="0" @onkeydown="OnKeyDown">
+<div class="run" tabindex="0" @ref="runElement" @onkeydown="OnKeyDown" @onkeyup="OnKeyUp" @onkeydown:preventDefault="capturedKeypad != null" @onfocusout="ReleaseKeys">
 
     <!-- Controls -->
     <div class="controls">
@@ -34,11 +34,13 @@
         <span class="strip-title">control lines</span>
         @foreach (var group in ControlLines)
         {
+            var groupInfo = Info(group.Device);
             <span class="line-group" style="--cat:@group.Color">
-                <span class="line-device">@group.Device.Id</span>
+                <span class="line-device" title="@($"{group.Device.Type}: {groupInfo.Description}")">@group.Device.Id</span>
                 @foreach (var line in group.Lines)
                 {
-                    <span class="led @(LineActive(group.Device.Id, line) ? "on" : "")" title="@group.Device.Id.@line">@line</span>
+                    var lineDescription = groupInfo.ControlLines.FirstOrDefault(l => l.Name == line)?.Description;
+                    <span class="led @(LineActive(group.Device.Id, line) ? "on" : "")" title="@($"{group.Device.Id}.{line}{(string.IsNullOrEmpty(lineDescription) ? "" : ": " + lineDescription)}")">@line</span>
                 }
             </span>
         }
@@ -67,8 +69,10 @@
                         var color = BusColor(bus.Id);
                         var transfer = TransferOn(bus.Id);
                         <g>
-                            <rect class="bus-bar @(transfer != null ? "live" : "")" x="16" y="@N(y - 6)" width="@N(CanvasWidth - 32)" height="12" rx="6" fill="@color" />
-                            <text class="bus-label" x="24" y="@N(y - 14)" fill="@color">@bus.Id</text>
+                            <rect class="bus-bar @(transfer != null ? "live" : "")" x="16" y="@N(y - 3)" width="@N(CanvasWidth - 32)" height="6" rx="1" fill="@color" />
+                            <text class="bus-label" x="24" y="@N(y - 12)" fill="@color">@($"{bus.Id}[15:0]")</text>
+                            <line class="bus-slash" x1="@N(112)" y1="@N(y + 8)" x2="@N(122)" y2="@N(y - 8)" />
+                            <text class="bus-width" x="@N(125)" y="@N(y - 10)">16</text>
                         </g>
                     }
                     @for (int d = 0; d < definition.Devices.Count; d++)
@@ -105,7 +109,7 @@
                         var x = PortAnchor(driver, LayoutOf(driver, driverIndex), port).X;
                         var y = BusY(bus.Id);
                         <g class="bus-value" @key="Last.Cycle">
-                            <rect x="@N(x - 26)" y="@N(y - 12)" width="52" height="24" rx="12" fill="#fff" stroke="@BusColor(bus.Id)" stroke-width="2" />
+                            <rect x="@N(x - 26)" y="@N(y - 11)" width="52" height="22" rx="2" stroke="@BusColor(bus.Id)" stroke-width="1.5" />
                             <text x="@N(x)" y="@N(y + 5)" text-anchor="middle" fill="@BusColor(bus.Id)">@Hex(transfer.Value)</text>
                         </g>
                     }
@@ -120,8 +124,8 @@
                     var driving = device.Ports().Where(p => Drives(device.Id, p.Value)).Select(p => p.Value).FirstOrDefault();
                     var reading = device.Ports().Any(p => Reads(device.Id, p.Value));
                     <div class="dev @(IsActive(device.Id) ? "active" : "") @(driving != null ? "driving" : "") @(reading ? "reading" : "")"
-                         style="left:@Px(position.X); top:@Px(position.Y); width:@Px(CardWidth); height:@Px(CardHeight); border-top-color:@CategoryColor(info); @(driving != null ? $"--glow:{BusColor(driving)}" : "")">
-                        <div class="dev-head">
+                         style="left:@Px(position.X); top:@Px(position.Y); width:@Px(CardWidth); height:@Px(CardHeight); border-top-color:@CategoryColor(info);">
+                        <div class="dev-head" title="@($"{device.Type}: {info.Description}")">
                             <span class="dev-id">@device.Id</span>
                             <span class="dev-type">@(device.Name ?? device.Type)</span>
                         </div>
@@ -151,12 +155,12 @@
                                     break;
                                 case RomModule memory:
                                     <span class="mem">MAR <strong>@Hex(memory.memoryAddress)</strong></span>
-                                    <span class="sub">[@Hex(memory.memoryAddress)] = @Hex(memory.memory[memory.memoryAddress])</span>
+                                    <span class="sub">[@Hex(memory.memoryAddress)] = @Hex(memory.ValueAt(memory.memoryAddress))</span>
                                     break;
                                 case MMU mmu:
                                     var bank = mmu.SelectedBank;
                                     <span class="mem">bank <strong>@mmu.SelectedBankNumber</strong>  MAR <strong>@Hex(bank.memoryAddress)</strong></span>
-                                    <span class="sub">[@Hex(bank.memoryAddress)] = @Hex(bank.memory[bank.memoryAddress])</span>
+                                    <span class="sub">[@Hex(bank.memoryAddress)] = @Hex(bank.ValueAt(bank.memoryAddress))</span>
                                     break;
                                 case Clock clock:
                                     <span class="mem">@(clock.IsHalted() ? "HALTED" : "running")</span>
@@ -173,6 +177,15 @@
                                     <span class="mem">cursor <strong>@screenDevice.X, @screenDevice.Y</strong></span>
                                     <span class="sub"><span class="swatch" style="background:rgb(@pr,@pg,@pb)"></span> last @Hex(lastPixel)</span>
                                     break;
+                                case Keypad keypad:
+                                    <span class="dev-keys">
+                                        @foreach (var (key, label) in new[] { (Keypad.Keys.Up, "↑"), (Keypad.Keys.Down, "↓"), (Keypad.Keys.Left, "←"), (Keypad.Keys.Right, "→"), (Keypad.Keys.Space, "␣") })
+                                        {
+                                            <i class="@((keypad.Data & (int)key) != 0 ? "on" : "")">@label</i>
+                                        }
+                                    </span>
+                                    <span class="sub">@($"0x{keypad.Data:X2}")</span>
+                                    break;
                                 case ALU:
                                     var op = SignalsOf(device.Id).FirstOrDefault();
                                     <span class="mem">@(op ?? "idle")</span>
@@ -180,6 +193,16 @@
                                     break;
                             }
                         </div>
+                        @if (built is DualPortRegister || (built is Register && built is not StatusRegister))
+                        {
+                            var word = built is DualPortRegister dualWord ? dualWord.Data : ((Register)built).Data;
+                            <div class="dev-bits" title="@($"bits 15..0 = {Convert.ToString(word & 0xFFFF, 2).PadLeft(16, '0')}")">
+                                @for (int bit = 15; bit >= 0; bit--)
+                                {
+                                    <i class="@(((word >> bit) & 1) != 0 ? "on" : "")"></i>
+                                }
+                            </div>
+                        }
                         @if (IsActive(device.Id))
                         {
                             <div class="dev-signals">@foreach (var line in SignalsOf(device.Id)) { <span>@line</span> }</div>
@@ -223,6 +246,12 @@
                 var write = Last?.Writes.FirstOrDefault(w => w.Device == display.ID());
                 <div class="panel display-panel">
                     <CharacterDisplayView Display="display" LastWritten="@(write?.Address ?? -1)" Cycle="@(Last?.Cycle ?? 0)" />
+                </div>
+            }
+            @foreach (var keypad in Machine.Devices.OfType<Keypad>())
+            {
+                <div class="panel display-panel">
+                    <KeypadView Keypad="keypad" Captured="@(capturedKeypad == keypad)" CaptureChanged="captured => Capture(captured ? keypad : null)" Changed="StateHasChanged" />
                 </div>
             }
             <div class="panel now">
@@ -365,7 +394,7 @@
             var pageStart = Page(module) * PageSize;
             var addressDigits = AddressDigits(module);
             <div class="memory" style="--digits:@Digits; --adigits:@addressDigits">
-                <div class="mem-row head"><span class="mem-addr"></span>@for (int c = 0; c < 16; c++) { <span class="cell">@c.ToString("X")</span> }</div>
+                <div class="mem-row head"><span class="mem-addr">addr</span>@for (int c = 0; c < 16; c++) { <span class="cell">@c.ToString("X")</span> }<span class="ascii">ascii</span></div>
                 @for (int rowStart = pageStart; rowStart < Math.Min(pageStart + PageSize, module.Size); rowStart += 16)
                 {
                     var start = rowStart;
@@ -373,8 +402,9 @@
                         <span class="mem-addr">@start.ToString("X" + addressDigits)</span>
                         @for (int address = start; address < Math.Min(start + 16, module.Size); address++)
                         {
-                            <span class="cell @CellClass(address, module)" title="[@address.ToString("X" + addressDigits)] = @module.memory[address]">@Hex(module.memory[address])</span>
+                            <span class="cell @CellClass(address, module)" title="[@address.ToString("X" + addressDigits)] = @module.ValueAt(address)">@Hex(module.ValueAt(address))</span>
                         }
+                        <span class="ascii">@(new string(Enumerable.Range(start, Math.Max(0, Math.Min(16, module.Size - start))).Select(a => { var low = module.ValueAt(a) & 0xFF; return low >= 0x20 && low < 0x7F ? (char)low : '·'; }).ToArray()))</span>
                     </div>
                 }
             </div>

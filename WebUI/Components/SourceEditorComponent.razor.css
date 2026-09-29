@@ -1,0 +1,36 @@
+.source {
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    margin-bottom: 1rem;
+}
+
+.source-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--line);
+    background: var(--surface-2);
+}
+
+.grow {
+    flex: 1;
+}
+
+.source-text {
+    display: block;
+    width: 100%;
+    border: none;
+    outline: none;
+    resize: vertical;
+    padding: 10px 14px;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    line-height: 1.6;
+    color: var(--ink);
+    background: var(--surface);
+    tab-size: 2;
+}

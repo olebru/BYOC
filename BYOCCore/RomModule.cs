@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -7,8 +7,10 @@ namespace BYOCCore
     public class RomModule : IBusDevice
     {
         protected Bus connectedBus;
-        // One 16 bit word per address.
-        public readonly int[] memory;
+        // One 16 bit word per address. The cells are allocated on first write, so a large memory that is never
+        // used costs nothing; until then every cell reads as 0.
+        private ushort[] cells;
+        private readonly int size;
         public int memoryAddress = 0;
         private string deviceID;
         private string deviceName = "";
@@ -22,14 +24,22 @@ namespace BYOCCore
             deviceName = DeviceName;
             deviceID = DeviceID;
             connectedBus = ConnectedBus;
-            memory = new int[size];
+            this.size = size;
         }
-        public int Size { get { return memory.Length; } }
+        public int Size { get { return size; } }
+        public bool IsAllocated { get { return cells != null; } }
+        // The cells for reading and writing directly; allocates them if needed. Use ValueAt to read without allocating.
+        public ushort[] memory { get { return cells ??= new ushort[size]; } }
+        public int ValueAt(int address) { return cells == null ? 0 : cells[address]; }
+        protected void Store(int address, int value)
+        {
+            memory[address] = (ushort)(value & Bus.Mask);
+        }
         public virtual void Drive()
         {
             if (output)
             {
-                connectedBus.Data = memory[memoryAddress];
+                connectedBus.Data = ValueAt(memoryAddress);
                 output = false;
             }
             if (outputMAR)
@@ -42,7 +52,7 @@ namespace BYOCCore
         {
             if (loadMAR)
             {
-                memoryAddress = connectedBus.Data % memory.Length;
+                memoryAddress = connectedBus.Data % size;
                 loadMAR = false;
             }
         }
@@ -75,13 +85,13 @@ namespace BYOCCore
         }
         public void LoadProgram(IReadOnlyList<int> cells)
         {
-            if (cells.Count > memory.Length)
+            if (cells.Count > size)
             {
-                throw new ArgumentException($"Program is {cells.Count} cells, but {deviceName} only holds {memory.Length}.");
+                throw new ArgumentException($"Program is {cells.Count} cells, but {deviceName} only holds {size}.");
             }
             for (int i = 0; i < cells.Count; i++)
             {
-                memory[i] = cells[i] & Bus.Mask;
+                Store(i, cells[i]);
             }
         }
         public string OperationsOnNextClockMAR()
@@ -115,11 +125,11 @@ namespace BYOCCore
             output.Append(Environment.NewLine);
             output.Append("Values:");
             output.Append(Environment.NewLine);
-            for (int i = 0; i < memory.Length; i += 16)
+            for (int i = 0; i < size; i += 16)
             {
-                for (int n = i; n < Math.Min(i + 16, memory.Length); n++)
+                for (int n = i; n < Math.Min(i + 16, size); n++)
                 {
-                    output.Append(memory[n].ToString(connectedBus.NumberFormat));
+                    output.Append(ValueAt(n).ToString(connectedBus.NumberFormat));
                     output.Append(" ");
                 }
                 output.Append(Environment.NewLine);

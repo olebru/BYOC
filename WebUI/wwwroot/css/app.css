@@ -1,37 +1,236 @@
-﻿@import url('open-iconic/font/css/open-iconic-bootstrap.min.css');
+@import url('open-iconic/font/css/open-iconic-bootstrap.min.css');
+
+/* Design tokens: warm engineering paper, near black ink and one signal colour for anything live
+   (driving the bus, active control lines, lit bits). Component styles use these variables only. */
+:root {
+    --paper: #f3f2ee;
+    --paper-2: #ebe9e3;
+    --surface: #ffffff;
+    --surface-2: #faf9f6;
+    --sunken: #f6f5f1;
+    --ink: #17181c;
+    --ink-2: #454a54;
+    --ink-3: #7d828c;
+    --ink-4: #a9adb4;
+    --line: #e1dfd8;
+    --line-2: #cfccc2;
+    --line-ink: #2b2d33;
+    --grid-dot: #d6d3ca;
+
+    --signal: #f04f23;
+    --signal-soft: #fde6de;
+    --signal-ink: #b8340f;
+    --read: #2f6fdb;
+    --read-soft: #e3ecfb;
+    --ok: #2b8a3e;
+    --ok-soft: #e3f3e6;
+    --warn: #b7791f;
+    --warn-soft: #fbf0dc;
+    --bad: #c92a2a;
+    --bad-soft: #fbe4e4;
+
+    --cat-registers: #3d6fd8;
+    --cat-control: #7c5cc4;
+    --cat-arithmetic: #b7791f;
+    --cat-memory: #2b8a3e;
+    --cat-io: #c2255c;
+
+    --screen: #111214;
+    --lcd-bg: #1d1f0f;
+    --lcd-ink: #f2b640;
+
+    --font-sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --font-mono: 'IBM Plex Mono', 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+    --radius: 4px;
+    --radius-sm: 3px;
+    --shadow: 0 1px 0 rgba(23, 24, 28, 0.04), 0 1px 3px rgba(23, 24, 28, 0.06);
+    --shadow-lift: 0 2px 0 rgba(23, 24, 28, 0.05), 0 6px 18px rgba(23, 24, 28, 0.10);
+}
 
 html, body {
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-family: var(--font-sans);
+    color: var(--ink);
+    background: var(--paper);
+    -webkit-font-smoothing: antialiased;
+}
+
+code, kbd, pre, samp, .mono {
+    font-family: var(--font-mono);
+}
+
+/* Small uppercase labels, like silkscreen on a board. */
+.silk {
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-3);
 }
 
 a, .btn-link {
-    color: #0366d6;
+    color: var(--read);
+}
+
+.content {
+    padding-top: 0.9rem;
+}
+
+/* ---- Bootstrap, retuned ---- */
+.btn {
+    font-family: var(--font-sans);
+    font-weight: 500;
+    border-radius: var(--radius);
+    box-shadow: none !important;
+}
+
+.btn-sm {
+    font-size: 0.8rem;
+    padding: 0.2rem 0.6rem;
 }
 
 .btn-primary {
     color: #fff;
-    background-color: #1b6ec2;
-    border-color: #1861ac;
+    background-color: var(--ink);
+    border-color: var(--ink);
 }
 
-.content {
-    padding-top: 1.1rem;
+    .btn-primary:hover, .btn-primary:focus, .btn-primary:active {
+        background-color: #000 !important;
+        border-color: #000 !important;
+    }
+
+.btn-outline-primary {
+    color: var(--ink);
+    border-color: var(--line-2);
+    background: var(--surface);
+}
+
+    .btn-outline-primary:hover {
+        color: var(--ink);
+        background: var(--sunken);
+        border-color: var(--ink-3);
+    }
+
+.btn-outline-secondary {
+    color: var(--ink-2);
+    border-color: var(--line-2);
+    background: var(--surface);
+}
+
+    .btn-outline-secondary:hover, .btn-outline-secondary:active {
+        color: var(--ink) !important;
+        background: var(--sunken) !important;
+        border-color: var(--ink-3) !important;
+    }
+
+.form-control {
+    border-radius: var(--radius);
+    border-color: var(--line-2);
+    color: var(--ink);
+    background-color: var(--surface);
+}
+
+    .form-control:focus {
+        border-color: var(--ink-2);
+        box-shadow: 0 0 0 3px rgba(23, 24, 28, 0.08);
+    }
+
+.alert {
+    border-radius: var(--radius);
+    font-size: 0.875rem;
+}
+
+.alert-warning {
+    background: var(--warn-soft);
+    border-color: #efd9ae;
+    color: #6d4a0f;
+}
+
+.alert-danger {
+    background: var(--bad-soft);
+    border-color: #f1c1c1;
+    color: #8a1c1c;
+}
+
+.badge {
+    font-family: var(--font-mono);
+    font-weight: 600;
+    border-radius: var(--radius-sm);
+}
+
+.badge-danger {
+    background: var(--bad);
+}
+
+.badge-warning {
+    background: var(--warn);
+    color: #fff;
+}
+
+/* ---- Tabs: silkscreen labels with an index, the active one underlined in ink ---- */
+.nav-tabs {
+    border-bottom: 1px solid var(--line-2);
+    gap: 2px;
+}
+
+    .nav-tabs .nav-link {
+        border: none;
+        border-bottom: 2px solid transparent;
+        border-radius: 0;
+        margin-bottom: -1px;
+        padding: 0.45rem 0.85rem 0.4rem;
+        font-family: var(--font-mono);
+        font-size: 0.78rem;
+        font-weight: 500;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--ink-3);
+        background: transparent;
+    }
+
+        .nav-tabs .nav-link:hover {
+            color: var(--ink);
+            border-bottom-color: var(--line-2);
+        }
+
+        .nav-tabs .nav-link.active {
+            color: var(--ink);
+            background: transparent;
+            border-bottom-color: var(--ink);
+        }
+
+        .nav-tabs .nav-link .tab-index {
+            color: var(--ink-4);
+            margin-right: 0.45em;
+            font-weight: 400;
+        }
+
+        .nav-tabs .nav-link.active .tab-index {
+            color: var(--signal);
+        }
+
+/* ---- Scrollbars: thin, quiet ---- */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--line-2) transparent;
 }
 
 .valid.modified:not([type=checkbox]) {
-    outline: 1px solid #26b050;
+    outline: 1px solid var(--ok);
 }
 
 .invalid {
-    outline: 1px solid red;
+    outline: 1px solid var(--bad);
 }
 
 .validation-message {
-    color: red;
+    color: var(--bad);
 }
 
 #blazor-error-ui {
-    background: lightyellow;
+    background: var(--warn-soft);
     bottom: 0;
     box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
     display: none;

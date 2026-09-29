@@ -5,6 +5,7 @@
   "programs": [
     { "name": "Hello, world on the LCD", "description": "A print subroutine called with BL, walking the string with LDR_R1", "file": "hello.asm" },
     { "name": "Fibonacci on the LCD", "description": "Stops on the ADD carry; decimal printing by repeated subtraction", "file": "fibonacci.asm" },
-    { "name": "Colour gradient on the screen", "description": "Red left to right, green top to bottom", "file": "gradient.asm" }
+    { "name": "Colour gradient on the screen", "description": "Red left to right, green top to bottom", "file": "gradient.asm" },
+    { "name": "Sketch with the arrow keys", "description": "Reads the keypad with IN: the arrows move a pen, space changes its colour", "file": "sketch.asm" }
   ]
 }

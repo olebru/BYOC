@@ -100,6 +100,57 @@ public class WordTests
         Assert.Equal(4095, c.Device<Register>("regsp").Data);
     }
 
+    [Fact]
+    public void TheLargestMmuBuildsAndOnlyAllocatesBanksThatAreWritten()
+    {
+        var definition = MachineDefinition.FromJson(ExampleData.MACHINE);
+        using var banks = System.Text.Json.JsonDocument.Parse("256");
+        using var bankSize = System.Text.Json.JsonDocument.Parse("65536");
+        definition.FindDevice("mmu").Parameters["banks"] = banks.RootElement.Clone();
+        definition.FindDevice("mmu").Parameters["bankSize"] = bankSize.RootElement.Clone();
+        var c = new Machine(definition, ExampleData.MICROCODE, "\tLAI\t#7\n\tSTA\t#65535\n\tHLT");
+        var mmu = c.Device<MMU>("mmu");
+        Assert.Equal(256, mmu.RamBanks.Length);
+        Assert.Equal(65536, mmu.RamBanks[255].Size);
+        Assert.DoesNotContain(mmu.RamBanks, b => b.IsAllocated);
+
+        foreach (var _ in c.Run()) { }
+        Assert.Equal(7, mmu.RamBanks[0].ValueAt(65535));
+        Assert.Single(mmu.RamBanks, b => b.IsAllocated);
+        Assert.Equal(0, mmu.RamBanks[200].ValueAt(1234));
+    }
+
+    [Fact]
+    public void CellsHoldSixteenUnsignedBits()
+    {
+        var bus = new Bus();
+        var source = new Register("SRC", "src", bus);
+        var ram = new RamModule("RAM", "ram", bus, 16);
+        bus.devices.Add(source);
+        bus.devices.Add(ram);
+        Assert.False(ram.IsAllocated);
+        Assert.Equal(0, ram.ValueAt(3));
+
+        source.Data = 3;
+        source.Enable("output");
+        ram.Enable("loadmar");
+        bus.Clk();
+        source.Data = 0xFFFF;
+        source.Enable("output");
+        ram.Enable("load");
+        bus.Clk();
+        Assert.True(ram.IsAllocated);
+        Assert.Equal(0xFFFF, ram.ValueAt(3));
+
+        ram.Enable("output");
+        source.Enable("load");
+        bus.Clk();
+        Assert.Equal(0xFFFF, source.Data);
+
+        ram.LoadProgram(new[] { 0x1_2345, -1 });
+        Assert.Equal(new[] { 0x2345, 0xFFFF }, new[] { ram.ValueAt(0), ram.ValueAt(1) });
+    }
+
     [Theory]
     [InlineData("mem", "size", 0, "between 1 and 65536")]
     [InlineData("mmu", "banks", 300, "between 1 and 256")]

@@ -114,6 +114,13 @@
       "name": "SCREEN",
       "bus": "main",
       "layout": { "x": 402, "y": 380 }
+    },
+    {
+      "id": "keys",
+      "type": "keypad",
+      "name": "KEYPAD",
+      "bus": "main",
+      "layout": { "x": 588, "y": 380 }
     }
   ],
   "decoder": {
@@ -1428,6 +1435,16 @@
           "steps": [
             {
               "signals": ["r0.output", "fb.plot", "ir.reset", "pc.inc"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "IN",
+          "description": "R0 = the keys: 1 up, 2 down, 4 left, 8 right, 16 space",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": ["keys.output", "r0.load", "ir.reset", "pc.inc"]
             }
           ]
         },

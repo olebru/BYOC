@@ -47,7 +47,8 @@
       "bus": "main",
       "parameters": { "columns": 32, "rows": 4 }
     },
-    { "id": "fb", "type": "framebuffer", "name": "SCREEN", "bus": "main" }
+    { "id": "fb", "type": "framebuffer", "name": "SCREEN", "bus": "main" },
+    { "id": "keys", "type": "keypad", "name": "KEYPAD", "bus": "main" }
   ],
   "decoder": {
     "status": "regsta",
@@ -758,6 +759,16 @@
           "steps": [
             {
               "signals": ["regb.output", "fb.plot", "regi.reset", "pc.inc"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "LKA",
+          "description": "Load A with the keys: 1 up, 2 down, 4 left, 8 right, 16 space",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": ["keys.output", "rega.load", "regi.reset", "pc.inc"]
             }
           ]
         }

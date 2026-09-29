@@ -7,11 +7,11 @@
 
 <div class="workspace-header">
     <ul class="nav nav-tabs">
-        @foreach (var tab in Tabs)
+        @foreach (var (tab, index) in Tabs.Select((t, i) => (t, i)))
         {
             <li class="nav-item">
                 <a class="nav-link @(ActiveTab == tab ? "active" : "")" href="" @onclick="() => ActiveTab = tab" @onclick:preventDefault>
-                    @tab
+                    <span class="tab-index">@((index + 1).ToString("00"))</span>@tab
                     @if (tab == "Design" && DefinitionErrors.Count > 0) { <span class="badge badge-danger ml-1">@DefinitionErrors.Count</span> }
                     @if (tab == "Microcode" && MicrocodeErrorCount > 0) { <span class="badge badge-danger ml-1">@MicrocodeErrorCount</span> }
                     @if (tab == "Microcode" && MicrocodeErrorCount == 0 && MicrocodeWarningCount > 0) { <span class="badge badge-warning ml-1">@MicrocodeWarningCount</span> }
@@ -22,7 +22,7 @@
         }
     </ul>
     <div class="workspace-actions">
-        <label class="package-label" for="package-select">Package</label>
+        <label class="package-label silk" for="package-select">Package</label>
         <select id="package-select" class="form-control form-control-sm package-select" value="@PackageName" @onchange="SelectPackage" title="@Package.Description">
             @foreach (var package in BuiltInPackages.All)
             {
@@ -64,7 +64,7 @@ else if (ActiveTab == "Microcode")
 else if (ActiveTab == "Program")
 {
     <div class="examples">
-        <span class="examples-label">Example programs in @PackageName</span>
+        <span class="examples-label silk">Examples · @PackageName</span>
         @foreach (var example in Package.Programs)
         {
             <button class="btn btn-sm @(Program == example.Source ? "btn-primary" : "btn-outline-primary")" title="@example.Description" @onclick="() => LoadExample(example.Source)">@example.Name</button>
@@ -76,7 +76,7 @@ else if (ActiveTab == "Program")
 else if (ActiveTab == "JSON")
 {
     <ErrorList Errors="ParseErrors" />
-    <SourceEditorComponent Label="Machine definition (JSON) with its microcode in decoder.microcode, kept in sync with both editors" Value="@DefinitionJson" ValueChanged="OnJsonChanged" Rows="34" />
+    <SourceEditorComponent Label="machine.json · microcode inline · synced with the editors" Value="@DefinitionJson" ValueChanged="OnJsonChanged" Rows="34" />
 }
 else if (ActiveTab == "Run")
 {

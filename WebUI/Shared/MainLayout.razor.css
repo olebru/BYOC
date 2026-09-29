@@ -11,21 +11,69 @@
 
 .topbar {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     gap: 14px;
-    padding: 10px 24px;
-    background-image: linear-gradient(90deg, rgb(56, 115, 223) 0%, #336328 100%);
+    height: 44px;
+    padding: 0 24px;
+    background: var(--ink);
     color: #fff;
+    border-bottom: 1px solid #000;
 }
 
     .topbar .brand {
+        display: flex;
+        align-items: center;
+        gap: 8px;
         color: #fff;
-        font-weight: 700;
-        font-size: 1.2rem;
         text-decoration: none;
     }
 
-    .topbar .tagline {
-        opacity: 0.85;
-        font-size: 0.85rem;
+    .topbar .chip {
+        width: 20px;
+        height: 20px;
+        fill: none;
+        stroke: #fff;
+        stroke-width: 1.4;
     }
+
+        .topbar .chip circle {
+            fill: var(--signal);
+            stroke: none;
+        }
+
+    .topbar .name {
+        font-family: var(--font-mono);
+        font-weight: 600;
+        font-size: 0.95rem;
+        letter-spacing: 0.14em;
+    }
+
+    .topbar .tagline {
+        font-family: var(--font-mono);
+        font-size: 0.72rem;
+        color: #9a9ea6;
+        letter-spacing: 0.02em;
+    }
+
+        .topbar .tagline .sep {
+            color: #5b5f67;
+            margin: 0 0.3em;
+        }
+
+    .topbar .spacer {
+        flex: 1;
+    }
+
+    .topbar .spec {
+        font-family: var(--font-mono);
+        font-size: 0.68rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #7d828c;
+    }
+
+@media (max-width: 720px) {
+    .topbar .tagline, .topbar .spec {
+        display: none;
+    }
+}

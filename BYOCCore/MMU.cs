@@ -12,13 +12,11 @@ namespace BYOCCore
         private string id;
         private List<string> pendingBankFunctions = new List<string>();
         private bool select0Stack;
-        public const int MaxCells = 1 << 20;
         private static readonly HashSet<string> BankFunctions = new HashSet<string> { "loadmar", "outputmar", "output", "load" };
         public const int DefaultBanks = 16;
         public MMU(string DeviceName, string DeviceID, Bus bus, int banks = DefaultBanks, int bankSize = RomModule.DefaultSize)
         {
             if (banks < 1 || banks > 256) throw new ArgumentException($"An MMU has between 1 and 256 banks, not {banks}.");
-            if ((long)banks * bankSize > MaxCells) throw new ArgumentException($"{banks} banks of {bankSize} cells is more than {MaxCells} cells.");
             this.bus = bus;
             ChipSelectRegister = new Register("CS  ", "cs", this.bus);
             id = DeviceID;

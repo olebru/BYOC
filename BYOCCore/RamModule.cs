@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 namespace BYOCCore
 {
@@ -8,7 +8,6 @@ namespace BYOCCore
         // Counts stores, so observers can tell which modules were written in a tick.
         public long WriteCount { get; private set; }
         public int LastWriteAddress { get; private set; } = -1;
-        public int ValueAt(int address) { return memory[address]; }
         public RamModule(string DeviceName, string DeviceID, Bus ConnectedBus, int size = DefaultSize) : base(DeviceName, DeviceID, ConnectedBus, size)
         {
         }
@@ -16,7 +15,7 @@ namespace BYOCCore
         {
             if (load)
             {
-                base.memory[memoryAddress] = base.connectedBus.Data;
+                Store(memoryAddress, connectedBus.Data);
                 LastWriteAddress = memoryAddress;
                 WriteCount++;
                 load = false;

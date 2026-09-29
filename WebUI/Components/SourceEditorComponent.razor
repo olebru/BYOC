@@ -1,8 +1,12 @@
-<div class="mb-3">
-    <label class="form-label"><strong>@Label</strong></label>
-    <InputFile OnChange="LoadFile" class="form-control form-control-sm mb-1" />
-    <textarea class="form-control" style="font-family: monospace; font-size: 0.8rem;" rows="@Rows"
-              spellcheck="false" @bind="Value" @bind:after="() => ValueChanged.InvokeAsync(Value)"></textarea>
+<div class="source">
+    <div class="source-head">
+        <span class="silk">@Label</span>
+        <span class="grow"></span>
+        <label class="btn btn-sm btn-outline-secondary mb-0">
+            Load file…<InputFile OnChange="LoadFile" class="d-none" />
+        </label>
+    </div>
+    <textarea class="source-text" rows="@Rows" spellcheck="false" @bind="Value" @bind:after="() => ValueChanged.InvokeAsync(Value)"></textarea>
 </div>
 
 @code

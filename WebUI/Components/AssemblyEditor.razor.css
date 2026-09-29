@@ -1,9 +1,10 @@
 .asm {
     display: flex;
     flex-direction: column;
-    border: 1px solid #e3e7ee;
-    border-radius: 10px;
-    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
+    box-shadow: var(--shadow);
     overflow: hidden;
     height: calc(100vh - 205px);
     min-height: 420px;
@@ -13,28 +14,31 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    padding: 6px 10px;
-    border-bottom: 1px solid #e3e7ee;
-    background: #f8f9fb;
+    padding: 5px 10px;
+    border-bottom: 1px solid var(--line);
+    background: var(--surface-2);
 }
 
 .tool {
     border: 1px solid transparent;
     background: transparent;
-    border-radius: 6px;
-    padding: 3px 9px;
-    font-size: 0.85rem;
+    border-radius: var(--radius-sm);
+    padding: 2px 9px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--ink-2);
 }
 
     .tool:hover {
-        background: #e9eef6;
-        border-color: #d5dde9;
+        background: var(--sunken);
+        border-color: var(--line-2);
+        color: var(--ink);
     }
 
 .sep {
     width: 1px;
-    height: 20px;
-    background: #e3e7ee;
+    height: 18px;
+    background: var(--line);
     margin: 0 4px;
 }
 
@@ -43,29 +47,37 @@
 }
 
 .status {
-    font-size: 0.85rem;
-    border-radius: 999px;
-    padding: 2px 12px;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 500;
+    border-radius: var(--radius-sm);
+    padding: 2px 8px;
+    border: 1px solid transparent;
 }
 
     .status.ok {
-        background: #e7f6ec;
-        color: #1e7b3d;
+        background: var(--ok-soft);
+        color: var(--ok);
+        border-color: #c7e5cd;
     }
 
     .status.bad {
-        background: #fdecec;
-        color: #b42318;
+        background: var(--bad-soft);
+        color: var(--bad);
+        border-color: #f1c1c1;
     }
 
     .status.warn {
-        background: #fff4e0;
-        color: #8a5300;
+        background: var(--warn-soft);
+        color: var(--warn);
+        border-color: #efd9ae;
     }
 
 .hint {
-    font-size: 0.75rem;
-    color: #7a8599;
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.02em;
+    color: var(--ink-3);
 }
 
 ::deep .asm-monaco {
@@ -76,28 +88,34 @@
 .asm-problems {
     max-height: 140px;
     overflow: auto;
-    border-top: 1px solid #f5c2c2;
-    background: #fff8f8;
+    border-top: 1px solid var(--line);
+    background: var(--surface-2);
     font-size: 0.8rem;
-    padding: 4px 12px;
+    padding: 4px 0;
 }
 
 .asm-problem {
-    color: #8a1c14;
-    padding: 1px 0;
+    color: var(--ink);
+    padding: 2px 12px 2px 10px;
+    border-left: 2px solid var(--bad);
     cursor: pointer;
 }
 
     .asm-problem:hover {
-        text-decoration: underline;
+        background: var(--sunken);
     }
 
-    .asm-problem.warning, .asm-problem.warning .where {
-        color: #8a5300;
+    .asm-problem.warning {
+        border-left-color: var(--warn);
     }
 
     .asm-problem .where {
-        font-family: ui-monospace, Menlo, monospace;
-        color: #b42318;
-        margin-right: 6px;
+        font-family: var(--font-mono);
+        font-size: 0.72rem;
+        color: var(--bad);
+        margin-right: 8px;
+    }
+
+    .asm-problem.warning .where {
+        color: var(--warn);
     }
