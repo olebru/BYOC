@@ -178,6 +178,7 @@ namespace BYOCCore
         private readonly Dictionary<int, TickPlan> plans = new Dictionary<int, TickPlan>();
         private Bus[] busArray;
         private IBusDevice[] deviceArray;
+        private IBusMaster[] busMasters;
 
         // When false, ticks skip the detail kept for display (bus transfers, value changes, memory writes and the
         // history), which makes running much faster. LastTick, breakpoints and CurrentInstructionAddress still work.
@@ -211,6 +212,7 @@ namespace BYOCCore
         {
             busArray ??= Buses.Values.ToArray();
             deviceArray ??= Devices.ToArray();
+            busMasters ??= Devices.OfType<IBusMaster>().ToArray();
             int status = statusRegister.Data, step = instructionRegister.Data;
             var plan = PlanFor(status, step);
             var record = new TickRecord
@@ -244,7 +246,13 @@ namespace BYOCCore
                 record.Signals = plan.Signals.ToList();
                 foreach (var bus in busArray)
                 {
-                    record.Transfers.Add(new BusTransfer { Bus = bus.ID, Driver = bus.Writer?.ID(), Value = bus.Data, Readers = plan.ReadersByBus[bus.ID] });
+                    var readers = plan.ReadersByBus[bus.ID];
+                    foreach (var master in busMasters)
+                    {
+                        if (master.MasteredBusId == bus.ID && master.LastReader != null && !readers.Contains(master.LastReader))
+                            readers = readers.Append(master.LastReader).ToList();
+                    }
+                    record.Transfers.Add(new BusTransfer { Bus = bus.ID, Driver = bus.Writer?.ID(), Value = bus.Data, Readers = readers });
                 }
                 var valuesAfter = SnapshotValues();
                 foreach (var value in valuesAfter)
@@ -289,6 +297,10 @@ namespace BYOCCore
                     case MemoryModule memory: values[device.ID() + ".mar"] = memory.memoryAddress; break;
                     case CharacterDisplay display: values[device.ID() + ".cursor"] = display.Cursor; break;
                     case Keypad keypad: values[device.ID()] = keypad.Data; break;
+                    case Blitter blitter:
+                        values[device.ID() + ".busy"] = blitter.Busy ? 1 : 0;
+                        values[device.ID() + ".row"] = blitter.Row;
+                        break;
                     case InstructionRegister counter: values[device.ID()] = counter.Data; break;
                     case Framebuffer framebuffer:
                         values[device.ID() + ".x"] = framebuffer.X;

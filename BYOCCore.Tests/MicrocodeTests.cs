@@ -224,6 +224,7 @@ public class MicrocodeTests
         var machine = DefaultMachine();
         machine.Buses.Add(new BusDefinition { Id = "io" });
         machine.Devices.Add(new DeviceDefinition { Id = "bridge", Type = "dualPortRegister", Buses = { ["a"] = "main", ["b"] = "io" } });
+        machine.Devices.Add(new DeviceDefinition { Id = "blit", Type = "blitter", Buses = { ["host"] = "main", ["video"] = "io" }, Connections = { ["screen"] = "fb" } });
         var built = new Machine(machine, ExampleData.MICROCODE, "");
         Assert.Equal(registry.Types.OrderBy(t => t), machine.Devices.Select(d => d.Type).Distinct().OrderBy(t => t));
         foreach (var device in machine.Devices)

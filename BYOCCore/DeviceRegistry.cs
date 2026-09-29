@@ -197,6 +197,24 @@ namespace BYOCCore
                         ControlLineInfo.Internal("clear", "Blank the screen and move the cursor home"),
                     }
                 });
+            registry.Register("blitter", c => new Blitter(c.Name, c.Id, c.Bus("host"), c.Bus("video"), c.Connection<Framebuffer>("screen")),
+                new DeviceTypeInfo
+                {
+                    Category = "I/O",
+                    Description = "A graphics coprocessor. Give it a rectangle and a colour on the host bus and start it: it then fills the rectangle by itself on its video bus, one transfer per tick, driving the connected framebuffer while the CPU carries on. status reads 1 while it is busy",
+                    Ports = new List<string> { "host", "video" },
+                    Connections = { new ConnectionInfo { Name = "screen", Description = "The framebuffer it draws on, on its video bus" } },
+                    ControlLines =
+                    {
+                        ControlLineInfo.Input("loadx", "Take the rectangle's left column from the host bus", "host"),
+                        ControlLineInfo.Input("loady", "Take the rectangle's top row from the host bus", "host"),
+                        ControlLineInfo.Input("loadw", "Take the rectangle's width from the host bus", "host"),
+                        ControlLineInfo.Input("loadh", "Take the rectangle's height from the host bus", "host"),
+                        ControlLineInfo.Input("loadcolour", "Take the RGB565 fill colour from the host bus", "host"),
+                        ControlLineInfo.Internal("start", "Start filling the rectangle; it then runs by itself"),
+                        ControlLineInfo.Output("status", "Put 1 on the host bus while busy, 0 when idle", "host"),
+                    }
+                });
             registry.Register("keypad", c => new Keypad(c.Name, c.Id, c.Bus()),
                 new DeviceTypeInfo
                 {
