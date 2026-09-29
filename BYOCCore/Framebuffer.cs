@@ -107,6 +107,18 @@ namespace BYOCCore
             return bytes;
         }
 
+        // The raw RGB565 words of a region, two little endian bytes per pixel, copied row by row. Much cheaper than
+        // ToRgba where .NET is interpreted (WebAssembly): the browser expands the colours itself.
+        public byte[] ToRgb565Bytes(int x, int y, int width, int height)
+        {
+            var bytes = new byte[width * height * 2];
+            for (int row = 0; row < height; row++)
+            {
+                Buffer.BlockCopy(Pixels, ((y + row) * Width + x) * 2, bytes, row * width * 2, width * 2);
+            }
+            return bytes;
+        }
+
         // RGB565 to 8 bit channels, repeating the top bits so full intensity maps to 255.
         public static (byte R, byte G, byte B) ToRgb(int rgb565)
         {

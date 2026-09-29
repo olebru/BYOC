@@ -393,6 +393,7 @@
             var module = MemoryModule;
             var pageStart = Page(module) * PageSize;
             var addressDigits = AddressDigits(module);
+            var marks = MarksFor(module);
             <div class="memory" style="--digits:@Digits; --adigits:@addressDigits">
                 <div class="mem-row head"><span class="mem-addr">addr</span>@for (int c = 0; c < 16; c++) { <span class="cell">@c.ToString("X")</span> }<span class="ascii">ascii</span></div>
                 @for (int rowStart = pageStart; rowStart < Math.Min(pageStart + PageSize, module.Size); rowStart += 16)
@@ -402,7 +403,7 @@
                         <span class="mem-addr">@start.ToString("X" + addressDigits)</span>
                         @for (int address = start; address < Math.Min(start + 16, module.Size); address++)
                         {
-                            <span class="cell @CellClass(address, module)" title="[@address.ToString("X" + addressDigits)] = @module.ValueAt(address)">@Hex(module.ValueAt(address))</span>
+                            <span class="cell @CellClass(address, module, marks)" title="[@address.ToString("X" + addressDigits)] = @module.ValueAt(address)">@Hex(module.ValueAt(address))</span>
                         }
                         <span class="ascii">@(new string(Enumerable.Range(start, Math.Max(0, Math.Min(16, module.Size - start))).Select(a => { var low = module.ValueAt(a) & 0xFF; return low >= 0x20 && low < 0x7F ? (char)low : '·'; }).ToArray()))</span>
                     </div>

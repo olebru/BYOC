@@ -99,6 +99,16 @@ public class FramebufferTests
     }
 
     [Fact]
+    public void Rgb565BytesAreTheRawWordsOfARegion()
+    {
+        screen.Pixels[1 * Framebuffer.Width + 2] = 0xF81F;
+        screen.Pixels[1 * Framebuffer.Width + 3] = 0x07E0;
+        screen.Pixels[2 * Framebuffer.Width + 2] = 0x1234;
+        Assert.Equal(new byte[] { 0x1F, 0xF8, 0xE0, 0x07, 0x34, 0x12, 0x00, 0x00 }, screen.ToRgb565Bytes(2, 1, 2, 2));
+        Assert.Equal(Framebuffer.Width * Framebuffer.Height * 2, screen.ToRgb565Bytes(0, 0, Framebuffer.Width, Framebuffer.Height).Length);
+    }
+
+    [Fact]
     public void ControlLinesMatchTheRegistry()
     {
         Assert.Equal(screen.SignalLines(), DeviceRegistry.CreateDefault().Info("framebuffer").ControlLines.Select(l => l.Name));

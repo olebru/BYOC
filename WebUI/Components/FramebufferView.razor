@@ -46,12 +46,12 @@
         {
             drawn = Screen;
             Screen.TakeDirtyRegion();
-            await JS.InvokeVoidAsync("byocScreen.draw", canvasId, 0, 0, Framebuffer.Width, Framebuffer.Height, Screen.ToRgba(0, 0, Framebuffer.Width, Framebuffer.Height));
+            await JS.InvokeVoidAsync("byocScreen.draw", canvasId, 0, 0, Framebuffer.Width, Framebuffer.Height, Screen.ToRgb565Bytes(0, 0, Framebuffer.Width, Framebuffer.Height));
             return;
         }
         if (Screen.TakeDirtyRegion() is var (x, y, width, height))
         {
-            await JS.InvokeVoidAsync("byocScreen.draw", canvasId, x, y, width, height, Screen.ToRgba(x, y, width, height));
+            await JS.InvokeVoidAsync("byocScreen.draw", canvasId, x, y, width, height, Screen.ToRgb565Bytes(x, y, width, height));
         }
     }
 }

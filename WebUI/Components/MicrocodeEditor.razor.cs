@@ -165,16 +165,17 @@ namespace WebUI.Components
         {
             return Math.Max(1, Enumerable.Range(0, DecoderRom.StatusVariants).Max(s => instruction.StepsFor(s).Count));
         }
-        // The opcode the decoder ROM gives an instruction: blocks are laid out in order from 0.
-        private string OpcodeOf(InstructionDefinition instruction)
+        // The opcode the decoder ROM gives each instruction: blocks are laid out in order from 0.
+        private Dictionary<InstructionDefinition, string> OpcodeMap()
         {
+            var opcodes = new Dictionary<InstructionDefinition, string>();
             int address = 0;
-            foreach (var candidate in Microcode.AllInstructions)
+            foreach (var instruction in Microcode.AllInstructions)
             {
-                if (candidate == instruction) return address.ToString("X4");
-                address += BlockSize(candidate);
+                opcodes[instruction] = address.ToString("X4");
+                address += BlockSize(instruction);
             }
-            return "";
+            return opcodes;
         }
 
         // ---- Diagnostics ----

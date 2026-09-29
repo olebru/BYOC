@@ -469,18 +469,49 @@ namespace WebUI.Components
         {
             get { return Machine.Devices.OfType<ProgramCounter>().Select(p => (int)p.Data); }
         }
-        private string CellClass(int address, RomModule module)
+        // What the memory panel highlights, worked out once per render: PC values, the current instruction's cells,
+        // and the cells written in the last tick and in the ticks just before it.
+        private class MemoryMarks
         {
-            var classes = new List<string>();
-            if (module.memoryAddress == address) classes.Add("mar");
-            bool isProgram = memoryDevice == Machine.Definition.ProgramMemory;
-            if (isProgram && ProgramCounterValues.Contains(address)) classes.Add("pc");
-            var current = ListingAt(Machine.CurrentInstructionAddress);
-            if (isProgram && current != null && address >= current.Address && address < current.Address + current.Cells.Length) classes.Add("current");
-            if (Last?.Writes.Any(w => w.Device == memoryDevice && w.Bank == Bank && w.Address == address) == true) classes.Add("written");
-            else if (Machine.History.Skip(Math.Max(0, Machine.History.Count - 30)).Any(t => t.Writes.Any(w => w.Device == memoryDevice && w.Bank == Bank && w.Address == address))) classes.Add("recent");
-            if (module.ValueAt(address) == 0) classes.Add("zero");
-            return string.Join(" ", classes);
+            public readonly HashSet<int> ProgramCounters = new HashSet<int>();
+            public int CurrentStart = -1, CurrentEnd = -1;
+            public readonly HashSet<int> Written = new HashSet<int>();
+            public readonly HashSet<int> Recent = new HashSet<int>();
+        }
+        private MemoryMarks MarksFor(RomModule module)
+        {
+            var marks = new MemoryMarks();
+            if (memoryDevice == Machine.Definition.ProgramMemory)
+            {
+                marks.ProgramCounters.UnionWith(ProgramCounterValues);
+                var current = ListingAt(Machine.CurrentInstructionAddress);
+                if (current != null) (marks.CurrentStart, marks.CurrentEnd) = (current.Address, current.Address + current.Cells.Length);
+            }
+            var bank = Bank;
+            foreach (var write in Last?.Writes ?? Enumerable.Empty<MemoryWrite>())
+            {
+                if (write.Device == memoryDevice && write.Bank == bank) marks.Written.Add(write.Address);
+            }
+            var history = Machine.History;
+            for (int i = Math.Max(0, history.Count - 30); i < history.Count; i++)
+            {
+                foreach (var write in history[i].Writes)
+                {
+                    if (write.Device == memoryDevice && write.Bank == bank) marks.Recent.Add(write.Address);
+                }
+            }
+            return marks;
+        }
+        private static string CellClass(int address, RomModule module, MemoryMarks marks)
+        {
+            var classes = "";
+            if (module.memoryAddress == address) classes += " mar";
+            if (marks.ProgramCounters.Contains(address)) classes += " pc";
+            if (address >= marks.CurrentStart && address < marks.CurrentEnd) classes += " current";
+            if (marks.Written.Contains(address)) classes += " written";
+            else if (marks.Recent.Contains(address)) classes += " recent";
+            if (module.ValueAt(address) == 0) classes += " zero";
+            return classes;
         }
 
         // ---- Control lines and decoder ROM ----

@@ -51,10 +51,11 @@
         <!-- Instruction list -->
         <div class="list">
             <input class="form-control form-control-sm mb-2" placeholder="Filter instructions" @bind="filter" @bind:event="oninput" />
+            @{ var opcodes = OpcodeMap(); }
             @if (Microcode.Fetch != null)
             {
                 <div class="list-item fetch @(Selected == Microcode.Fetch ? "selected" : "")" @onclick="() => Select(Microcode.Fetch)">
-                    <span class="opcode">@OpcodeOf(Microcode.Fetch)</span>
+                    <span class="opcode">@opcodes.GetValueOrDefault(Microcode.Fetch)</span>
                     <span class="mnemonic">@Microcode.Fetch.Mnemonic</span>
                     <span class="badge-fetch">Fetch</span>
                     <span class="desc"></span>
@@ -70,7 +71,7 @@
                 <div class="list-item @(Selected == instruction ? "selected" : "")" draggable="true"
                      @ondragstart="() => DragInstruction(index)" @ondragover:preventDefault @ondrop="() => DropOnInstruction(index)"
                      @onclick="() => Select(instruction)" title="@instruction.Description">
-                    <span class="opcode">@OpcodeOf(instruction)</span>
+                    <span class="opcode">@opcodes.GetValueOrDefault(instruction)</span>
                     <span class="mnemonic">@instruction.Mnemonic</span>
                     @if (instruction.Operands > 0) { <span class="ops">@instruction.Operands op</span> }
                     <span class="desc">@instruction.Description</span>
