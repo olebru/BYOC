@@ -405,7 +405,14 @@
                         {
                             <span class="cell @CellClass(address, module, marks)" title="[@address.ToString("X" + addressDigits)] = @module.ValueAt(address)">@Hex(module.ValueAt(address))</span>
                         }
-                        <span class="ascii">@(new string(Enumerable.Range(start, Math.Max(0, Math.Min(16, module.Size - start))).Select(a => { var low = module.ValueAt(a) & 0xFF; return low >= 0x20 && low < 0x7F ? (char)low : '·'; }).ToArray()))</span>
+                        <span class="ascii">
+                            @for (int address = start; address < Math.Min(start + 16, module.Size); address++)
+                            {
+                                var low = module.ValueAt(address) & 0xFF;
+                                var printable = low >= 0x20 && low < 0x7F;
+                                <span class="ch @CellClass(address, module, marks) @(printable ? "" : "blank")">@(printable ? ((char)low).ToString() : "·")</span>
+                            }
+                        </span>
                     </div>
                 }
             </div>
