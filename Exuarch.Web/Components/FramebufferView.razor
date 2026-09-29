@@ -1,0 +1,57 @@
+@using Exuarch.Core
+@inject IJSRuntime JS
+
+@if (Screen != null)
+{
+    <div class="screen @(large ? "large" : "")" tabindex="-1" @ref="root" @onkeydown="OnKeyDown" @onclick="() => large = false">
+        <div class="screen-frame" @onclick:stopPropagation>
+            <div class="screen-head">
+                <span class="screen-name">@Screen.ID()</span>
+                <span class="screen-info">@Framebuffer.Width × @Framebuffer.Height · RGB565 · cursor @Screen.X, @Screen.Y</span>
+                <span class="screen-hint">@(large ? "actual size · click or Esc to close" : "click to view at actual size")</span>
+            </div>
+            <canvas id="@canvasId" width="@Framebuffer.Width" height="@Framebuffer.Height" class="screen-canvas" @onclick="() => large = !large"></canvas>
+        </div>
+    </div>
+}
+
+@code
+{
+    [Parameter]
+    public Framebuffer Screen { get; set; }
+
+    private readonly string canvasId = "fb-" + Guid.NewGuid().ToString("N");
+    private Framebuffer drawn;
+    // Shows the screen at its real 640 x 480 size over the page, with crisp pixels.
+    private bool large;
+    private bool focusedLarge;
+    private ElementReference root;
+
+    private void OnKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape") large = false;
+    }
+
+    // Sends only what changed since the last render; a new screen, or a new canvas, gets the whole picture.
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (Screen == null) return;
+        // Take keyboard focus when the actual size view opens, so Esc closes it.
+        if (large != focusedLarge)
+        {
+            focusedLarge = large;
+            if (large) await JS.InvokeVoidAsync("exuarchEditor.focus", root);
+        }
+        if (firstRender || !ReferenceEquals(drawn, Screen))
+        {
+            drawn = Screen;
+            Screen.TakeDirtyRegion();
+            await JS.InvokeVoidAsync("exuarchScreen.draw", canvasId, 0, 0, Framebuffer.Width, Framebuffer.Height, Screen.ToRgb565Bytes(0, 0, Framebuffer.Width, Framebuffer.Height));
+            return;
+        }
+        if (Screen.TakeDirtyRegion() is var (x, y, width, height))
+        {
+            await JS.InvokeVoidAsync("exuarchScreen.draw", canvasId, x, y, width, height, Screen.ToRgb565Bytes(x, y, width, height));
+        }
+    }
+}

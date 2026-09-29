@@ -1,0 +1,23 @@
+@inherits LayoutComponentBase
+
+<div class="page">
+    <header class="topbar">
+        <a class="brand" href="">
+            <svg class="chip" viewBox="0 0 20 20" aria-hidden="true">
+                <rect x="4" y="4" width="12" height="12" rx="1.5" />
+                <circle cx="7" cy="7" r="1" />
+                <path d="M7 1v3M10 1v3M13 1v3M7 16v3M10 16v3M13 16v3M1 7h3M1 10h3M1 13h3M16 7h3M16 10h3M16 13h3" />
+            </svg>
+            <span class="name">ExµArch</span>
+        </a>
+        <span class="tagline">explore microarchitectures <span class="sep">/</span> a computer architecture playground</span>
+        <span class="spacer"></span>
+        <span class="spec">16-bit · two phase clock</span>
+    </header>
+
+    <main class="main">
+        <div class="content px-4">
+            @Body
+        </div>
+    </main>
+</div>
