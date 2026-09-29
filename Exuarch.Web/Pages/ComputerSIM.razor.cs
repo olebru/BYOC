@@ -81,11 +81,25 @@ namespace Exuarch.Web.Pages
             Rebuild();
         }
 
+        // The example the program was loaded from, if any; edits keep it so the title can say "(edited)".
+        private string programName;
+        private string ProgramTitle
+        {
+            get
+            {
+                var example = Package.Programs.FirstOrDefault(p => p.Source == Program);
+                if (example != null) return example.Name;
+                if (programName != null) return $"{programName} (edited)";
+                return string.IsNullOrWhiteSpace(Program) ? "No program" : "Untitled program";
+            }
+        }
+
         private void LoadPackage(MachinePackage package)
         {
             Package = package;
             PackageError = null;
             Program = package.Programs.FirstOrDefault()?.Source ?? "";
+            programName = package.Programs.FirstOrDefault()?.Name;
             ApplyDefinition(package.Machine.Clone());
         }
 
@@ -142,7 +156,7 @@ namespace Exuarch.Web.Pages
             };
             History.Record();
             LoadPackage(package);
-            if (newStart == "minimal") { Program = MachineTemplates.StarterProgram; Rebuild(); }
+            if (newStart == "minimal") { Program = MachineTemplates.StarterProgram; programName = "Starter program"; Rebuild(); }
             newDialog = false;
             ActiveTab = "Design";
         }
@@ -220,9 +234,10 @@ namespace Exuarch.Web.Pages
             }
         }
 
-        private void LoadExample(string source)
+        private void LoadExample(PackageProgram example)
         {
-            Program = source;
+            Program = example.Source;
+            programName = example.Name;
             Rebuild();
         }
 

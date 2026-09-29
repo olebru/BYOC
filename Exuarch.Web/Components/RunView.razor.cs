@@ -21,6 +21,9 @@ namespace Exuarch.Web.Components
         [Parameter] public Machine Machine { get; set; }
         [Parameter] public DeviceRegistry Registry { get; set; } = DeviceRegistry.CreateDefault();
         [Parameter] public EventCallback OnRestart { get; set; }
+        // Shown in the top bar: which machine this is and which program is loaded.
+        [Parameter] public string MachineName { get; set; }
+        [Parameter] public string ProgramName { get; set; }
 
         private Machine shown;
         private bool running;

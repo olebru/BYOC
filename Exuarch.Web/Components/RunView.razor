@@ -21,6 +21,13 @@
         </label>
         <button class="ctl @(maxSpeed ? "on" : "")" title="Run as fast as the browser allows, ignoring the slider (M)" @onclick="() => maxSpeed = !maxSpeed">⚡ Max</button>
         <span class="grow"></span>
+        @if (!string.IsNullOrEmpty(ProgramName))
+        {
+            <span class="loaded" title="@($"{MachineName} running {ProgramName}")">
+                @if (!string.IsNullOrEmpty(MachineName)) { <span class="loaded-machine">@MachineName</span><span class="loaded-sep">/</span> }
+                <span class="loaded-program">@ProgramName</span>
+            </span>
+        }
         <span class="cycle">cycle <strong>@Machine.Cycles</strong></span>
         <span class="state state-@State">@State</span>
     </div>

@@ -1339,3 +1339,33 @@
             background: var(--signal);
             border-color: var(--signal-ink);
         }
+
+
+/* The machine and program in the top bar. */
+.loaded {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    min-width: 0;
+    margin-right: 14px;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    white-space: nowrap;
+}
+
+.loaded-machine {
+    color: var(--ink-3);
+    letter-spacing: 0.04em;
+}
+
+.loaded-sep {
+    color: var(--ink-4);
+}
+
+.loaded-program {
+    color: var(--ink);
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 320px;
+}
