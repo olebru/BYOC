@@ -5,6 +5,18 @@
 {
     <div class="alert alert-danger alert-dismissible">@PackageError <button type="button" class="close" @onclick="() => PackageError = null">&times;</button></div>
 }
+@if (StorageWarning != null)
+{
+    <div class="alert alert-warning alert-dismissible">@StorageWarning <button type="button" class="close" @onclick="() => StorageWarning = null">&times;</button></div>
+}
+@if (pendingConfirm is { } question)
+{
+    <div class="confirm-bar" role="alertdialog">
+        <span class="confirm-message">@question.Message</span>
+        <button class="btn btn-sm btn-danger" @onclick="Confirm">@question.Action</button>
+        <button class="btn btn-sm btn-outline-secondary" @onclick="() => pendingConfirm = null">Cancel</button>
+    </div>
+}
 
 <div class="workspace-header">
     <ul class="nav nav-tabs">
@@ -25,13 +37,17 @@
     <div class="workspace-actions">
         <button class="btn btn-sm getting-started @(drawerOpen ? "on" : "")" @onclick="@(() => ToggleDrawer("Handbook"))" title="The handbook, the example machines and this machine's note">Getting started</button>
         <span class="package-label silk">Package</span>
-        <button class="package-name" title="@Package.Description" @onclick="@(() => ToggleDrawer(IsBuiltIn ? "Examples" : "This machine"))">@PackageName@(IsBuiltIn ? "" : " · yours")</button>
+        <button class="package-name" title="@Package.Description" @onclick="@(() => ToggleDrawer("Machines"))">@PackageName@(IsBuiltIn ? (IsEdited ? " · edited" : "") : " · yours")</button>
         <button class="btn btn-sm btn-outline-secondary" @onclick="OpenNewDialog" title="Start a new machine of your own">New…</button>
-        <button class="btn btn-sm btn-outline-secondary" @onclick="ResetPackage" title="Load the package's machine and first program again">Reset</button>
-        <label class="btn btn-sm btn-outline-secondary mb-0" title="Open a package file: a machine with its microcode and programs">
-            Open…<InputFile OnChange="OpenPackage" accept=".json" class="d-none" />
+        @if (IsBuiltIn)
+        {
+            <button class="btn btn-sm btn-outline-secondary" disabled="@(!IsEdited)" @onclick="() => ResetPackage(PackageName)"
+                    title="@(IsEdited ? "Throw away your changes to this package and load it the way it ships" : "Nothing to reset: this package is the way it ships")">Reset</button>
+        }
+        <label class="btn btn-sm btn-outline-secondary mb-0" title="Import a package file: a machine with its microcode, programs and note">
+            Import…<InputFile OnChange="ImportPackage" accept=".json" class="d-none" />
         </label>
-        <button class="btn btn-sm btn-outline-secondary" @onclick="DownloadPackage" title="Save the machine, its microcode and the programs as one file">Download</button>
+        <button class="btn btn-sm btn-outline-secondary" @onclick="ExportPackage" title="Export this package as a file: the machine, its microcode, the programs and the note">Export</button>
     </div>
 </div>
 
@@ -50,7 +66,7 @@
                     <span><strong>@title</strong><small>@description</small></span>
                 </label>
             }
-            <div class="new-note">The new machine lives in this page until you download it; Download saves it as a package file you can open again.</div>
+            <div class="new-note">The new machine is kept in this browser. Export saves it as a package file, to keep or share, that Import… opens again.</div>
             <div class="new-actions">
                 <button class="btn btn-sm btn-outline-secondary" @onclick="() => newDialog = false">Cancel</button>
                 <button class="btn btn-sm btn-primary" @onclick="CreateMachine">Create</button>
@@ -124,6 +140,7 @@ else if (ActiveTab == "Run")
 
 @if (drawerOpen)
 {
-    <GettingStarted Package="Package" IsBuiltIn="IsBuiltIn" @bind-Section="drawerSection" @bind-Page="drawerPage" OnClose="() => drawerOpen = false"
-                    OnLoadPackage="LoadBuiltIn" OnLink="FollowLink" />
+    <GettingStarted Package="Package" IsBuiltIn="IsBuiltIn" Workspace="workspace" @bind-Section="drawerSection" @bind-Page="drawerPage" OnClose="() => drawerOpen = false"
+                    OnLoadPackage="OpenByName" OnResetPackage="ResetPackage" OnDeletePackage="DeletePackage" OnExportPackage="ExportByName"
+                    OnReadmeChanged="MarkChanged" OnLink="FollowLink" />
 }

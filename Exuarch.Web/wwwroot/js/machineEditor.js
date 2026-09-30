@@ -67,3 +67,17 @@ window.exuarchWelcome = {
         return false;
     },
 };
+
+// The workspace in the browser's storage. Every call is safe: private windows, blocked storage or a full quota
+// just mean nothing is kept, which set reports by returning false.
+window.exuarchStore = {
+    get: function (key) {
+        try { return localStorage.getItem(key); } catch { return null; }
+    },
+    set: function (key, value) {
+        try { localStorage.setItem(key, value); return true; } catch { return false; }
+    },
+    remove: function (key) {
+        try { localStorage.removeItem(key); } catch { }
+    },
+};
