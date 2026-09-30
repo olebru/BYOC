@@ -66,55 +66,6 @@ public class ReadmeTests
     }
 
     [Fact]
-    public void TheGettingStartedGuideComesFirstAndItsLinksLeadSomewhere()
-    {
-        Assert.Equal("Getting started", Guides.All[0].Title);
-        foreach (var guide in Guides.All)
-        {
-            var links = ReadmeLinks.In(guide.Markdown).ToList();
-            Assert.NotEmpty(links);
-            foreach (var href in links)
-            {
-                var problem = ReadmeLinks.Problem(null, href);
-                Assert.True(problem == null, $"{guide.Title}: {href}: {problem}");
-            }
-        }
-        // It points at every built in package and every tab.
-        foreach (var package in BuiltInPackages.All) Assert.Contains($"exuarch:package/{package.Name})", Guides.All[0].Markdown);
-        foreach (var tab in ReadmeLinks.Tabs) Assert.Contains($"exuarch:tab/{tab}", Guides.All[0].Markdown);
-    }
-
-    [Fact]
-    public void AGuideCanNotLinkToAMachinesParts()
-    {
-        Assert.Contains("only to tabs and packages", ReadmeLinks.Problem(null, "exuarch:device/alu"));
-    }
-
-    // The "first thing to try" in the getting started guide, done by hand: it has to work as written.
-    [Fact]
-    public void TheGuidesFirstMachineSaysHi()
-    {
-        var machine = MachineTemplates.Minimal("Mine").Machine;
-        machine.Devices.Add(new DeviceDefinition { Id = "lcd", Type = "display", Bus = "main" });
-        machine.Decoder.Microcode.Instructions.Add(new InstructionDefinition
-        {
-            Mnemonic = "OUT", Operands = 1,
-            Steps =
-            {
-                new MicroStep { Signals = { "pc.output", "mem.loadmar" } },
-                new MicroStep { Signals = { "mem.output", "lcd.load", "pc.inc", "ir.reset" } },
-            },
-        });
-        Assert.Empty(Machine.ValidateDefinition(machine, DeviceRegistry.CreateDefault()));
-        var c = new Machine(machine, "OUT 'H'\nOUT 'i'\nHLT");
-        int ticks = 0;
-        while (!c.IsHalted) { c.SingleStep(); Assert.True(++ticks < 100); }
-        Assert.StartsWith("Hi", c.Device<CharacterDisplay>("lcd").Text);
-        Assert.Contains("OUT 'H'`, `OUT 'i'`, `HLT`", Guides.All[0].Markdown);
-        Assert.Contains("`mem.output` `lcd.load` `pc.inc` `ir.reset`", Guides.All[0].Markdown);
-    }
-
-    [Fact]
     public void TheReadmeTravelsWithAPackageFile()
     {
         var package = BuiltInPackages.Get("MOVE-16");

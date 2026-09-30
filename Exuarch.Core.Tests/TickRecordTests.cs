@@ -55,8 +55,8 @@ public class TickRecordTests
         c.StepInstruction();
         c.StepInstruction();
         var write = Assert.Single(c.History.SelectMany(t => t.Writes));
-        Assert.Equal(("mmu", 0, 4094, 15), (write.Device, write.Bank, write.Address, write.Value));
-        Assert.Contains(c.History, t => t.Changes.Any(ch => ch.Device == "regsp" && ch.After == 4094));
+        Assert.Equal(("mmu", 0, 4095, 15), (write.Device, write.Bank, write.Address, write.Value));
+        Assert.Contains(c.History, t => t.Changes.Any(ch => ch.Device == "regsp" && ch.After == 65535));
     }
 
     [Fact]

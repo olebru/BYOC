@@ -24,3 +24,9 @@ The [fetch routine](exuarch:instruction/FETCH) has two versions. With I=0 it fet
 2. Capture the keyboard on the keypad panel and press keys: each press is one interrupt.
 3. Open the [fetch routine](exuarch:instruction/FETCH) in the microcode editor and use the flag preview to switch between I=0 and I=1.
 4. Try the timer: change the `TPERI 20000` in the program and see the clock speed up or slow down.
+
+## Read more
+
+- [Interrupts](exuarch:guide/interrupts): the controller, the timer and the I condition.
+- [Fetch and the instruction register](exuarch:guide/fetch-and-the-instruction-register): the fetch routine that branches on I.
+- [Bus masters and coprocessors](exuarch:guide/bus-masters): the blitter from COPRO-16.

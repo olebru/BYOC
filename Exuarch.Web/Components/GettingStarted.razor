@@ -1,4 +1,5 @@
 @using Exuarch.Core
+@inject IJSRuntime JS
 
 <aside class="drawer @(editing ? "wide" : "")" aria-label="Getting started">
     <div class="drawer-head">
@@ -12,19 +13,80 @@
             <button class="drawer-section @(Section == section ? "on" : "")" @onclick="() => Show(section)">@section</button>
         }
     </div>
-    <div class="drawer-body">
-        @if (Section == "Guide")
+    <div class="drawer-body" @ref="body">
+        @if (Section == "Handbook")
         {
-            @if (Guides.All.Count > 1)
+            @if (Page == null)
             {
-                <div class="guide-list">
-                    @foreach (var (guide, index) in Guides.All.Select((g, i) => (g, i)))
+                <div class="handbook-search">
+                    <input class="form-control form-control-sm" type="search" placeholder="Search the handbook, the devices and this machine"
+                           aria-label="Search the handbook" value="@query" @oninput="e => query = e.Value?.ToString()" />
+                </div>
+                @if (!string.IsNullOrWhiteSpace(query))
+                {
+                    var hits = Handbook.Search(query, Package);
+                    @if (hits.Count == 0)
                     {
-                        <button class="btn btn-sm @(guideIndex == index ? "btn-primary" : "btn-outline-secondary")" @onclick="() => guideIndex = index">@guide.Title</button>
+                        <p class="handbook-empty">Nothing matches “@query.Trim()”.</p>
+                    }
+                    <ul class="hits">
+                        @foreach (var hit in hits)
+                        {
+                            <li>
+                                <button class="hit" @onclick="() => Follow((hit.Kind, hit.Target))">
+                                    <span class="hit-head"><span class="hit-title">@hit.Title</span><span class="hit-section silk">@hit.Section</span></span>
+                                    <span class="hit-snippet">@hit.Snippet</span>
+                                </button>
+                            </li>
+                        }
+                    </ul>
+                }
+                else
+                {
+                    @foreach (var group in Guides.All.GroupBy(g => g.Section))
+                    {
+                        <div class="toc-section silk">@group.Key</div>
+                        <ol class="toc @(group.Key == "Start" ? "plain" : "")">
+                            @foreach (var guide in group)
+                            {
+                                <li><button class="toc-link" @onclick="@(() => Open(("guide", guide.Id)))">@guide.Title</button></li>
+                            }
+                        </ol>
+                    }
+                    <div class="toc-section silk">@Handbook.ReferenceSection</div>
+                    @foreach (var category in DeviceReference.ByCategory)
+                    {
+                        <div class="toc-category">
+                            <span class="toc-category-name">@category.Key</span>
+                            @foreach (var type in category)
+                            {
+                                <button class="toc-device" title="@type.Description" @onclick="@(() => Open(("reference", type.Type)))">@type.Type</button>
+                            }
+                        </div>
+                    }
+                }
+            }
+            else
+            {
+                var (previous, next) = Neighbours(Page.Value);
+                <div class="page-nav">
+                    <button class="page-back" @onclick="() => Open(null)">‹ Contents</button>
+                    <span class="grow"></span>
+                    <span class="silk">@PageSection(Page.Value)</span>
+                </div>
+                <ReadmeView @key="@($"{Page.Value.Kind}/{Page.Value.Target}")" Markdown="@PageMarkdown(Page.Value)" OnLink="Follow" />
+                <div class="page-steps">
+                    @if (previous != null)
+                    {
+                        <button class="page-step" @onclick="() => Open(previous.Value.Link)"><small>Previous</small>@previous.Value.Title</button>
+                    }
+                    <span class="grow"></span>
+                    @if (next != null)
+                    {
+                        <button class="page-step next" @onclick="() => Open(next.Value.Link)"><small>Next</small>@next.Value.Title</button>
                     }
                 </div>
             }
-            <ReadmeView @key="@("guide" + guideIndex)" Markdown="@Guides.All[guideIndex].Markdown" OnLink="OnLink" />
         }
         else if (Section == "Examples")
         {
@@ -64,7 +126,7 @@
                     <button class="btn btn-sm @(editing ? "btn-primary" : "btn-outline-secondary")" @onclick="() => editing = !editing">@(editing ? "Done" : "Edit")</button>
                 }
             </div>
-            <ReadmeView @key="@("machine" + Package.Name)" Markdown="@Package.Readme" Editing="editing" MarkdownChanged="SetReadme" OnLink="OnLink"
+            <ReadmeView @key="@("machine" + Package.Name)" Markdown="@Package.Readme" Editing="editing" MarkdownChanged="SetReadme" OnLink="Follow"
                         Empty="@(IsBuiltIn ? "This machine has no note." : "No note yet. Use Edit to write what your machine is about.")" />
         }
     </div>
@@ -72,22 +134,46 @@
 
 @code
 {
-    public static readonly string[] Sections = { "Guide", "Examples", "This machine" };
+    public static readonly string[] Sections = { "Handbook", "Examples", "This machine" };
 
     [Parameter] public MachinePackage Package { get; set; }
     [Parameter] public bool IsBuiltIn { get; set; }
-    [Parameter] public string Section { get; set; } = "Guide";
+    [Parameter] public string Section { get; set; } = "Handbook";
     [Parameter] public EventCallback<string> SectionChanged { get; set; }
+    // The handbook page shown, as an exuarch: link kind (guide or reference) and target; null for the contents.
+    [Parameter] public (string Kind, string Target)? Page { get; set; }
+    [Parameter] public EventCallback<(string Kind, string Target)?> PageChanged { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
     [Parameter] public EventCallback<string> OnLoadPackage { get; set; }
+    // Every link, handbook pages included: the page decides where it goes.
     [Parameter] public EventCallback<(string Kind, string Target)> OnLink { get; set; }
 
-    private int guideIndex;
+    private ElementReference body;
     private bool editing;
+    private string query;
+    private (string Kind, string Target)? shownPage;
+    private string shownSection;
+
+    // Guides first, then the device reference: the order Previous and Next walk through.
+    private static readonly Lazy<List<((string Kind, string Target) Link, string Title, string Section)>> Order = new(() =>
+        Guides.All.Select(g => (("guide", g.Id), g.Title, g.Section))
+            .Concat(DeviceReference.Types.Select(t => (("reference", t.Type), t.Type, Handbook.ReferenceSection)))
+            .ToList());
 
     protected override void OnParametersSet()
     {
         if (IsBuiltIn || Section != "This machine") editing = false;
+    }
+
+    // A new page or section starts at the top.
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (shownPage != Page || shownSection != Section)
+        {
+            shownPage = Page;
+            shownSection = Section;
+            if (!firstRender) await JS.InvokeVoidAsync("exuarchReadme.scrollTop", body);
+        }
     }
 
     private async Task Show(string section)
@@ -95,6 +181,38 @@
         editing = false;
         Section = section;
         await SectionChanged.InvokeAsync(section);
+    }
+
+    private async Task Open((string Kind, string Target)? page)
+    {
+        Page = page;
+        await PageChanged.InvokeAsync(page);
+    }
+
+    private Task Follow((string Kind, string Target) link)
+    {
+        return OnLink.InvokeAsync(link);
+    }
+
+    private static string PageMarkdown((string Kind, string Target) page)
+    {
+        if (page.Kind == "reference") return DeviceReference.Exists(page.Target) ? DeviceReference.Markdown(page.Target) : $"# {page.Target}\n\nThere is no such device type.";
+        return Guides.Find(page.Target)?.Markdown ?? $"# {page.Target}\n\nThere is no such page.";
+    }
+
+    private static string PageSection((string Kind, string Target) page)
+    {
+        return page.Kind == "reference" ? Handbook.ReferenceSection : Guides.Find(page.Target)?.Section;
+    }
+
+    private static (((string Kind, string Target) Link, string Title)? Previous, ((string Kind, string Target) Link, string Title)? Next) Neighbours((string Kind, string Target) page)
+    {
+        var order = Order.Value;
+        int index = order.FindIndex(p => p.Link == page);
+        if (index < 0) return (null, null);
+        var previous = index > 0 ? (order[index - 1].Link, order[index - 1].Title) : ((( string, string), string)?)null;
+        var next = index < order.Count - 1 ? (order[index + 1].Link, order[index + 1].Title) : ((( string, string), string)?)null;
+        return (previous, next);
     }
 
     private void SetReadme(string markdown)

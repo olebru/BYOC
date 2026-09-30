@@ -58,15 +58,14 @@ namespace Exuarch.Core
 
         public static DeviceRegistry CreateDefault()
         {
-            var initialValue = new ParameterInfo { Name = "initialValue", Description = "Value after power on", Max = 65535 };
             var size = new ParameterInfo { Name = "size", Description = "Number of 16 bit cells", Min = 1, Max = 65536, Default = MemoryModule.DefaultSize };
             List<ControlLineInfo> RegisterLines() => new List<ControlLineInfo>
             {
                 ControlLineInfo.Output("output", "Put the value on the bus"),
                 ControlLineInfo.Input("load", "Take the value from the bus"),
                 ControlLineInfo.Internal("reset", "Set to 0"),
-                ControlLineInfo.Internal("inc", "Add 1"),
-                ControlLineInfo.Internal("dec", "Subtract 1"),
+                ControlLineInfo.Internal("inc", "Add 1; 65535 wraps to 0"),
+                ControlLineInfo.Internal("dec", "Subtract 1; 0 wraps to 65535"),
             };
             List<ControlLineInfo> MemoryLines() => new List<ControlLineInfo>
             {
@@ -82,17 +81,16 @@ namespace Exuarch.Core
             }
 
             var registry = new DeviceRegistry();
-            registry.Register("register", c => new Register(c.Name, c.Id, c.Bus(), c.IntParameter("initialValue", 0, 0, 65535)),
-                new DeviceTypeInfo { Category = "Registers", Description = "Holds one 16 bit value between ticks. output puts it on the bus and load stores the bus value; reset, inc and dec change it in place", Parameters = { initialValue }, ControlLines = RegisterLines() });
+            registry.Register("register", c => new Register(c.Name, c.Id, c.Bus()),
+                new DeviceTypeInfo { Category = "Registers", Description = "Holds one 16 bit value between ticks. output puts it on the bus and load stores the bus value; reset, inc and dec change it in place, wrapping from 65535 to 0 and back. It starts at 0", ControlLines = RegisterLines() });
             registry.Register("statusRegister", c => new StatusRegister(c.Name, c.Id, c.Bus()),
                 new DeviceTypeInfo { Category = "Registers", Description = "Holds the four ALU flags: N negative, V overflow, C carry and Z zero. The decoder reads them to pick which steps of an instruction run", ControlLines = RegisterLines() });
-            registry.Register("dualPortRegister", c => new DualPortRegister(c.Name, c.Id, c.Bus("a"), c.Bus("b"), c.IntParameter("initialValue", 0, 0, 65535)),
+            registry.Register("dualPortRegister", c => new DualPortRegister(c.Name, c.Id, c.Bus("a"), c.Bus("b")),
                 new DeviceTypeInfo
                 {
                     Category = "Registers",
                     Description = "A register that sits on two buses: load it from one and output it on the other to move a value between them",
                     Ports = new List<string> { "a", "b" },
-                    Parameters = { initialValue },
                     ControlLines =
                     {
                         ControlLineInfo.Input("loada", "Take the value from bus a", "a"),
@@ -100,8 +98,8 @@ namespace Exuarch.Core
                         ControlLineInfo.Output("outputa", "Put the value on bus a", "a"),
                         ControlLineInfo.Output("outputb", "Put the value on bus b", "b"),
                         ControlLineInfo.Internal("reset", "Set to 0"),
-                        ControlLineInfo.Internal("inc", "Add 1"),
-                        ControlLineInfo.Internal("dec", "Subtract 1"),
+                        ControlLineInfo.Internal("inc", "Add 1; 65535 wraps to 0"),
+                        ControlLineInfo.Internal("dec", "Subtract 1; 0 wraps to 65535"),
                     }
                 });
             registry.Register("instructionRegister", c => new InstructionRegister(c.Name, c.Id, c.Bus()),

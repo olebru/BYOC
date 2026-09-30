@@ -29,3 +29,9 @@ Memory is reached through an address register. [LDR_R1](exuarch:instruction/LDR_
 2. [Fibonacci on the LCD](<exuarch:program/Fibonacci on the LCD>) stops exactly when an `ADD` carries out of 16 bits, and saves R1 to R3 on the stack inside its print routine.
 3. [Sketch with the arrow keys](<exuarch:program/Sketch with the arrow keys>) reads the keypad with `IN`. In the [Run view](exuarch:tab/Run), switch on ⚡ Max, click the keypad's *Use the keyboard* and draw.
 4. Count the ticks: with fetch, an `ADD_R2` takes 4, and so does a `LDR_R1`. BYOC-16's `LDA`, which reads its address from the program and reaches into memory itself, takes 6.
+
+## Read more
+
+- [Flags and conditions](exuarch:guide/flags-and-conditions): the flags the branches test.
+- [Subroutines and the stack](exuarch:guide/subroutines-and-the-stack): calls and returns through a stack, to compare with the link register.
+- [Operands](exuarch:guide/operands): value and address operands.

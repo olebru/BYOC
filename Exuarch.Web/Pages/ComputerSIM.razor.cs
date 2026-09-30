@@ -11,18 +11,21 @@ using Exuarch.Web.Components;
 
 namespace Exuarch.Web.Pages
 {
-    public partial class ComputerSIM
+    public partial class ComputerSIM : IDisposable
     {
         // The same names README links use (ReadmeLinks.Tabs).
         private static readonly string[] Tabs = { "Hardware design", "Microcode", "Program", "JSON", "Run" };
         private static readonly DeviceRegistry Registry = DeviceRegistry.CreateDefault();
 
         [Microsoft.AspNetCore.Components.Inject] private IJSRuntime JS { get; set; }
+        [Microsoft.AspNetCore.Components.Inject] private HelpService Help { get; set; }
 
         private string ActiveTab = "Hardware design";
         // The getting started drawer: guides, the example packages and the note of the machine that is open.
         private bool drawerOpen;
-        private string drawerSection = "Guide";
+        private string drawerSection = "Handbook";
+        // The handbook page in the drawer; null shows the contents.
+        private (string Kind, string Target)? drawerPage;
         // The package the machine and the example programs came from, as it was loaded.
         private MachinePackage Package;
         private string PackageName { get { return Package.Name; } }
@@ -121,6 +124,21 @@ namespace Exuarch.Web.Pages
             drawerSection = "This machine";
         }
 
+        // A "?" somewhere in the editors: open that handbook page.
+        private void OnHelp(string kind, string target)
+        {
+            InvokeAsync(() =>
+            {
+                FollowLink((kind, target));
+                StateHasChanged();
+            });
+        }
+
+        public void Dispose()
+        {
+            Help.Requested -= OnHelp;
+        }
+
         private void ToggleDrawer(string section)
         {
             drawerOpen = !drawerOpen || drawerSection != section;
@@ -147,10 +165,15 @@ namespace Exuarch.Web.Pages
         protected override async Task OnAfterRenderAsync(bool firstRender)
         {
             // The very first visit opens the guide once; after that the drawer stays shut until asked for.
-            if (firstRender && !await JS.InvokeAsync<bool>("exuarchWelcome.seen"))
+            if (firstRender)
             {
-                drawerOpen = true;
-                StateHasChanged();
+                Help.Requested += OnHelp;
+                if (!await JS.InvokeAsync<bool>("exuarchWelcome.seen"))
+                {
+                    drawerOpen = true;
+                    drawerPage = ("guide", "getting-started");
+                    StateHasChanged();
+                }
             }
             if (focusNewName && newDialog)
             {
@@ -342,6 +365,12 @@ namespace Exuarch.Web.Pages
                     break;
                 case "package":
                     LoadBuiltIn(link.Target);
+                    break;
+                case "guide":
+                case "reference":
+                    drawerOpen = true;
+                    drawerSection = "Handbook";
+                    drawerPage = link;
                     break;
             }
         }

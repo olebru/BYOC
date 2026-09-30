@@ -30,3 +30,9 @@ Constants and strings live with the program, on the other bus from the data, so 
 1. Step [Hello, world across three buses](<exuarch:program/Hello, world across three buses>) with **Tick** in the [Run view](exuarch:tab/Run): during `OUT` the character travels on iobus while the next opcode is fetched on ibus. Look for two bus values in one tick.
 2. Play the [Paddle game](<exuarch:program/Paddle game>): ⚡ Max, capture the keyboard on the keypad panel, and keep the ball in play.
 3. Compare cycle counts: [Fibonacci on the LCD](<exuarch:program/Fibonacci on the LCD>) does the same work as BYOC-16's version. Which machine finishes in fewer ticks?
+
+## Read more
+
+- [Bridges between buses](exuarch:guide/bridges): how the bridge registers move values between buses.
+- [Buses and the two-phase tick](exuarch:guide/buses-and-ticks): why each bus can carry its own transfer in the same tick.
+- [Memory and banks](exuarch:guide/memory-and-banks): program and data memory.

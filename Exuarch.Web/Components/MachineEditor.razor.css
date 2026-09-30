@@ -721,3 +721,20 @@ kbd {
     font-size: 0.6rem;
     color: var(--ink-4);
 }
+
+/* The decoder: a card like the devices, but not on a bus. Drawn as a chip with pins along both sides. */
+.decoder-dot {
+    background: var(--cat-control);
+}
+
+.card-decoder {
+    border-top-color: var(--cat-control);
+    background:
+        linear-gradient(90deg, var(--line-2) 0 3px, transparent 3px) left 6px top 30px / 3px 8px repeat-y,
+        linear-gradient(90deg, var(--line-2) 0 3px, transparent 3px) right 3px top 30px / 3px 8px repeat-y,
+        var(--surface-2);
+}
+
+.decoder-wire {
+    stroke: var(--cat-control);
+}

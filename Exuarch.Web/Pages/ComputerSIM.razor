@@ -23,7 +23,7 @@
         }
     </ul>
     <div class="workspace-actions">
-        <button class="btn btn-sm getting-started @(drawerOpen ? "on" : "")" @onclick="@(() => ToggleDrawer("Guide"))" title="Guides and the example machines">Getting started</button>
+        <button class="btn btn-sm getting-started @(drawerOpen ? "on" : "")" @onclick="@(() => ToggleDrawer("Handbook"))" title="The handbook, the example machines and this machine's note">Getting started</button>
         <span class="package-label silk">Package</span>
         <button class="package-name" title="@Package.Description" @onclick="@(() => ToggleDrawer(IsBuiltIn ? "Examples" : "This machine"))">@PackageName@(IsBuiltIn ? "" : " · yours")</button>
         <button class="btn btn-sm btn-outline-secondary" @onclick="OpenNewDialog" title="Start a new machine of your own">New…</button>
@@ -82,7 +82,7 @@ else if (ActiveTab == "Microcode")
 else if (ActiveTab == "Program")
 {
     <div class="examples">
-        <span class="examples-label silk">Programs · @PackageName</span>
+        <span class="examples-label silk">Programs · @PackageName<HelpLink Target="assembly" Title="Assembly: syntax, literals, .DATA and .STRING" /></span>
         @foreach (var example in Package.Programs)
         {
             <button class="btn btn-sm @(IsCurrent(example) ? "btn-primary" : "btn-outline-primary")" title="@example.Description" @onclick="() => LoadExample(example)">@example.Name</button>
@@ -124,6 +124,6 @@ else if (ActiveTab == "Run")
 
 @if (drawerOpen)
 {
-    <GettingStarted Package="Package" IsBuiltIn="IsBuiltIn" @bind-Section="drawerSection" OnClose="() => drawerOpen = false"
+    <GettingStarted Package="Package" IsBuiltIn="IsBuiltIn" @bind-Section="drawerSection" @bind-Page="drawerPage" OnClose="() => drawerOpen = false"
                     OnLoadPackage="LoadBuiltIn" OnLink="FollowLink" />
 }

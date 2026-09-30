@@ -1,0 +1,13 @@
+@inject HelpService Help
+
+<button type="button" class="help-link @(ChildContent == null ? "" : "labelled")" title="@Title" aria-label="@Title"
+        @onclick="() => Help.Open(Kind, Target)" @onclick:stopPropagation>@if (ChildContent == null) { <text>?</text> } else { @ChildContent }</button>
+
+@code
+{
+    // A handbook page: Kind "guide" with a page id, or "reference" with a device type.
+    [Parameter] public string Kind { get; set; } = "guide";
+    [Parameter] public string Target { get; set; }
+    [Parameter] public string Title { get; set; } = "Read about this in the handbook";
+    [Parameter] public RenderFragment ChildContent { get; set; }
+}

@@ -377,6 +377,15 @@ namespace Exuarch.Core
                 {
                     errors.Add($"Device '{device.Id}': unknown type '{device.Type}', known types are {string.Join(", ", registry.Types)}.");
                 }
+                else
+                {
+                    var known = registry.Info(device.Type).Parameters.Select(p => p.Name).ToList();
+                    foreach (var name in device.Parameters.Keys.Where(k => !known.Contains(k)))
+                    {
+                        var has = known.Count == 0 ? "it has none" : $"it has {string.Join(", ", known)}";
+                        errors.Add($"Device '{device.Id}': a {device.Type} has no parameter '{name}', {has}.");
+                    }
+                }
                 if (device.Bus != null && device.Buses.ContainsKey(DeviceBuildContext.DefaultPort))
                 {
                     errors.Add($"Device '{device.Id}': port '{DeviceBuildContext.DefaultPort}' is set by both \"bus\" and \"buses\".");

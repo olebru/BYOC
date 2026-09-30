@@ -45,7 +45,6 @@
       "type": "register",
       "name": "SP",
       "bus": "main",
-      "parameters": { "initialValue": 4096 },
       "layout": { "x": 774, "y": 50 }
     },
     {

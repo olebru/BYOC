@@ -294,7 +294,7 @@ public class PackageTests
             POP_R0
             HLT");
         Assert.Equal(new[] { 11, 11, 22, 22 }, Registers(c));
-        Assert.Equal(4096, c.Device<Register>("sp").Data);
+        Assert.Equal(0, c.Device<Register>("sp").Data);
         Assert.Equal(11, c.Device<RamModule>("mem").ValueAt(4095));
         Assert.Equal(22, c.Device<RamModule>("mem").ValueAt(4094));
     }
