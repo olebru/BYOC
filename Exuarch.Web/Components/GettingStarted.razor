@@ -1,0 +1,104 @@
+@using Exuarch.Core
+
+<aside class="drawer @(editing ? "wide" : "")" aria-label="Getting started">
+    <div class="drawer-head">
+        <span class="drawer-title">Getting started</span>
+        <span class="grow"></span>
+        <button class="drawer-close" title="Close" @onclick="OnClose">×</button>
+    </div>
+    <div class="drawer-sections">
+        @foreach (var section in Sections)
+        {
+            <button class="drawer-section @(Section == section ? "on" : "")" @onclick="() => Show(section)">@section</button>
+        }
+    </div>
+    <div class="drawer-body">
+        @if (Section == "Guide")
+        {
+            @if (Guides.All.Count > 1)
+            {
+                <div class="guide-list">
+                    @foreach (var (guide, index) in Guides.All.Select((g, i) => (g, i)))
+                    {
+                        <button class="btn btn-sm @(guideIndex == index ? "btn-primary" : "btn-outline-secondary")" @onclick="() => guideIndex = index">@guide.Title</button>
+                    }
+                </div>
+            }
+            <ReadmeView @key="@("guide" + guideIndex)" Markdown="@Guides.All[guideIndex].Markdown" OnLink="OnLink" />
+        }
+        else if (Section == "Examples")
+        {
+            <p class="examples-intro">Machines to take apart and start from. Loading one replaces the machine you have open; <strong>New…</strong> can start your own from a copy of it.</p>
+            @foreach (var example in BuiltInPackages.All)
+            {
+                var current = example.Name == Package.Name;
+                <div class="example @(current ? "current" : "")">
+                    <div class="example-head">
+                        <span class="example-name">@example.Name</span>
+                        <span class="grow"></span>
+                        @if (current)
+                        {
+                            <span class="example-open silk">open</span>
+                            <button class="btn btn-sm btn-outline-secondary" @onclick="@(() => Show("This machine"))">Read</button>
+                        }
+                        else
+                        {
+                            <button class="btn btn-sm btn-outline-primary" @onclick="() => OnLoadPackage.InvokeAsync(example.Name)">Load</button>
+                        }
+                    </div>
+                    <div class="example-description">@example.Description</div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="machine-toolbar">
+                <span class="silk">@Package.Name</span>
+                <span class="grow"></span>
+                @if (IsBuiltIn)
+                {
+                    <span class="machine-hint">A built in example. Start your own with New….</span>
+                }
+                else
+                {
+                    <button class="btn btn-sm @(editing ? "btn-primary" : "btn-outline-secondary")" @onclick="() => editing = !editing">@(editing ? "Done" : "Edit")</button>
+                }
+            </div>
+            <ReadmeView @key="@("machine" + Package.Name)" Markdown="@Package.Readme" Editing="editing" MarkdownChanged="SetReadme" OnLink="OnLink"
+                        Empty="@(IsBuiltIn ? "This machine has no note." : "No note yet. Use Edit to write what your machine is about.")" />
+        }
+    </div>
+</aside>
+
+@code
+{
+    public static readonly string[] Sections = { "Guide", "Examples", "This machine" };
+
+    [Parameter] public MachinePackage Package { get; set; }
+    [Parameter] public bool IsBuiltIn { get; set; }
+    [Parameter] public string Section { get; set; } = "Guide";
+    [Parameter] public EventCallback<string> SectionChanged { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback<string> OnLoadPackage { get; set; }
+    [Parameter] public EventCallback<(string Kind, string Target)> OnLink { get; set; }
+
+    private int guideIndex;
+    private bool editing;
+
+    protected override void OnParametersSet()
+    {
+        if (IsBuiltIn || Section != "This machine") editing = false;
+    }
+
+    private async Task Show(string section)
+    {
+        editing = false;
+        Section = section;
+        await SectionChanged.InvokeAsync(section);
+    }
+
+    private void SetReadme(string markdown)
+    {
+        Package.Readme = markdown;
+    }
+}

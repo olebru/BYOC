@@ -1,5 +1,6 @@
 @page "/"
 
+<div class="workspace @(drawerOpen ? "drawer-open" : "")">
 @if (PackageError != null)
 {
     <div class="alert alert-danger alert-dismissible">@PackageError <button type="button" class="close" @onclick="() => PackageError = null">&times;</button></div>
@@ -11,7 +12,7 @@
         {
             <li class="nav-item">
                 <a class="nav-link @(ActiveTab == tab ? "active" : "")" href="" @onclick="() => ActiveTab = tab" @onclick:preventDefault>
-                    <span class="tab-index">@index.ToString("00")</span>@tab
+                    <span class="tab-index">@((index + 1).ToString("00"))</span>@tab
                     @if (tab == "Hardware design" && DefinitionErrors.Count > 0) { <span class="badge badge-danger ml-1">@DefinitionErrors.Count</span> }
                     @if (tab == "Microcode" && MicrocodeErrorCount > 0) { <span class="badge badge-danger ml-1">@MicrocodeErrorCount</span> }
                     @if (tab == "Microcode" && MicrocodeErrorCount == 0 && MicrocodeWarningCount > 0) { <span class="badge badge-warning ml-1">@MicrocodeWarningCount</span> }
@@ -22,18 +23,9 @@
         }
     </ul>
     <div class="workspace-actions">
-        <label class="package-label silk" for="package-select">Package</label>
-        <select id="package-select" class="form-control form-control-sm package-select" value="@PackageName" @onchange="SelectPackage" title="@Package.Description">
-            @foreach (var package in BuiltInPackages.All)
-            {
-                <option value="@package.Name">@package.Name</option>
-            }
-            @if (!BuiltInPackages.All.Any(p => p.Name == PackageName))
-            {
-                <option value="@PackageName">@PackageName (custom)</option>
-            }
-        </select>
-        <button class="btn btn-sm btn-outline-secondary package-about" title="About this package" @onclick="@(() => ActiveTab = "About")">ⓘ</button>
+        <button class="btn btn-sm getting-started @(drawerOpen ? "on" : "")" @onclick="@(() => ToggleDrawer("Guide"))" title="Guides and the example machines">Getting started</button>
+        <span class="package-label silk">Package</span>
+        <button class="package-name" title="@Package.Description" @onclick="@(() => ToggleDrawer(IsBuiltIn ? "Examples" : "This machine"))">@PackageName@(IsBuiltIn ? "" : " · yours")</button>
         <button class="btn btn-sm btn-outline-secondary" @onclick="OpenNewDialog" title="Start a new machine of your own">New…</button>
         <button class="btn btn-sm btn-outline-secondary" @onclick="ResetPackage" title="Load the package's machine and first program again">Reset</button>
         <label class="btn btn-sm btn-outline-secondary mb-0" title="Open a package file: a machine with its microcode and programs">
@@ -67,11 +59,7 @@
     </div>
 }
 
-@if (ActiveTab == "About")
-{
-    <ReadmeView Package="Package" Editable="@(!IsBuiltIn)" OnLink="FollowLink" />
-}
-else if (ActiveTab == "Hardware design")
+@if (ActiveTab == "Hardware design")
 {
     <MachineEditor Definition="Definition" DefinitionChanged="OnDesignChanged" Errors="DefinitionErrors" Preview="C" Registry="Registry"
                    History="History" OnOpenMicrocode="OpenMicrocode" FocusDevice="@focusDevice" FocusVersion="focusVersion" />
@@ -93,16 +81,25 @@ else if (ActiveTab == "Microcode")
 }
 else if (ActiveTab == "Program")
 {
-    @if (Package.Programs.Count > 0)
-    {
     <div class="examples">
-        <span class="examples-label silk">Examples · @PackageName</span>
+        <span class="examples-label silk">Programs · @PackageName</span>
         @foreach (var example in Package.Programs)
         {
-            <button class="btn btn-sm @(Program == example.Source ? "btn-primary" : "btn-outline-primary")" title="@example.Description" @onclick="() => LoadExample(example)">@example.Name</button>
+            <button class="btn btn-sm @(IsCurrent(example) ? "btn-primary" : "btn-outline-primary")" title="@example.Description" @onclick="() => LoadExample(example)">@example.Name</button>
+        }
+        @if (newProgramName == null)
+        {
+            <button class="btn btn-sm btn-outline-secondary" title="Start an empty program and add it to the package" @onclick="StartNewProgram">＋ New program</button>
+        }
+        else
+        {
+            <span class="new-program">
+                <input class="form-control form-control-sm" placeholder="My program" aria-label="Name of the new program" @bind="newProgramName" @bind:event="oninput" @onkeydown="NewProgramKey" @ref="newProgramInput" />
+                <button class="btn btn-sm btn-primary" @onclick="CreateProgram">Create</button>
+                <button class="btn btn-sm btn-outline-secondary" @onclick="() => newProgramName = null">Cancel</button>
+            </span>
         }
     </div>
-    }
     <AssemblyEditor Value="@Program" ValueChanged="OnProgramChanged" Microcode="Definition.Decoder?.Microcode" MemorySize="ProgramMemorySize" />
     <ErrorList Errors="@ProgramErrors.Where(e => !e.StartsWith("Line ")).ToList()" />
 }
@@ -122,4 +119,11 @@ else if (ActiveTab == "Run")
     {
         <RunView Machine="C" Registry="Registry" OnRestart="Rebuild" MachineName="@Definition.Name" ProgramName="@ProgramTitle" />
     }
+}
+</div>
+
+@if (drawerOpen)
+{
+    <GettingStarted Package="Package" IsBuiltIn="IsBuiltIn" @bind-Section="drawerSection" OnClose="() => drawerOpen = false"
+                    OnLoadPackage="LoadBuiltIn" OnLink="FollowLink" />
 }

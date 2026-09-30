@@ -4,5 +4,6 @@
   </PropertyGroup>
   <ItemGroup>
     <EmbeddedResource Include="Packages/**/*" LogicalName="Exuarch.Core.Packages/$([System.String]::Copy('%(RecursiveDir)').Replace('\','/'))%(Filename)%(Extension)" />
+    <EmbeddedResource Include="Guides/*.md" LogicalName="Exuarch.Core.Guides/%(Filename)%(Extension)" />
   </ItemGroup>
 </Project>

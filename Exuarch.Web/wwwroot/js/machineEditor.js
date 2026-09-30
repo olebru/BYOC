@@ -53,16 +53,14 @@ window.exuarchReadme = {
     },
 };
 
-// Which packages this browser has already been introduced to, so their README opens only the first time.
-window.exuarchSeen = {
-    key: 'exuarch.seenPackages',
-    has: function (name) {
-        try { return JSON.parse(localStorage.getItem(this.key) || '[]').includes(name); } catch { return false; }
-    },
-    add: function (name) {
+// Whether this browser has been here before; the first call remembers that it has, so the guide opens only once.
+window.exuarchWelcome = {
+    key: 'exuarch.welcomed',
+    seen: function () {
         try {
-            const seen = JSON.parse(localStorage.getItem(this.key) || '[]');
-            if (!seen.includes(name)) { seen.push(name); localStorage.setItem(this.key, JSON.stringify(seen)); }
+            if (localStorage.getItem(this.key)) return true;
+            localStorage.setItem(this.key, '1');
         } catch { }
+        return false;
     },
 };
