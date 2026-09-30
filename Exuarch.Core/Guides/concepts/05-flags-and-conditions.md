@@ -17,14 +17,28 @@ It is otherwise an ordinary register with `output`, `load`, `reset`, `inc` and `
 
 ## What the ALU sets
 
-An `alu` is connected to its status register as `status`, and every operation replaces all four flags at the end of the tick, so a flag an operation does not set is cleared:
+An `alu` is connected to its status register as `status`, and every operation replaces all four flags at the end of the tick, so a flag an operation does not set is cleared. Every operation sets Z when the result is 0 and N from the result's top bit, which is its sign when the value is read as a signed number. C and V depend on the operation:
 
-- `add`: Z when the result is 0, C when the sum carries out of 16 bits, V on signed overflow. N is never set.
-- `sub` and `cmp`: Z when the result is 0, N and C both when a is less than b as unsigned numbers (C is a borrow), V on signed overflow. `cmp` sets the flags without putting the result on the bus.
-- `and`, `orr`, `eor`: Z when the result is 0, N from the top bit.
-- `lsl`, `lsr`: a shifted by the low 4 bits of b. Z when the result is 0, N from the top bit, C the last bit shifted out.
+- `add`: C when the sum carries out of 16 bits, V on signed overflow.
+- `sub` and `cmp`: C when a is less than b as unsigned numbers (a borrow), V on signed overflow. `cmp` sets the flags without putting the result on the bus.
+- `and`, `orr`, `eor`: C and V are 0.
+- `lsl`, `lsr`: a shifted by the low 4 bits of b. C is the last bit shifted out, V is 0.
 
-So after a `cmp`, Z=1 means equal and C=1 means below.
+For example `0x7FFF + 1` gives `0x8000` with N and V set: the result looks negative, and V says that is because the signed sum overflowed.
+
+## Comparing numbers
+
+A 16 bit value can be read as unsigned (0 to 65535) or signed (-32768 to 32767), and `cmp` answers both questions at once:
+
+| After `cmp` | Means |
+|---|---|
+| Z=1 | a equals b |
+| C=1 | a is below b, unsigned |
+| N≠V | a is less than b, signed |
+
+N alone is not enough for a signed comparison, because the subtraction can overflow: comparing `0x8000` (-32768) with 1 gives `0x7FFF`, a positive result with V set. N and V differ, so a is less than b, which is right. Comparing `0xFFFF` with 1 gives N=1 and V=0: as signed numbers -1 is less than 1, while C=0 says that as unsigned numbers 65535 is not below 1.
+
+A step condition tests one value per flag, so a "less than" branch on N≠V takes two steps, one for N=1 V=0 and one for N=0 V=1.
 
 ## The interrupt condition
 

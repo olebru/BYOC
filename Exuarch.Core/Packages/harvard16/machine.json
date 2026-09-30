@@ -454,7 +454,7 @@
         },
         {
           "mnemonic": "SUB",
-          "description": "A = A - B; C and N when A \u003C B (borrow)",
+          "description": "A = A - B; C when A \u003C B unsigned (borrow), N from the sign of the result",
           "operands": 0,
           "steps": [
             {

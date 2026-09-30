@@ -1,11 +1,11 @@
 .readme-body {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     min-height: 100%;
 }
 
     .readme-body.editing {
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     }
 
 .readme-source {
@@ -23,6 +23,8 @@
 
 /* The README itself, set like documentation: sans text, mono for code and names. */
 .readme {
+    min-width: 0;
+    overflow-wrap: anywhere;
     padding: 18px 24px 40px;
     max-width: 760px;
     font-size: 0.92rem;
@@ -86,6 +88,8 @@
 }
 
 .readme ::deep pre {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
     background: var(--sunken);
     border: 1px solid var(--line);
     border-radius: var(--radius);
@@ -123,6 +127,7 @@
         }
 
 .readme ::deep table {
+    width: 100%;
     border-collapse: collapse;
     margin: 0 0 14px;
     font-size: 0.88rem;
@@ -134,8 +139,8 @@
     text-align: left;
 }
 
-/* Line and parameter names stay whole; the description column takes the wrapping. */
-.readme ::deep td code {
+/* Line and parameter names in the first column stay whole; other cells wrap. */
+.readme ::deep td:first-child code {
     white-space: nowrap;
 }
 
@@ -148,7 +153,7 @@
 
 @media (max-width: 900px) {
     .readme-body.editing {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
     }
 
     .readme {

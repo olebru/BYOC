@@ -471,7 +471,7 @@
         },
         {
           "mnemonic": "SUB_R0",
-          "description": "R0 = R0 - R0; C and N when R0 \u003C R0 (borrow)",
+          "description": "R0 = R0 - R0; C when R0 \u003C R0 unsigned (borrow), N from the sign of the result",
           "operands": 0,
           "steps": [
             {
@@ -484,7 +484,7 @@
         },
         {
           "mnemonic": "SUB_R1",
-          "description": "R0 = R0 - R1; C and N when R0 \u003C R1 (borrow)",
+          "description": "R0 = R0 - R1; C when R0 \u003C R1 unsigned (borrow), N from the sign of the result",
           "operands": 0,
           "steps": [
             {
@@ -497,7 +497,7 @@
         },
         {
           "mnemonic": "SUB_R2",
-          "description": "R0 = R0 - R2; C and N when R0 \u003C R2 (borrow)",
+          "description": "R0 = R0 - R2; C when R0 \u003C R2 unsigned (borrow), N from the sign of the result",
           "operands": 0,
           "steps": [
             {
@@ -510,7 +510,7 @@
         },
         {
           "mnemonic": "SUB_R3",
-          "description": "R0 = R0 - R3; C and N when R0 \u003C R3 (borrow)",
+          "description": "R0 = R0 - R3; C when R0 \u003C R3 unsigned (borrow), N from the sign of the result",
           "operands": 0,
           "steps": [
             {
@@ -523,7 +523,7 @@
         },
         {
           "mnemonic": "SUBI",
-          "description": "R0 = R0 - value; C and N when R0 \u003C value (borrow)",
+          "description": "R0 = R0 - value; C when R0 \u003C value unsigned (borrow), N from the sign of the result",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [

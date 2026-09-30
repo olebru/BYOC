@@ -49,7 +49,7 @@ public class WordTests
 
     [Theory]
     [InlineData("add", 0xFFFF, 1, 0, StatusRegister.ZeroFlag | StatusRegister.CarryFlag)]
-    [InlineData("add", 0x7FFF, 1, 0x8000, StatusRegister.OverflowFlag)]
+    [InlineData("add", 0x7FFF, 1, 0x8000, StatusRegister.NegativeFlag | StatusRegister.OverflowFlag)]
     [InlineData("add", 300, 400, 700, 0)]
     [InlineData("sub", 1000, 1000, 0, StatusRegister.ZeroFlag)]
     [InlineData("sub", 3, 5, 0xFFFE, StatusRegister.NegativeFlag | StatusRegister.CarryFlag)]

@@ -2,12 +2,13 @@ using System;
 using System.Collections.Generic;
 namespace Exuarch.Core
 {
-    // 16 bit ALU working on two registers (a and b) and writing its flags to a status register.
-    //   add: a + b. Z when 0, C when the sum carries out, V on signed overflow.
-    //   sub: a - b; cmp sets the same flags without driving the bus. Z when equal, N and C when a < b unsigned
-    //        (C is borrow), V on signed overflow.
-    //   and, orr, eor: bitwise. Z when 0, N from the top bit.
-    //   lsl, lsr: a shifted left or right by b (0-15). Z when 0, N from the top bit, C the last bit shifted out.
+    // 16 bit ALU working on two registers (a and b) and writing its flags to a status register. Every operation
+    // sets Z when the result is 0 and N from its top bit, the sign in two's complement.
+    //   add: a + b. C when the sum carries out, V on signed overflow.
+    //   sub: a - b; cmp sets the same flags without driving the bus. C when a < b unsigned (a borrow), V on signed
+    //        overflow. So after cmp: Z equal, C below (unsigned), N != V less than (signed).
+    //   and, orr, eor: bitwise.
+    //   lsl, lsr: a shifted left or right by b (0-15). C the last bit shifted out.
     public class ALU : IBusDevice
     {
         private Register a;
@@ -46,28 +47,27 @@ namespace Exuarch.Core
                 case "sub":
                 case "cmp":
                     result = (x - y) & Mask;
-                    if (x < y) status |= StatusRegister.NegativeFlag | StatusRegister.CarryFlag;
+                    if (x < y) status |= StatusRegister.CarryFlag;
                     if (((x ^ y) & (x ^ result) & SignBit) != 0) status |= StatusRegister.OverflowFlag;
                     break;
-                case "and": result = x & y; status |= Sign(result); break;
-                case "orr": result = x | y; status |= Sign(result); break;
-                case "eor": result = x ^ y; status |= Sign(result); break;
+                case "and": result = x & y; break;
+                case "orr": result = x | y; break;
+                case "eor": result = x ^ y; break;
                 case "lsl":
                     int left = y & 15;
                     result = (x << left) & Mask;
                     if (left > 0 && ((x >> (16 - left)) & 1) != 0) status |= StatusRegister.CarryFlag;
-                    status |= Sign(result);
                     break;
                 case "lsr":
                     int right = y & 15;
                     result = x >> right;
                     if (right > 0 && ((x >> (right - 1)) & 1) != 0) status |= StatusRegister.CarryFlag;
-                    status |= Sign(result);
                     break;
                 default:
                     throw new InvalidOperationException(pending);
             }
             if (result == 0) status |= StatusRegister.ZeroFlag;
+            status |= Sign(result);
             if (pending != "cmp") bus.Data = result;
             pendingStatus = status;
             pending = null;
