@@ -94,7 +94,7 @@ else if (ActiveTab == "Program")
         <span class="examples-label silk">Examples · @PackageName</span>
         @foreach (var example in Package.Programs)
         {
-            <button class="btn btn-sm @(Program == example.Source ? "btn-primary" : "btn-outline-primary")" title="@example.Description" @onclick="() => LoadExample(example.Source)">@example.Name</button>
+            <button class="btn btn-sm @(Program == example.Source ? "btn-primary" : "btn-outline-primary")" title="@example.Description" @onclick="() => LoadExample(example)">@example.Name</button>
         }
     </div>
     }
@@ -115,6 +115,6 @@ else if (ActiveTab == "Run")
     }
     else
     {
-        <RunView Machine="C" Registry="Registry" OnRestart="Rebuild" />
+        <RunView Machine="C" Registry="Registry" OnRestart="Rebuild" MachineName="@Definition.Name" ProgramName="@ProgramTitle" />
     }
 }
