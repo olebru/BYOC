@@ -11,8 +11,20 @@ namespace Exuarch.Core
         // in the legacy tab separated format: the first instructions, before the ones added since.
         public static string MICROCODE { get { return BuiltInPackages.Default.Machine.Decoder.Microcode.ToJson(); } }
 
+        // A small program for the default machine: pushes values and adds two values stored after the code, for ever.
+        public const string SRC = @"        LAI    15
+        PSA
+        PSA
+        LRA    letter
+        LRB    one
+        PSA
+loop:   ADD
+        PSA
+        JMP    loop
+letter: .DATA  65
+one:    .DATA  1";
+
         // The default package's example programs.
-        public static string SRC { get { return BuiltInPackages.Default.Program("Stack and memory").Source; } }
         public static string HELLO { get { return BuiltInPackages.Default.Program("Hello, world on the LCD").Source; } }
         public static string FIBONACCI { get { return BuiltInPackages.Default.Program("Fibonacci on the LCD").Source; } }
         public static string BANDS { get { return BuiltInPackages.Default.Program("Colour bands on the screen").Source; } }

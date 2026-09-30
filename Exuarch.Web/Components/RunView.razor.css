@@ -223,6 +223,85 @@
         border-color: var(--signal);
     }
 
+/* ---- Collapsible panels ----
+   A panel's title is its toggle: the chevron points down while it is open and right while it is folded. */
+.panel-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: none;
+    background: transparent;
+    padding: 0;
+    cursor: pointer;
+    text-align: left;
+    max-width: 100%;
+}
+
+    .panel-toggle:hover {
+        color: var(--ink);
+    }
+
+    .panel-toggle:focus-visible {
+        outline: 2px solid var(--focus-ring);
+        outline-offset: 2px;
+        border-radius: var(--radius-sm);
+    }
+
+    .panel-toggle .chev {
+        display: inline-block;
+        width: 0;
+        height: 0;
+        border-left: 4px solid transparent;
+        border-right: 4px solid transparent;
+        border-top: 5px solid currentColor;
+        transition: transform 0.12s;
+        flex-shrink: 0;
+    }
+
+.collapsed > .panel-toggle .chev,
+.collapsed > .clock-head .panel-toggle .chev,
+.collapsed > .bottom-tabs .panel-toggle .chev {
+    transform: rotate(-90deg);
+}
+
+.panel.collapsed > .panel-toggle,
+.panel.collapsed .clock-head .panel-title {
+    margin-bottom: 0;
+}
+
+.display-panel > .panel-toggle {
+    margin-bottom: 6px;
+}
+
+.now-inline {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--ink);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.program.collapsed {
+    flex: 0 0 auto;
+    min-height: 0;
+}
+
+.bottom.collapsed {
+    height: auto;
+}
+
+    .bottom.collapsed .bottom-tabs {
+        border-bottom: none;
+    }
+
+.bottom-toggle {
+    color: var(--ink-2);
+    padding: 4px 6px;
+}
+
 /* ---- Main area ---- */
 .main {
     display: flex;

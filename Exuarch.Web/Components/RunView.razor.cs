@@ -48,6 +48,11 @@ namespace Exuarch.Web.Components
         private ElementReference runElement;
         private bool stopRequested;
         private bool wholeRom;
+        // Panels the viewer has folded away, kept in the browser: "side", "lines", "clock", "now", "program",
+        // "bottom" and "device:<id>" for a screen, LCD or keypad.
+        private readonly HashSet<string> collapsed = new HashSet<string>();
+        private bool panelsLoaded;
+        private const string PanelsKey = "exuarch.runPanels";
 
         protected override void OnParametersSet()
         {
@@ -70,6 +75,17 @@ namespace Exuarch.Web.Components
 
         protected override async Task OnAfterRenderAsync(bool firstRender)
         {
+            if (!panelsLoaded)
+            {
+                panelsLoaded = true;
+                var saved = await JS.InvokeAsync<string>("exuarchStore.get", PanelsKey);
+                if (!string.IsNullOrEmpty(saved))
+                {
+                    collapsed.UnionWith(saved.Split(',', StringSplitOptions.RemoveEmptyEntries));
+                    fitPending = true;
+                    StateHasChanged();
+                }
+            }
             // Once per Run view element (it is made again when the machine goes away and comes back).
             if (Machine != null && runElement.Context != null && guardedElement != runElement.Id)
             {
@@ -92,6 +108,24 @@ namespace Exuarch.Web.Components
         public void Dispose()
         {
             stopRequested = true;
+        }
+
+        private bool Collapsed(string panel) => collapsed.Contains(panel);
+
+        private async Task TogglePanel(string panel)
+        {
+            if (!collapsed.Remove(panel)) collapsed.Add(panel);
+            // The schematic changes width with the side column, and the listing needs scrolling to the current line again.
+            if (panel == "side") fitPending = true;
+            lastScrolledAddress = null;
+            await JS.InvokeAsync<bool>("exuarchStore.set", PanelsKey, string.Join(",", collapsed.OrderBy(p => p)));
+        }
+
+        // A bottom tab opens the bottom panel if it was folded away.
+        private async Task ShowBottom(string tab)
+        {
+            bottomTab = tab;
+            if (Collapsed("bottom")) await TogglePanel("bottom");
         }
 
         // Scales the schematic so the whole machine fits the panel width.
