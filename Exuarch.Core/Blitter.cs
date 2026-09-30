@@ -2,12 +2,11 @@ using System;
 using System.Collections.Generic;
 namespace Exuarch.Core
 {
-    // A device that drives another device's control lines by itself, without microcode. The machine asks it which
-    // device took its bus value in the last tick, so the transfer can be shown like any other.
+    // A device that drives other devices' control lines by itself, without microcode. The machine asks it which
+    // devices took a value from which bus in the last tick, so those transfers can be shown like any other.
     public interface IBusMaster
     {
-        string MasteredBusId { get; }
-        string LastReader { get; }
+        IEnumerable<(string BusId, string ReaderId)> LastReaders { get; }
     }
 
     // A graphics coprocessor. The CPU gives it a rectangle on the host bus (loadx, loady, loadw, loadh, loadcolour)
@@ -58,8 +57,10 @@ namespace Exuarch.Core
             this.screen = screen ?? throw new ArgumentException("A blitter needs a framebuffer to draw on.");
         }
 
-        public string MasteredBusId { get { return video.ID; } }
-        public string LastReader { get { return lastReader; } }
+        public IEnumerable<(string BusId, string ReaderId)> LastReaders
+        {
+            get { if (lastReader != null) yield return (video.ID, lastReader); }
+        }
 
         public void Drive()
         {

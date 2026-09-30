@@ -192,7 +192,60 @@ namespace Exuarch.Core
                         ControlLineInfo.Input("loadx", "Set the cursor column from the bus (0-639)"),
                         ControlLineInfo.Input("loady", "Set the cursor row from the bus (0-479)"),
                         ControlLineInfo.Input("plot", "Write the RGB565 colour on the bus at the cursor, then move right"),
+                        ControlLineInfo.Internal("skip", "Move the cursor right without writing"),
                         ControlLineInfo.Internal("clear", "Blank the screen and move the cursor home"),
+                    }
+                });
+            registry.Register("rasterizer", c => new Rasterizer(c.Name, c.Id, c.Bus("host"), c.Bus("list"), c.Bus("video"),
+                    c.Connection<Framebuffer>("screen"), c.OptionalConnection<DepthBuffer>("depth"), c.Connection<MemoryModule>("memory")),
+                new DeviceTypeInfo
+                {
+                    Category = "I/O",
+                    Description = "A triangle rasterizer, the heart of a fixed function GPU. Give it the address and number of triangles in its memory and start it: it reads each triangle over its list bus (12 words: x, y, z and an RGB565 colour per corner), then fills it on its video bus, one transfer per tick, blending the corner colours (Gouraud shading). With a depth buffer connected it draws a pixel only where the triangle is nearer. status reads 1 while it is busy, and it asks for an interrupt when done",
+                    Ports = new List<string> { "host", "list", "video" },
+                    Connections =
+                    {
+                        new ConnectionInfo { Name = "screen", Description = "The framebuffer it draws on, on its video bus" },
+                        new ConnectionInfo { Name = "depth", Description = "Optional: the depth buffer it tests and updates, on its video bus" },
+                        new ConnectionInfo { Name = "memory", Description = "The memory it reads triangles from, on its list bus" },
+                    },
+                    ControlLines =
+                    {
+                        ControlLineInfo.Input("loadaddr", "Take the address of the first triangle from the host bus", "host"),
+                        ControlLineInfo.Input("loadcount", "Take the number of triangles from the host bus", "host"),
+                        ControlLineInfo.Internal("start", "Start drawing the triangles; it then runs by itself"),
+                        ControlLineInfo.Output("status", "Put 1 on the host bus while busy, 0 when idle", "host"),
+                    }
+                });
+            registry.Register("depthBuffer", c => new DepthBuffer(c.Name, c.Id, c.Bus()),
+                new DeviceTypeInfo
+                {
+                    Category = "I/O",
+                    Description = "A 640 x 480 memory of depths, one per framebuffer pixel, smaller being nearer. It has a cursor like the framebuffer: loadx and loady set it, output reads the depth there, load writes one and next moves right. clear sets every depth to 65535, the farthest",
+                    ControlLines =
+                    {
+                        ControlLineInfo.Input("loadx", "Set the cursor column from the bus (0-639)"),
+                        ControlLineInfo.Input("loady", "Set the cursor row from the bus (0-479)"),
+                        ControlLineInfo.Output("output", "Put the depth at the cursor on the bus"),
+                        ControlLineInfo.Input("load", "Write the depth on the bus at the cursor"),
+                        ControlLineInfo.Internal("next", "Move the cursor right, after any load in the same tick"),
+                        ControlLineInfo.Internal("clear", "Set every depth to 65535 and move the cursor home"),
+                    }
+                });
+            registry.Register("mac", c => new MultiplyAccumulate(c.Name, c.Id, c.Bus(), c.IntParameter("shift", 8, 0, 15)),
+                new DeviceTypeInfo
+                {
+                    Category = "Arithmetic",
+                    Description = "A multiply-accumulate unit for fixed point maths. It takes two signed operands, a and b, and keeps a 32 bit accumulator: mul sets it to a times b, mac adds a times b, div divides it by b. output puts the accumulator shifted right by shift on the bus, so with shift 8 the numbers are 8.8 fixed point and 256 is 1.0",
+                    Parameters = { new ParameterInfo { Name = "shift", Description = "Fraction bits: output is the accumulator shifted right by this much", Min = 0, Max = 15, Default = 8 } },
+                    ControlLines =
+                    {
+                        ControlLineInfo.Input("loada", "Take the signed operand a from the bus"),
+                        ControlLineInfo.Input("loadb", "Take the signed operand b from the bus"),
+                        ControlLineInfo.Internal("mul", "Accumulator = a × b"),
+                        ControlLineInfo.Internal("mac", "Accumulator = accumulator + a × b"),
+                        ControlLineInfo.Internal("div", "Accumulator = (accumulator << shift) / b, keeping the fixed point scale"),
+                        ControlLineInfo.Output("output", "Put accumulator >> shift on the bus, clamped to 16 bits"),
                     }
                 });
             registry.Register("blitter", c => new Blitter(c.Name, c.Id, c.Bus("host"), c.Bus("video"), c.Connection<Framebuffer>("screen")),
@@ -321,6 +374,11 @@ namespace Exuarch.Core
             }
             var target = resolveDevice(targetId);
             return target as T ?? throw Error($"connection '{name}' must be a {typeof(T).Name}, but '{targetId}' is a {target.GetType().Name}");
+        }
+        // A connection that may be left out: null when it is not set, and checked like Connection when it is.
+        public T OptionalConnection<T>(string name) where T : class, IBusDevice
+        {
+            return definition.Connections.ContainsKey(name) ? Connection<T>(name) : null;
         }
         // An interrupt source connected by name, or null when the connection is not set.
         public IInterruptSource InterruptSource(string name)

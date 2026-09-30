@@ -2,11 +2,25 @@ using System;
 using System.Collections.Generic;
 namespace Exuarch.Core
 {
+    // A 640 x 480 picture the Run view can show: the framebuffer's colours, or a depth buffer drawn in grey.
+    public interface IScreen : IBusDevice
+    {
+        int X { get; }
+        int Y { get; }
+        // What the view says about the picture, such as "RGB565".
+        string Kind { get; }
+        // True when the words are depths, to be drawn in grey, rather than RGB565 colours.
+        bool IsDepth { get; }
+        (int X, int Y, int Width, int Height)? TakeDirtyRegion();
+        // The 16 bit words of a region, two little endian bytes each, row by row: the browser turns them into pixels.
+        byte[] WordBytes(int x, int y, int width, int height);
+    }
+
     // A 640 x 480 colour display. Each pixel is a 16 bit RGB565 word: 5 bits red, 6 bits green, 5 bits blue.
     // loadx and loady set the cursor from the bus; plot writes the bus value at the cursor and moves one pixel
-    // right, wrapping to the start of the next row (and from the last row to the first); clear blanks the screen
-    // and homes the cursor.
-    public class Framebuffer : IBusDevice, IWriteTracked
+    // right, wrapping to the start of the next row (and from the last row to the first); skip moves the same way
+    // without writing; clear blanks the screen and homes the cursor.
+    public class Framebuffer : IScreen, IWriteTracked
     {
         public const int Width = 640;
         public const int Height = 480;
@@ -20,7 +34,10 @@ namespace Exuarch.Core
         private readonly Bus bus;
         private readonly string deviceID;
         private readonly string deviceName;
-        private bool loadX, loadY, plot, clear;
+        private bool loadX, loadY, plot, skip, clear;
+        public string Kind { get { return "RGB565"; } }
+        public bool IsDepth { get { return false; } }
+        public byte[] WordBytes(int x, int y, int width, int height) { return ToRgb565Bytes(x, y, width, height); }
         private int dirtyLeft = Width, dirtyTop = Height, dirtyRight = -1, dirtyBottom = -1;
 
         public Framebuffer(string DeviceName, string DeviceID, Bus bus)
@@ -61,12 +78,22 @@ namespace Exuarch.Core
                 LastWriteAddress = address;
                 WriteCount++;
                 MarkDirty(X, Y, X, Y);
-                if (++X == Width)
-                {
-                    X = 0;
-                    Y = (Y + 1) % Height;
-                }
+                Advance();
                 plot = false;
+            }
+            if (skip)
+            {
+                Advance();
+                skip = false;
+            }
+        }
+
+        private void Advance()
+        {
+            if (++X == Width)
+            {
+                X = 0;
+                Y = (Y + 1) % Height;
             }
         }
 
@@ -138,6 +165,7 @@ namespace Exuarch.Core
                 case "loadx": loadX = true; break;
                 case "loady": loadY = true; break;
                 case "plot": plot = true; break;
+                case "skip": skip = true; break;
                 case "clear": clear = true; break;
                 default:
                     throw new Exception("Unable to enable the unknown function: " + function);
@@ -147,7 +175,7 @@ namespace Exuarch.Core
         public bool IsOutputEnabled() { return false; }
         public List<string> SignalLines()
         {
-            return new List<string> { "loadx", "loady", "plot", "clear" };
+            return new List<string> { "loadx", "loady", "plot", "skip", "clear" };
         }
     }
 }
