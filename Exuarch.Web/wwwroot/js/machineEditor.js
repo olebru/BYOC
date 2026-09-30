@@ -107,3 +107,25 @@ window.exuarchKeys = {
         });
     },
 };
+
+// Light or dark. The choice is kept in the browser; dark is the default (index.html applies it before the page
+// paints). The code editors follow: Monaco's theme is global.
+window.exuarchTheme = {
+    key: 'exuarch.theme',
+    current: function () {
+        return document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
+    },
+    monaco: function () {
+        return this.current() === 'light' ? 'exuarch' : 'exuarch-dark';
+    },
+    set: function (theme) {
+        theme = theme === 'light' ? 'light' : 'dark';
+        document.documentElement.dataset.theme = theme;
+        try { localStorage.setItem(this.key, theme); } catch { }
+        if (window.monaco && window.exuarchAsm && window.exuarchAsm.registered) window.monaco.editor.setTheme(this.monaco());
+        return theme;
+    },
+    toggle: function () {
+        return this.set(this.current() === 'light' ? 'dark' : 'light');
+    },
+};

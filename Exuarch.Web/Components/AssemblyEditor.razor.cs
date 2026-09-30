@@ -43,12 +43,19 @@ namespace Exuarch.Web.Components
         private int cellCount;
         private CancellationTokenSource pending;
 
+        private string monacoTheme = "exuarch-dark";
+        protected override async Task OnInitializedAsync()
+        {
+            monacoTheme = await JS.InvokeAsync<string>("exuarchTheme.monaco");
+        }
+
         private StandaloneEditorConstructionOptions Options(StandaloneCodeEditor _)
         {
             return new StandaloneEditorConstructionOptions
             {
                 Language = "exuarch-asm",
-                Theme = "exuarch",
+                // Monaco's own theme of the right brightness until ours is defined, when the language registers.
+                Theme = monacoTheme == "exuarch" ? "vs" : "vs-dark",
                 Value = Value ?? "",
                 AutomaticLayout = true,
                 FormatOnType = true,
@@ -91,7 +98,7 @@ namespace Exuarch.Web.Components
             current = Value ?? "";
             await RegisterLanguage();
             await Global.SetModelLanguage(JS, await editor.GetModel(), "exuarch-asm");
-            await Global.SetTheme(JS, "exuarch");
+            await Global.SetTheme(JS, await JS.InvokeAsync<string>("exuarchTheme.monaco"));
             Analyze(current);
             await PushMarkers();
             StateHasChanged();

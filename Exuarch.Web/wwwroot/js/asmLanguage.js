@@ -56,6 +56,39 @@ window.exuarchAsm = {
                     'editorHoverWidget.border': '#cfccc2',
                 },
             });
+            // The same, for the dark theme (see exuarchTheme in machineEditor.js).
+            monaco.editor.defineTheme('exuarch-dark', {
+                base: 'vs-dark',
+                inherit: true,
+                rules: [
+                    { token: 'keyword', foreground: 'e9e7e2', fontStyle: 'bold' },
+                    { token: 'keyword.directive', foreground: '3bc2d4', fontStyle: 'bold' },
+                    { token: 'type.label', foreground: 'a58fe2', fontStyle: 'bold' },
+                    { token: 'identifier.label', foreground: 'a58fe2' },
+                    { token: 'number', foreground: '6f9ff2' },
+                    { token: 'string', foreground: 'ff9d7c' },
+                    { token: 'comment', foreground: '7a7f89' },
+                    { token: 'delimiter', foreground: '8b909a' },
+                ],
+                colors: {
+                    'editor.background': '#1b1e23',
+                    'editor.foreground': '#e9e7e2',
+                    'editor.lineHighlightBackground': '#20242a',
+                    'editor.lineHighlightBorder': '#00000000',
+                    'editorLineNumber.foreground': '#5f646d',
+                    'editorLineNumber.activeForeground': '#e9e7e2',
+                    'editorGutter.background': '#20242a',
+                    'editorCursor.foreground': '#ff6a3d',
+                    'editor.selectionBackground': '#3b2119',
+                    'editor.inactiveSelectionBackground': '#2b2f36',
+                    'editorIndentGuide.background1': '#2b2f36',
+                    'editorWidget.background': '#1b1e23',
+                    'editorWidget.border': '#3b404a',
+                    'editorSuggestWidget.selectedBackground': '#2b2f36',
+                    'editorHoverWidget.background': '#1b1e23',
+                    'editorHoverWidget.border': '#3b404a',
+                },
+            });
 
             const self = this;
             monaco.languages.registerCompletionItemProvider(id, {

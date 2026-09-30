@@ -22,8 +22,8 @@
     align-items: center;
     height: 44px;
     padding: 0 8px 0 18px;
-    background: var(--ink);
-    color: var(--surface);
+    background: var(--bar);
+    color: var(--bar-ink);
 }
 
 .drawer-title {

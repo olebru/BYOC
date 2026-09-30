@@ -1,5 +1,7 @@
 /* Design tokens: warm engineering paper, near black ink and one signal colour for anything live
-   (driving the bus, active control lines, lit bits). Component styles use these variables only. */
+   (driving the bus, active control lines, lit bits). Component styles use these variables only.
+   The light theme is below; the dark one, the default, follows it. index.html sets data-theme before the page
+   paints, and the switch in the top bar changes it. */
 :root {
     --paper: #f3f2ee;
     --paper-2: #ebe9e3;
@@ -40,14 +42,84 @@
     --font-sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
     --font-mono: 'IBM Plex Mono', 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
+    /* The top bar and the drawer's head: dark in both themes. */
+    --bar: #17181c;
+    --bar-line: #000000;
+    --bar-ink: #ffffff;
+    /* Borders and text for the soft ok, warning and error panels. */
+    --ok-line: #c7e5cd;
+    --warn-line: #efd9ae;
+    --warn-ink: #6d4a0f;
+    --bad-line: #f1c1c1;
+    --bad-ink: #8a1c1c;
+    --focus-ring: rgba(23, 24, 28, 0.08);
+    --tint: rgba(23, 24, 28, 0.06);
+
     --radius: 4px;
     --radius-sm: 3px;
     --shadow: 0 1px 0 rgba(23, 24, 28, 0.04), 0 1px 3px rgba(23, 24, 28, 0.06);
     --shadow-lift: 0 2px 0 rgba(23, 24, 28, 0.05), 0 6px 18px rgba(23, 24, 28, 0.10);
+    color-scheme: light;
+}
+
+/* The dark theme: the same board at night. Ink and paper swap; the signal colours are a little brighter so they
+   still stand out. */
+:root[data-theme="dark"] {
+    --paper: #121417;
+    --paper-2: #171a1e;
+    --surface: #1b1e23;
+    --surface-2: #20242a;
+    --sunken: #16191d;
+    --ink: #e9e7e2;
+    --ink-2: #bcc0c7;
+    --ink-3: #8b909a;
+    --ink-4: #5f646d;
+    --line: #2b2f36;
+    --line-2: #3b404a;
+    --line-ink: #0c0d10;
+    --grid-dot: #2c3038;
+
+    --signal: #ff6a3d;
+    --signal-soft: #3b2119;
+    --signal-ink: #ff9d7c;
+    --read: #6f9ff2;
+    --read-soft: #1c283f;
+    --ok: #52be6c;
+    --ok-soft: #17291c;
+    --warn: #e2a645;
+    --warn-soft: #2f2614;
+    --bad: #f26666;
+    --bad-soft: #361b1b;
+
+    --cat-registers: #6f97ee;
+    --cat-control: #a58fe2;
+    --cat-arithmetic: #dba54e;
+    --cat-memory: #52be6c;
+    --cat-io: #ea5b8e;
+
+    --screen: #050506;
+    --lcd-bg: #1d1f0f;
+    --lcd-ink: #f2b640;
+
+    --bar: #0b0c0f;
+    --bar-line: #000000;
+    --bar-ink: #ffffff;
+    --ok-line: #2f5a39;
+    --warn-line: #5d4721;
+    --warn-ink: #f2c97c;
+    --bad-line: #6b2b2b;
+    --bad-ink: #ffb4b4;
+    --focus-ring: rgba(233, 231, 226, 0.14);
+    --tint: rgba(233, 231, 226, 0.07);
+
+    --shadow: 0 1px 0 rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.45);
+    --shadow-lift: 0 2px 0 rgba(0, 0, 0, 0.4), 0 6px 18px rgba(0, 0, 0, 0.55);
+    color-scheme: dark;
 }
 
 html, body {
     font-family: var(--font-sans);
+    transition: background-color 0.15s;
     color: var(--ink);
     background: var(--paper);
     -webkit-font-smoothing: antialiased;
@@ -89,14 +161,15 @@ a, .btn-link {
 }
 
 .btn-primary {
-    color: #fff;
+    color: var(--surface);
     background-color: var(--ink);
     border-color: var(--ink);
 }
 
     .btn-primary:hover, .btn-primary:focus, .btn-primary:active {
-        background-color: #000 !important;
-        border-color: #000 !important;
+        color: var(--surface) !important;
+        background-color: var(--ink-2) !important;
+        border-color: var(--ink-2) !important;
     }
 
 .btn-outline-primary {
@@ -132,7 +205,9 @@ a, .btn-link {
 
     .form-control:focus {
         border-color: var(--ink-2);
-        box-shadow: 0 0 0 3px rgba(23, 24, 28, 0.08);
+        color: var(--ink);
+        background-color: var(--surface);
+        box-shadow: 0 0 0 3px var(--focus-ring);
     }
 
 .alert {
@@ -142,14 +217,35 @@ a, .btn-link {
 
 .alert-warning {
     background: var(--warn-soft);
-    border-color: #efd9ae;
-    color: #6d4a0f;
+    border-color: var(--warn-line);
+    color: var(--warn-ink);
 }
 
 .alert-danger {
     background: var(--bad-soft);
-    border-color: #f1c1c1;
-    color: #8a1c1c;
+    border-color: var(--bad-line);
+    color: var(--bad-ink);
+}
+
+.close {
+    color: var(--ink);
+    text-shadow: none;
+}
+
+    .close:hover {
+        color: var(--ink);
+    }
+
+.form-control::placeholder {
+    color: var(--ink-4);
+}
+
+.form-control:disabled, .form-control[readonly] {
+    background-color: var(--sunken);
+}
+
+.btn:disabled, .btn.disabled {
+    opacity: 0.45;
 }
 
 .badge {

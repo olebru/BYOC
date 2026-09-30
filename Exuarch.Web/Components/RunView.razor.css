@@ -1282,7 +1282,7 @@
 }
 
     .clock-chart .area {
-        fill: rgba(23, 24, 28, 0.06);
+        fill: var(--tint);
     }
 
     .clock-chart .line {
