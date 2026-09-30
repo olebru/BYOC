@@ -107,6 +107,7 @@
                         @if (current)
                         {
                             <span class="example-open silk">open</span>
+                            <button class="btn btn-sm btn-outline-secondary" @onclick="@(() => Show("This machine"))">Read</button>
                         }
                         else
                         {
@@ -138,6 +139,7 @@
                         {
                             <button class="btn btn-sm btn-outline-primary" @onclick="() => OnLoadPackage.InvokeAsync(example.Name)">Load</button>
                         }
+                        <button class="btn btn-sm btn-outline-secondary" title="Save it as a file, with your changes if it has any" @onclick="() => OnExportPackage.InvokeAsync(example.Name)">Export</button>
                         @if (edited)
                         {
                             <button class="btn btn-sm btn-outline-danger" title="Throw away your changes and bring it back the way it ships" @onclick="() => OnResetPackage.InvokeAsync(example.Name)">Reset</button>
@@ -154,7 +156,7 @@
                 <span class="grow"></span>
                 @if (IsBuiltIn)
                 {
-                    <span class="machine-hint">A built in example. Start your own with New….</span>
+                    <span class="machine-hint">A built in example. Start your own with New…</span>
                 }
                 else
                 {

@@ -4,7 +4,7 @@ The machine this project started with: a classic **accumulator** design with a s
 
 ## The idea
 
-Almost everything goes through one register, **A**, the accumulator. Loads put a value in A, arithmetic combines A with **B** and puts the result back in A, and stores write A to memory. A small computer with one working register needs few control lines and little microcode, which is why so many early machines looked like this.
+Almost everything goes through one register, **A**, the accumulator. Loads put a value in A, arithmetic combines A with **B** and puts the result back in A, and stores write A (or B) to memory. A small computer with one working register needs few control lines and little microcode, which is why so many early machines looked like this.
 
 ## The parts
 

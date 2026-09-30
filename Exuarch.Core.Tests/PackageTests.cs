@@ -93,11 +93,24 @@ public class PackageTests
         Assert.Contains(expected, e.Message);
     }
 
+    // PEA and PEB peek at the stack in bank 0, like PSA and POA use it, whatever bank the program has selected,
+    // and leave that bank selected and SP where it was.
     [Fact]
-    public void ExampleDataReadsTheDefaultPackage()
+    public void ByocPeeksReadTheStackInBankZero()
+    {
+        var byoc = BuiltInPackages.Get("BYOC-16");
+        var c = Run(byoc, "LAI 7\nPSA\nSWB 1\nLAI 0\nPEA\nSTA 0\nPEB\nHLT");
+        var mmu = c.Device<MMU>("mmu");
+        Assert.Equal(1, mmu.SelectedBankNumber);
+        Assert.Equal(7, mmu.RamBanks[1].ValueAt(0));
+        Assert.Equal(7, c.Device<Register>("regb").Data);
+        Assert.Equal(0xFFFF, c.Device<Register>("regsp").Data);
+    }
+
+    [Fact]
+    public void ExampleDataHasTheDefaultPackagesPrograms()
     {
         Assert.Equal(BuiltInPackages.Default.Programs.Select(p => p.Name), ExampleData.Programs.Select(p => p.Name));
-        Assert.Equal(BuiltInPackages.Default.Machine.ToJson(), ExampleData.MACHINE);
     }
 
     [Fact]

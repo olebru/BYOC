@@ -9,9 +9,9 @@ namespace Exuarch.Core
         // Instruction whose micro step ran, and the index of that step in the instruction's Steps list.
         public string Instruction { get; set; }
         public int? StepIndex { get; set; }
-        // Status register value the decoder used for this tick.
+        // The decoder status used for this tick: the flags in bits 0 to 3 and the interrupt request (I) in bit 4.
         public int Status { get; set; }
-        // Micro step register value, and the full decoder ROM address: (status & 0x0F) << step bits | micro step.
+        // Micro step register value, and the full decoder ROM address: (status & 0x1F) << step bits | micro step.
         public int MicroStep { get; set; }
         public int RomAddress { get; set; }
         public List<string> Signals { get; set; } = new List<string>();
@@ -33,7 +33,7 @@ namespace Exuarch.Core
 
     public class ValueChange
     {
-        // Device ID, or "device.mar" / "device.cs" for memory address and chip select registers.
+        // Device ID, or the device ID and a part of it, such as "mem.mar", "mmu.cs", "lcd.cursor" or "blit.busy".
         public string Device { get; set; }
         public int Before { get; set; }
         public int After { get; set; }

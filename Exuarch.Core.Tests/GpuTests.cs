@@ -241,7 +241,7 @@ public class GpuTests
         int flatTicks = flat.Draw(0, 1);
         long pixels = flat.Rasterizer.PixelsDrawn;
         int rows = flat.Lit().Select(p => p.Item2).Distinct().Count();
-        // One more tick at the start: start is taken at the end of the tick before, the job begins in the next.
+        // No extra tick at the start: the first step is chosen in the latch of the tick that takes start.
         Assert.Equal(2 * Rasterizer.WordsPerTriangle + 2 * rows + pixels, flatTicks);
 
         var deep = new Rig(depth: true);
@@ -264,10 +264,9 @@ public class GpuTests
         rig.Cpu.Data = 1; rig.Cpu.Enable("output"); rig.Rasterizer.Enable("loadcount"); rig.Tick();
         rig.Rasterizer.Enable("start"); rig.Tick();
         Assert.True(rig.Rasterizer.Busy);
-        var reader = new Register("S", "s", rig.Host);
-        rig.Rasterizer.Enable("status");
-        rig.Rasterizer.Drive();
-        Assert.Equal(1, rig.Host.Data);
+        // The CPU reads status over the host bus in an ordinary tick.
+        rig.Rasterizer.Enable("status"); rig.Cpu.Enable("load"); rig.Tick();
+        Assert.Equal(1, rig.Cpu.Data);
         Assert.False(rig.Rasterizer.TakeInterruptRequest());
         while (rig.Rasterizer.Busy) rig.Tick();
         Assert.True(rig.Rasterizer.TakeInterruptRequest());

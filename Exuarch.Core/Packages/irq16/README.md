@@ -1,6 +1,6 @@
 # IRQ-16
 
-**Interrupts**: devices tap the CPU on the shoulder instead of the CPU asking them over and over. This is the COPRO-16 machine with a stack, a timer and an interrupt controller added.
+**Interrupts**: devices tap the CPU on the shoulder instead of the CPU asking them over and over. It is built from COPRO-16: the same kind of CPU and blitter, with a stack, a keypad, a timer, a VEC register that holds the handler's address and an interrupt controller added, and an instruction set based on COPRO-16's.
 
 ## The idea
 

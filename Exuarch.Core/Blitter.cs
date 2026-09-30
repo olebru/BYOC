@@ -39,6 +39,9 @@ namespace Exuarch.Core
         private bool loadX, loadY, loadW, loadH, loadColour, start, status;
         private string lastReader;
         private bool interruptRequest;
+        // The job ended in this tick's drive half; the interrupt is asked for in the latch half, like every other
+        // source, so whether the controller sees it this tick does not depend on the order of the devices.
+        private bool finished;
 
         // Asks for an interrupt when a job is finished.
         public bool TakeInterruptRequest()
@@ -95,7 +98,7 @@ namespace Exuarch.Core
                         {
                             Busy = false;
                             JobsDone++;
-                            interruptRequest = true;
+                            finished = true;
                         }
                     }
                     break;
@@ -104,13 +107,19 @@ namespace Exuarch.Core
         }
         public void Latch()
         {
+            if (finished)
+            {
+                interruptRequest = true;
+                finished = false;
+            }
             int value = host.Data;
             if (loadX) X = value;
             if (loadY) Y = value;
             if (loadW) Width = value;
             if (loadH) Height = value;
             if (loadColour) Colour = value;
-            if (start && Width > 0 && Height > 0)
+            // Like the rasterizer, a start while busy is ignored: wait for status to read 0 first.
+            if (start && !Busy && Width > 0 && Height > 0)
             {
                 Busy = true;
                 Row = 0;

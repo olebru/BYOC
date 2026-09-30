@@ -32,7 +32,6 @@ window.exuarchAsm = {
                     { token: 'keyword.directive', foreground: '0c8599', fontStyle: 'bold' },
                     { token: 'type.label', foreground: '7c5cc4', fontStyle: 'bold' },
                     { token: 'identifier.label', foreground: '7c5cc4' },
-                    { token: 'identifier.unknown', foreground: 'c92a2a' },
                     { token: 'number', foreground: '2f6fdb' },
                     { token: 'string', foreground: 'b8340f' },
                     { token: 'comment', foreground: '9a9ea6' },

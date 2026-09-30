@@ -56,7 +56,7 @@ twice:  OUTA
 
 ## Run it
 
-Open [Run](exuarch:tab/Run) and run it: the LCD shows `OOKK`. Step through the first `CALL` with **Tick** (→) and open the **Memory** tab: the return address appears in the last cell, 4095, and `sp` shows 65535. `RET` reads it back, and `sp` is 0 again. Because every call pushes and every return pops, calls can nest: a subroutine can call another, and each `RET` finds its own return address.
+Open [Run](exuarch:tab/Run) and run it: the LCD shows `OOKK`. Step through the first `CALL` with **Tick** (→) and open the **Memory** tab: the return address appears in the last cell, 4095 (turn to the last page, or click **go to MAR**), and `sp` shows 65535. `RET` reads it back, and `sp` is 0 again. Because every call pushes and every return pops, calls can nest: a subroutine can call another, and each `RET` finds its own return address.
 
 Things to try:
 

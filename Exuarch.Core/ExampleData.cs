@@ -7,8 +7,8 @@ namespace Exuarch.Core
     {
         // The default package's machine definition (with its microcode) as JSON.
         public static string MACHINE { get { return BuiltInPackages.Default.Machine.ToJson(); } }
-        // The default machine's microcode (its decoder.microcode) on its own. ROMDATA below is the same
-        // microcode in the legacy tab separated format.
+        // The default machine's microcode (its decoder.microcode) on its own. ROMDATA below is the older part of it
+        // in the legacy tab separated format: the first instructions, before the ones added since.
         public static string MICROCODE { get { return BuiltInPackages.Default.Machine.Decoder.Microcode.ToJson(); } }
 
         // The default package's example programs.

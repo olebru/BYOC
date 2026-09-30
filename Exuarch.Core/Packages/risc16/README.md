@@ -1,10 +1,10 @@
 # RISC-16
 
-A small **load/store** machine in the spirit of ARM, kept deliberately simple. Where BYOC-16 lets many instructions touch memory, RISC-16 separates the two worlds: arithmetic only ever happens in registers, and memory is only reached by loads and stores.
+A small **load/store** machine in the spirit of ARM, kept deliberately simple. Where BYOC-16 lets many instructions touch memory, RISC-16 separates the two worlds: arithmetic only ever happens in registers, and memory is only reached by loads and stores (and by pushes and pops on the stack).
 
 ## The idea
 
-RISC designs trade a rich instruction set for a regular one. Every ALU instruction has the same shape, memory has exactly two ways in and out, and subroutine calls use a **link register** instead of the stack. That regularity is what made RISC processors easy to pipeline and fast.
+RISC designs trade a rich instruction set for a regular one. Every ALU instruction has the same shape, memory is reached by loads and stores (plus the stack), and subroutine calls use a **link register** instead of the stack. That regularity is what made RISC processors easy to pipeline and fast.
 
 To keep the hardware plain, the registers here are explicit: [R0](exuarch:device/r0), [R1](exuarch:device/r1), [R2](exuarch:device/r2) and [R3](exuarch:device/r3) are four ordinary register devices, and the register an instruction uses is part of its name, as in `MOV_R1_R0` or `ADD_R2`. That is how early 8 bit CPUs worked too, and it means there is no register file to decode.
 

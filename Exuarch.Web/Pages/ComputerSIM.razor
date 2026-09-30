@@ -101,7 +101,7 @@ else if (ActiveTab == "Program")
         <span class="examples-label silk">Programs · @PackageName<HelpLink Target="assembly" Title="Assembly: syntax, literals, .DATA and .STRING" /></span>
         @foreach (var example in Package.Programs)
         {
-            <button class="btn btn-sm @(IsCurrent(example) ? "btn-primary" : "btn-outline-primary")" title="@example.Description" @onclick="() => LoadExample(example)">@example.Name</button>
+            <button class="btn btn-sm @(IsCurrent(example) ? "btn-primary" : "btn-outline-primary")" title="@example.Description" @onclick="() => PickProgram(example)">@example.Name</button>
         }
         @if (newProgramName == null)
         {

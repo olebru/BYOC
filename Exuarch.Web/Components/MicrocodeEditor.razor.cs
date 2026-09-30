@@ -468,7 +468,7 @@ namespace Exuarch.Web.Components
         private async Task Download()
         {
             var name = string.IsNullOrWhiteSpace(Microcode.Name) ? "microcode" : Microcode.Name;
-            await JS.InvokeVoidAsync("exuarchEditor.download", $"{name}.json", Microcode.ToJson());
+            await JS.InvokeVoidAsync("exuarchEditor.download", $"{name}.microcode.json", Microcode.ToJson());
         }
         private async Task Import(InputFileChangeEventArgs e)
         {
@@ -480,7 +480,7 @@ namespace Exuarch.Web.Components
                 History?.Record();
                 await Replace(imported);
             }
-            catch (Exception ex) when (ex is MachineDefinitionException || ex is FormatException)
+            catch (Exception ex) when (ex is MachineDefinitionException || ex is FormatException || ex is System.IO.IOException)
             {
                 importError = ex.Message;
             }

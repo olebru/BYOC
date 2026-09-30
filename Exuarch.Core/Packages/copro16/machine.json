@@ -87,7 +87,6 @@
       "id": "blit",
       "type": "blitter",
       "name": "BLITTER",
-      "bus": "main",
       "buses": { "host": "main", "video": "video" },
       "connections": { "screen": "fb" },
       "layout": { "x": 960, "y": 300 }

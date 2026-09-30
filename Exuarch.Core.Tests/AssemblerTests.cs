@@ -48,7 +48,7 @@ public class AssemblerTests
     }
 
     [Fact]
-    public void ByteDirectiveAcceptsMultipleOperands()
+    public void DataDirectiveAcceptsMultipleOperands()
     {
         var bytes = new Assembler(rom).Assemble("data:\t.DATA\t#1,#2,data");
         Assert.Equal(new int[] { 1, 2, 0 }, bytes);

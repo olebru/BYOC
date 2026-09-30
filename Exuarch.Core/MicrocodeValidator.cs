@@ -70,6 +70,7 @@ namespace Exuarch.Core
                 for (int step = 0; step < instruction.Steps.Count; step++)
                 {
                     ValidateStep(instruction, step, machine, registry, built, Add);
+                    ValidateFlagWrites(instruction, step, machine, Add);
                 }
                 ValidateFlow(instruction, machine, Add);
             }
@@ -137,6 +138,32 @@ namespace Exuarch.Core
             }
         }
 
+        private static readonly string[] AluOperations = { "add", "sub", "cmp", "and", "orr", "eor", "lsl", "lsr" };
+        private static readonly string[] RegisterWrites = { "load", "reset", "inc", "dec" };
+
+        // An ALU operation writes its flags into the connected status register at the end of the tick. If the same
+        // step also loads, resets or counts that register, which write wins depends on the order of the devices.
+        private static void ValidateFlagWrites(InstructionDefinition instruction, int step, MachineDefinition machine,
+            Action<DiagnosticSeverity, InstructionDefinition, int?, string, string> add)
+        {
+            var signals = new List<Signal>();
+            foreach (var text in instruction.Steps[step].Signals)
+            {
+                if (Signal.TryParse(text, out var parsed)) signals.Add(parsed);
+            }
+            foreach (var alu in machine.Devices.Where(d => d.Type == "alu" && d.Connections.ContainsKey("status")))
+            {
+                var status = alu.Connections["status"];
+                var operation = signals.Where(s => s.Device == alu.Id && AluOperations.Contains(s.Line)).Select(s => $"{s.Device}.{s.Line}").FirstOrDefault();
+                var write = signals.Where(s => s.Device == status && RegisterWrites.Contains(s.Line)).Select(s => $"{s.Device}.{s.Line}").FirstOrDefault();
+                if (operation != null && write != null)
+                {
+                    add(DiagnosticSeverity.Error, instruction, step, write,
+                        $"{operation} writes the flags into {status}, and {write} writes {status} too in the same step; only one can win. Move one of them to another step.");
+                }
+            }
+        }
+
         // Every flag variant should end by returning to fetch (reset or load the micro step register) or
         // by halting, otherwise the micro step counter runs on into the next instruction's microcode.
         private static void ValidateFlow(InstructionDefinition instruction, MachineDefinition machine,
@@ -144,7 +171,8 @@ namespace Exuarch.Core
         {
             var stepRegister = machine.Decoder?.InstructionRegister;
             if (stepRegister == null || instruction.Steps.Count == 0) return;
-            var clocks = new HashSet<string>(machine.Devices.Where(d => d.Type == "clock").Select(d => d.Id));
+            // Only the machine's halt clock stops it; without one named, any clock's disable is taken as the end.
+            var clocks = new HashSet<string>(machine.Halt != null ? new[] { machine.Halt } : machine.Devices.Where(d => d.Type == "clock").Select(d => d.Id));
             bool Ends(MicroStep step) => step.Signals.Any(s => Signal.TryParse(s, out var signal)
                 && ((signal.Device == stepRegister && (signal.Line == "reset" || signal.Line == "load"))
                     || (clocks.Contains(signal.Device) && signal.Line == "disable")));

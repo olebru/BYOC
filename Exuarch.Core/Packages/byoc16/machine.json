@@ -89,7 +89,7 @@
         },
         {
           "mnemonic": "ADD",
-          "description": "A = A \u002B B, sets Z C V",
+          "description": "A = A \u002B B, sets Z N C V",
           "operands": 0,
           "steps": [
             {
@@ -333,7 +333,7 @@
         },
         {
           "mnemonic": "LNA",
-          "description": "Load A from base memory at the operand address \u002B B",
+          "description": "Load A from base memory at the operand address \u002B B; the flags follow that address sum",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -552,27 +552,45 @@
         },
         {
           "mnemonic": "PEA",
-          "description": "Peek: load A from the top of the stack without popping",
+          "description": "Peek: load A from the top of the stack in bank 0 without popping",
           "operands": 0,
           "steps": [
             {
-              "signals": ["regsp.output", "mmu.loadmar"]
+              "signals": ["regs.load", "mmu.outputcs"]
             },
             {
-              "signals": ["mmu.output", "rega.load", "regi.reset", "pc.inc"]
+              "signals": ["mmu.select0stack"]
+            },
+            {
+              "signals": ["mmu.loadmar", "regsp.output"]
+            },
+            {
+              "signals": ["rega.load", "mmu.output"]
+            },
+            {
+              "signals": ["regs.output", "mmu.loadcs", "regi.reset", "pc.inc"]
             }
           ]
         },
         {
           "mnemonic": "PEB",
-          "description": "Peek: load B from the top of the stack without popping",
+          "description": "Peek: load B from the top of the stack in bank 0 without popping",
           "operands": 0,
           "steps": [
             {
-              "signals": ["regsp.output", "mmu.loadmar"]
+              "signals": ["regs.load", "mmu.outputcs"]
             },
             {
-              "signals": ["mmu.output", "regb.load", "regi.reset", "pc.inc"]
+              "signals": ["mmu.select0stack"]
+            },
+            {
+              "signals": ["mmu.loadmar", "regsp.output"]
+            },
+            {
+              "signals": ["regb.load", "mmu.output"]
+            },
+            {
+              "signals": ["regs.output", "mmu.loadcs", "regi.reset", "pc.inc"]
             }
           ]
         },

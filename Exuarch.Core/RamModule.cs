@@ -34,12 +34,6 @@ namespace Exuarch.Core
                     break;
             }
         }
-        public override string OperationsOnNextClockRAM()
-        {
-            string next = base.OperationsOnNextClockRAM();
-            if (load) next = $"{next}load";
-            return next;
-        }
         public override List<String> SignalLines()
         {
             var baseList = base.SignalLines();

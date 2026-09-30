@@ -97,19 +97,6 @@ namespace Exuarch.Core
                 Store(i, cells[i]);
             }
         }
-        public string OperationsOnNextClockMAR()
-        {
-            string next = "";
-            if (loadMAR) next = $"{next}load";
-            if (outputMAR) next = $"{next}output";
-            return next;
-        }
-        public virtual string OperationsOnNextClockRAM()
-        {
-            string next = "";
-            if (output) next = $"{next}output";
-            return next;
-        }
         public virtual List<String> SignalLines()
         {
             var lines = new List<String>();

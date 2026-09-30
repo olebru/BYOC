@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 namespace Exuarch.Core
 {
-    // The compiled microcode. An address is the 4 status bits (NVCZ) followed by the 8 bit micro step
-    // address held in the instruction register. Each instruction gets a block of consecutive step
+    // The compiled microcode. An address is the 5 bits of the decoder status (I, N, V, C, Z) above the 16 bit
+    // micro step address held in the instruction register. Each instruction gets a block of consecutive step
     // addresses, sized for its longest flag variant.
     public class DecoderRom
     {
@@ -19,7 +19,7 @@ namespace Exuarch.Core
         private Dictionary<string, int> baseAddressByMnemonic;
         private int opCodesUsed;
         private readonly List<(InstructionDefinition Instruction, int Base, int Count)> ranges = new List<(InstructionDefinition, int, int)>();
-        // The steps each instruction runs for each of the 16 status values, parallel to ranges.
+        // The steps each instruction runs for each of the 32 status values, parallel to ranges.
         private readonly List<List<MicroStep>[]> variants = new List<List<MicroStep>[]>();
 
         // Accepts microcode JSON, or the legacy tab separated format.
@@ -75,7 +75,6 @@ namespace Exuarch.Core
         public static int RomAddress(int status, int step) { return ((status & StatusMask) << StepBits) | (step & (AddressSpace - 1)); }
         // Each instruction's block of micro step addresses, in address order.
         public IReadOnlyList<(InstructionDefinition Instruction, int Base, int Count)> Blocks { get { return ranges; } }
-        public IReadOnlyList<MicroInstruction> MicroInstructions { get { return completeROM; } }
         public int OpCodesUsed { get { return opCodesUsed; } }
 
         // The instruction whose micro step block contains the address, and the step that runs there for
@@ -100,12 +99,12 @@ namespace Exuarch.Core
             }
             return baseAddress;
         }
-        // Operand bytes the instruction declares, or null when it does not say.
+        // Operand cells the instruction declares, or null when it does not say.
         public int? OperandCount(string mnemonic)
         {
             return Microcode.FindInstruction(mnemonic)?.OperandCount;
         }
-        // The decoder only has 4 status inputs (NVCZ), so higher status bits are ignored.
+        // The decoder has 5 status inputs (I, N, V, C and Z), so status bits above bit 4 are ignored.
         public List<MicroInstruction> FetchInstruction(int StatusRegisterValue, int InstructionRegisterValue)
         {
             int fullOpCode = RomAddress(StatusRegisterValue, InstructionRegisterValue);

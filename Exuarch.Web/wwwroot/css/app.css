@@ -1,5 +1,3 @@
-@import url('open-iconic/font/css/open-iconic-bootstrap.min.css');
-
 /* Design tokens: warm engineering paper, near black ink and one signal colour for anything live
    (driving the bus, active control lines, lit bits). Component styles use these variables only. */
 :root {

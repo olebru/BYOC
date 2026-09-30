@@ -77,7 +77,33 @@ window.exuarchStore = {
     set: function (key, value) {
         try { localStorage.setItem(key, value); return true; } catch { return false; }
     },
-    remove: function (key) {
-        try { localStorage.removeItem(key); } catch { }
+};
+
+// Keyboard shortcuts that must not also do the browser's own thing. Attached once per element.
+window.exuarchKeys = {
+    // The Run view: Space, the right arrow and the letter shortcuts are the view's. On a focused button Space would
+    // click it as well (so Run would pause and start again); on the speed slider or a checkbox they would also move
+    // or toggle it. Buttons keep quiet, and controls keep the key to themselves.
+    runView: function (element) {
+        if (!element || element.__exuarchKeys) return;
+        element.__exuarchKeys = true;
+        const shortcut = e => !e.ctrlKey && !e.metaKey && !e.altKey && [' ', 'ArrowRight', 'r', 'R', 'm', 'M'].includes(e.key);
+        const control = t => t && (t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA' || t.isContentEditable);
+        const guard = e => {
+            if (!shortcut(e)) return;
+            if (control(e.target)) e.stopPropagation();
+            else if (e.target !== element) e.preventDefault();
+        };
+        element.addEventListener('keydown', guard);
+        element.addEventListener('keyup', guard);
+    },
+    // The hardware design: Ctrl or Cmd with D, Z or Y are its duplicate, undo and redo, not the browser's bookmark
+    // and history keys.
+    editor: function (element) {
+        if (!element || element.__exuarchKeys) return;
+        element.__exuarchKeys = true;
+        element.addEventListener('keydown', e => {
+            if ((e.ctrlKey || e.metaKey) && ['d', 'z', 'y'].includes(e.key.toLowerCase())) e.preventDefault();
+        });
     },
 };

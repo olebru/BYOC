@@ -80,16 +80,6 @@ namespace Exuarch.Core
         {
             return outputEnabled;
         }
-        public virtual string OperationsOnNextClock()
-        {
-            string next = "";
-            if (loadEnabled) next = $"{next}load";
-            if (outputEnabled) next = $"{next}output";
-            if (reset) next = $"{next}reset";
-            if (inc) next = $"{next}inc";
-            if (dec) next = $"{next}dec";
-            return $"{next}";
-        }
         public virtual List<String> SignalLines()
         {
             var lines = new List<String>();

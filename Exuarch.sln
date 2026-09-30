@@ -5,8 +5,6 @@ VisualStudioVersion = 16.0.30114.105
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Exuarch.Core", "Exuarch.Core\Exuarch.Core.csproj", "{25741D6F-87B3-449A-ABE6-C95EF8A5BBC5}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Exuarch.Cli", "Exuarch.Cli\Exuarch.Cli.csproj", "{14347FD5-65FD-4CB2-9A42-EEE468781EA5}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Exuarch.Web", "Exuarch.Web\Exuarch.Web.csproj", "{81192BAE-99E7-4297-909A-86EE2C280DB3}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Exuarch.Core.Tests", "Exuarch.Core.Tests\Exuarch.Core.Tests.csproj", "{C6DEFC23-096D-47B7-934E-D9C05D53F8DF}"
@@ -33,18 +31,6 @@ Global
 		{25741D6F-87B3-449A-ABE6-C95EF8A5BBC5}.Release|x64.Build.0 = Release|Any CPU
 		{25741D6F-87B3-449A-ABE6-C95EF8A5BBC5}.Release|x86.ActiveCfg = Release|Any CPU
 		{25741D6F-87B3-449A-ABE6-C95EF8A5BBC5}.Release|x86.Build.0 = Release|Any CPU
-		{14347FD5-65FD-4CB2-9A42-EEE468781EA5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{14347FD5-65FD-4CB2-9A42-EEE468781EA5}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{14347FD5-65FD-4CB2-9A42-EEE468781EA5}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{14347FD5-65FD-4CB2-9A42-EEE468781EA5}.Debug|x64.Build.0 = Debug|Any CPU
-		{14347FD5-65FD-4CB2-9A42-EEE468781EA5}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{14347FD5-65FD-4CB2-9A42-EEE468781EA5}.Debug|x86.Build.0 = Debug|Any CPU
-		{14347FD5-65FD-4CB2-9A42-EEE468781EA5}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{14347FD5-65FD-4CB2-9A42-EEE468781EA5}.Release|Any CPU.Build.0 = Release|Any CPU
-		{14347FD5-65FD-4CB2-9A42-EEE468781EA5}.Release|x64.ActiveCfg = Release|Any CPU
-		{14347FD5-65FD-4CB2-9A42-EEE468781EA5}.Release|x64.Build.0 = Release|Any CPU
-		{14347FD5-65FD-4CB2-9A42-EEE468781EA5}.Release|x86.ActiveCfg = Release|Any CPU
-		{14347FD5-65FD-4CB2-9A42-EEE468781EA5}.Release|x86.Build.0 = Release|Any CPU
 		{81192BAE-99E7-4297-909A-86EE2C280DB3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{81192BAE-99E7-4297-909A-86EE2C280DB3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{81192BAE-99E7-4297-909A-86EE2C280DB3}.Debug|x64.ActiveCfg = Debug|Any CPU

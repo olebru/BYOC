@@ -374,6 +374,7 @@ namespace Exuarch.Core
             foreach (var device in definition.Devices)
             {
                 if (string.IsNullOrWhiteSpace(device.Id)) { errors.Add("Every device needs an \"id\"."); continue; }
+                if (device.Id.Contains('.')) errors.Add($"Device '{device.Id}': an id can not contain '.', which separates the device from the line in a signal.");
                 if (!deviceIds.Add(device.Id)) errors.Add($"Device '{device.Id}' is defined more than once.");
                 if (!registry.IsRegistered(device.Type))
                 {
@@ -381,11 +382,26 @@ namespace Exuarch.Core
                 }
                 else
                 {
-                    var known = registry.Info(device.Type).Parameters.Select(p => p.Name).ToList();
+                    var info = registry.Info(device.Type);
+                    var known = info.Parameters.Select(p => p.Name).ToList();
                     foreach (var name in device.Parameters.Keys.Where(k => !known.Contains(k)))
                     {
                         var has = known.Count == 0 ? "it has none" : $"it has {string.Join(", ", known)}";
                         errors.Add($"Device '{device.Id}': a {device.Type} has no parameter '{name}', {has}.");
+                    }
+                    // Ports and connections are checked the same way, so a misspelt one is not ignored; a type
+                    // registered without describing itself (no control lines) can not be checked.
+                    var described = info.ControlLines.Count > 0;
+                    foreach (var port in device.Ports().Select(p => p.Key).Where(p => described && !info.Ports.Contains(p)))
+                    {
+                        var has = info.Ports.Count == 0 ? "it is on no bus" : $"it has {string.Join(", ", info.Ports)}";
+                        errors.Add($"Device '{device.Id}': a {device.Type} has no bus port '{port}', {has}.");
+                    }
+                    var connections = info.Connections.Select(c => c.Name).ToList();
+                    foreach (var name in device.Connections.Keys.Where(k => described && !connections.Contains(k)))
+                    {
+                        var has = connections.Count == 0 ? "it has none" : $"it has {string.Join(", ", connections)}";
+                        errors.Add($"Device '{device.Id}': a {device.Type} has no connection '{name}', {has}.");
                     }
                 }
                 if (device.Bus != null && device.Buses.ContainsKey(DeviceBuildContext.DefaultPort))
@@ -403,6 +419,19 @@ namespace Exuarch.Core
                 {
                     errors.Add($"Device '{device.Id}': connection '{connection.Key}' refers to unknown device '{connection.Value}'.");
                 }
+                // A bus master drives these devices' lines while it puts the value on one of its own buses, so they
+                // have to be on that bus, or they would take whatever is on theirs.
+                foreach (var (type, connection, port) in MasteredConnections.Where(m => m.Type == device.Type))
+                {
+                    if (!device.Connections.TryGetValue(connection, out var targetId)) continue;
+                    var target = definition.FindDevice(targetId);
+                    var bus = device.GetPortBus(port);
+                    var targetBus = target?.Ports().Select(p => p.Value).FirstOrDefault();
+                    if (target != null && bus != null && targetBus != bus)
+                    {
+                        errors.Add($"Device '{device.Id}': connection '{connection}' is '{targetId}', which is on bus '{targetBus ?? "none"}', but it has to be on the {port} bus, '{bus}'.");
+                    }
+                }
             }
             if (definition.Decoder == null)
             {
@@ -418,6 +447,10 @@ namespace Exuarch.Core
             CheckReference(errors, deviceIds, definition.ProgramMemory, "programMemory", required: false);
             if (errors.Count > 0) throw new MachineDefinitionException(errors);
         }
+        private static readonly (string Type, string Connection, string Port)[] MasteredConnections =
+        {
+            ("blitter", "screen", "video"), ("rasterizer", "screen", "video"), ("rasterizer", "depth", "video"), ("rasterizer", "memory", "list"),
+        };
         private static void CheckReference(List<string> errors, HashSet<string> deviceIds, string id, string setting, bool required)
         {
             if (id == null)

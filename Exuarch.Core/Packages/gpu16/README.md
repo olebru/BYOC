@@ -15,7 +15,7 @@ Drawing a 3D scene has two halves. **Geometry** turns the corners of each shape 
 
 ## How a frame is drawn
 
-A triangle is 12 words in the list: x, y, depth and an RGB565 colour for each corner. The CPU writes them with [STL](exuarch:instruction/STL), which crosses the bridge in four ticks per word. Then it tells the rasterizer where the triangles start with [GADR](exuarch:instruction/GADR) and how many there are with [GCNT](exuarch:instruction/GCNT), and starts it with [GO](exuarch:instruction/GO).
+A triangle is 12 words in the list: x, y, depth and an RGB565 colour for each corner. The CPU writes them with [STL](exuarch:instruction/STL), which crosses the bridge in six ticks per word, fetch included. Then it tells the rasterizer where the triangles start with [GADR](exuarch:instruction/GADR) and how many there are with [GCNT](exuarch:instruction/GCNT), and starts it with [GO](exuarch:instruction/GO).
 
 The rasterizer reads each triangle, two ticks per word, then fills it row by row. For every pixel it reads the depth buffer, and only if the triangle is nearer there does it write the new depth and plot the colour, blended from the three corner colours. [GST](exuarch:instruction/GST) tells the CPU whether it is still busy.
 

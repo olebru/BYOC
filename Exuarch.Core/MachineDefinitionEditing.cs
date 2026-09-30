@@ -193,6 +193,7 @@ namespace Exuarch.Core
         {
             if (string.IsNullOrWhiteSpace(newId)) throw new ArgumentException("ID can not be empty.");
             if (newId.Any(char.IsWhiteSpace)) throw new ArgumentException("ID can not contain spaces.");
+            if (newId.Contains('.')) throw new ArgumentException("ID can not contain '.', which separates the device from the line in a signal.");
             if (definition.FindDevice(newId) != null || definition.FindBus(newId) != null)
             {
                 throw new ArgumentException($"'{newId}' is already used.");

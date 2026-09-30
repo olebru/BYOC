@@ -4,11 +4,12 @@ In most of a machine, nothing happens unless the microcode says so. Every contro
 
 ## The framebuffer it draws on
 
-A [`framebuffer`](exuarch:reference/framebuffer) is a 640 × 480 colour screen. Each pixel is one 16 bit RGB565 word: 5 bits of red, 6 of green and 5 of blue, so `0xF800` is red, `0x07E0` green and `0x001F` blue. It has a cursor and four control lines:
+A [`framebuffer`](exuarch:reference/framebuffer) is a 640 × 480 colour screen. Each pixel is one 16 bit RGB565 word: 5 bits of red, 6 of green and 5 of blue, so `0xF800` is red, `0x07E0` green and `0x001F` blue. It has a cursor and five control lines:
 
 - `loadx` sets the cursor column from the bus. The value wraps at 640.
 - `loady` sets the cursor row from the bus. The value wraps at 480.
 - `plot` writes the bus value at the cursor and moves one pixel right. Past the last column it goes to the start of the next row, and past the last row back to the top.
+- `skip` moves the cursor one pixel right the same way, without writing.
 - `clear` blanks the screen and puts the cursor at the top left.
 
 A CPU can drive these lines from its own microcode, as BYOC-16 does. Filling a rectangle that way costs at least one tick per pixel, and the CPU can do nothing else meanwhile.

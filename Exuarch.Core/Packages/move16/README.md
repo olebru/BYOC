@@ -6,7 +6,7 @@ A computer with **no instruction set**, only moves. This is a *transport trigger
 
 Every instruction has the same form: move a value from a **source port** to a **destination port**, written `SOURCE_TO_DESTINATION`. Moving a value into the `ADD` port *is* the addition. Moving a value into `JZ` *is* the conditional jump. Moving anything into `HALT` stops the machine.
 
-Because the only thing the hardware ever does is transport a value, the instruction decoder is trivial, and every unit can be added or removed without changing the "instruction set". There are 218 moves, one for each source and destination pair, all generated.
+Because the only thing the hardware ever does is transport a value, the instruction decoder is trivial, and every unit can be added or removed without changing the "instruction set". There are 218 moves, one for each source and destination pair except moving a register to itself, `MEM_TO_MEM` and `R3_TO_CALL`.
 
 ## The ports
 
@@ -20,7 +20,7 @@ Sources, where a value can come from:
 
 Destinations, where a value can go:
 
-- The registers, and `A`, [the function unit's first input](exuarch:device/opa).
+- The registers, `MAR`, which sets the address `MEM` reads and writes, `MEM` itself, and `A`, [the function unit's first input](exuarch:device/opa).
 - **Triggers**: `ADD`, `SUB`, `AND`, `OR`, `XOR`, `SHL` and `SHR` combine A with the arriving value in [the function unit](exuarch:device/alu) and leave the answer in `RES`; `CMP` only sets the flags.
 - **Jumps**: `JMP`, `JZ`, `JNZ`, `JN` and `JC`, and `CALL`, which also leaves the return address in R3.
 - **Devices**: `LCD`, `X`, `Y` and `PIXEL`, and the value-ignored ports `CLEAR`, `CLS` and `HALT`.
