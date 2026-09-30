@@ -22,11 +22,14 @@ namespace Exuarch.Core
             ["ram"] = new[] { "memory-and-banks" },
             ["mmu"] = new[] { "memory-and-banks" },
             ["display"] = new[] { "first-machine" },
-            ["framebuffer"] = new[] { "bus-masters" },
+            ["framebuffer"] = new[] { "bus-masters", "graphics-pipeline" },
             ["blitter"] = new[] { "bus-masters", "interrupts" },
             ["interruptController"] = new[] { "interrupts" },
             ["timer"] = new[] { "interrupts" },
             ["keypad"] = new[] { "reading-the-keypad", "interrupts" },
+            ["rasterizer"] = new[] { "graphics-pipeline", "bus-masters" },
+            ["depthBuffer"] = new[] { "graphics-pipeline" },
+            ["mac"] = new[] { "graphics-pipeline" },
         };
 
         public static IEnumerable<DeviceTypeInfo> Types { get { return registry.Value.TypeInfos; } }

@@ -165,7 +165,7 @@
                                       @onpointerdown="e => StartWirePort(e, device, port)" @onpointerdown:stopPropagation></span>
                                 @if (info.Ports.Count > 1)
                                 {
-                                    <span class="port-label" style="left:@Px(anchor.X - device.Layout.X - 7); top:@Px(anchor.Bottom ? height - 22 : 8)">@port</span>
+                                    <span class="port-label" style="left:@Px(anchor.X - device.Layout.X + 8); top:@Px(anchor.Bottom ? height + 1 : -15)">@port</span>
                                 }
                             }
                         </div>

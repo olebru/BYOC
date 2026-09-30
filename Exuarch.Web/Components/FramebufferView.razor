@@ -7,7 +7,7 @@
         <div class="screen-frame" @onclick:stopPropagation>
             <div class="screen-head">
                 <span class="screen-name">@Screen.ID()</span>
-                <span class="screen-info">@Framebuffer.Width × @Framebuffer.Height · RGB565 · cursor @Screen.X, @Screen.Y</span>
+                <span class="screen-info">@Framebuffer.Width × @Framebuffer.Height · @Screen.Kind · cursor @Screen.X, @Screen.Y</span>
                 <span class="screen-hint">@(large ? "actual size · click or Esc to close" : "click to view at actual size")</span>
             </div>
             <canvas id="@canvasId" width="@Framebuffer.Width" height="@Framebuffer.Height" class="screen-canvas" @onclick="() => large = !large"></canvas>
@@ -17,11 +17,12 @@
 
 @code
 {
+    // The framebuffer, or a depth buffer drawn in grey.
     [Parameter]
-    public Framebuffer Screen { get; set; }
+    public IScreen Screen { get; set; }
 
     private readonly string canvasId = "fb-" + Guid.NewGuid().ToString("N");
-    private Framebuffer drawn;
+    private IScreen drawn;
     // Shows the screen at its real 640 x 480 size over the page, with crisp pixels.
     private bool large;
     private bool focusedLarge;
@@ -46,12 +47,12 @@
         {
             drawn = Screen;
             Screen.TakeDirtyRegion();
-            await JS.InvokeVoidAsync("exuarchScreen.draw", canvasId, 0, 0, Framebuffer.Width, Framebuffer.Height, Screen.ToRgb565Bytes(0, 0, Framebuffer.Width, Framebuffer.Height));
+            await JS.InvokeVoidAsync("exuarchScreen.draw", canvasId, 0, 0, Framebuffer.Width, Framebuffer.Height, Screen.WordBytes(0, 0, Framebuffer.Width, Framebuffer.Height), Screen.IsDepth);
             return;
         }
         if (Screen.TakeDirtyRegion() is var (x, y, width, height))
         {
-            await JS.InvokeVoidAsync("exuarchScreen.draw", canvasId, x, y, width, height, Screen.ToRgb565Bytes(x, y, width, height));
+            await JS.InvokeVoidAsync("exuarchScreen.draw", canvasId, x, y, width, height, Screen.WordBytes(x, y, width, height), Screen.IsDepth);
         }
     }
 }

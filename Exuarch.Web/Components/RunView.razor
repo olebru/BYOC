@@ -136,7 +136,7 @@
                             <span class="dev-id">@device.Id</span>
                             <span class="dev-type">@(device.Name ?? device.Type)</span>
                         </div>
-                        <div class="dev-body @(built is MemoryModule || built is MMU || built is Clock || built is ALU || built is CharacterDisplay || built is Framebuffer || built is Blitter || built is InterruptController || built is TickTimer ? "stacked" : "") @(Changed(device.Id) ? "changed" : "")" @key="(Changed(device.Id) ? Last.Cycle : 0)">
+                        <div class="dev-body @(built is MemoryModule || built is MMU || built is Clock || built is ALU || built is CharacterDisplay || built is Framebuffer || built is Blitter || built is InterruptController || built is TickTimer || built is Rasterizer || built is DepthBuffer || built is MultiplyAccumulate ? "stacked" : "") @(Changed(device.Id) ? "changed" : "")" @key="(Changed(device.Id) ? Last.Cycle : 0)">
                             @switch (built)
                             {
                                 case StatusRegister status:
@@ -196,6 +196,18 @@
                                     <span class="mem" title="@($"{blitter.JobsDone} jobs done, {blitter.PixelsDrawn} pixels")">@(blitter.Busy ? $"busy {blitter.Row + 1}/{blitter.Height}" : "idle")</span>
                                     <span class="sub">@($"{blitter.Width}×{blitter.Height} at {blitter.X},{blitter.Y}")</span>
                                     break;
+                                case Rasterizer rasterizer:
+                                    <span class="mem" title="@($"{rasterizer.JobsDone} lists done, {rasterizer.TrianglesDrawn} triangles, {rasterizer.PixelsDrawn} pixels drawn, {rasterizer.PixelsHidden} hidden")">@(rasterizer.Busy ? $"{rasterizer.Stage} {rasterizer.Triangle + 1}/{rasterizer.Count}" : "idle")</span>
+                                    <span class="sub">@($"{rasterizer.PixelsDrawn} drawn · {rasterizer.PixelsHidden} hidden")</span>
+                                    break;
+                                case DepthBuffer depthBuffer:
+                                    <span class="mem">cursor <strong>@depthBuffer.X, @depthBuffer.Y</strong></span>
+                                    <span class="sub">depth there @depthBuffer.DepthAt(depthBuffer.X, depthBuffer.Y)</span>
+                                    break;
+                                case MultiplyAccumulate mac:
+                                    <span class="mem" title="@($"a {mac.A}, b {mac.B}, accumulator {mac.Accumulator}")">acc <strong>@mac.Accumulator</strong></span>
+                                    <span class="sub">@($"out {mac.Result} · a {mac.A} · b {mac.B}")</span>
+                                    break;
                                 case Keypad keypad:
                                     <span class="dev-keys">
                                         @foreach (var (key, label) in new[] { (Keypad.Keys.Up, "↑"), (Keypad.Keys.Down, "↓"), (Keypad.Keys.Left, "←"), (Keypad.Keys.Right, "→"), (Keypad.Keys.Space, "␣") })
@@ -254,7 +266,7 @@
                 </svg>
                 <div class="clock-axis"><span>@FormatHz(ChartMax)</span><span>last @((int)Math.Round(ChartSpan)) s of running</span></div>
             </div>
-            @foreach (var screen in Machine.Devices.OfType<Framebuffer>())
+            @foreach (var screen in Machine.Devices.OfType<IScreen>())
             {
                 <div class="panel display-panel">
                     <FramebufferView Screen="screen" />

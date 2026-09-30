@@ -268,8 +268,10 @@ namespace Exuarch.Core
                     var readers = plan.ReadersByBus[bus.ID];
                     foreach (var master in busMasters)
                     {
-                        if (master.MasteredBusId == bus.ID && master.LastReader != null && !readers.Contains(master.LastReader))
-                            readers = readers.Append(master.LastReader).ToList();
+                        foreach (var (busId, reader) in master.LastReaders)
+                        {
+                            if (busId == bus.ID && !readers.Contains(reader)) readers = readers.Append(reader).ToList();
+                        }
                     }
                     record.Transfers.Add(new BusTransfer { Bus = bus.ID, Driver = bus.Writer?.ID(), Value = bus.Data, Readers = readers });
                 }

@@ -232,6 +232,11 @@ public class MicrocodeTests
         machine.Devices.Add(new DeviceDefinition { Id = "blit", Type = "blitter", Buses = { ["host"] = "main", ["video"] = "io" }, Connections = { ["screen"] = "fb" } });
         machine.Devices.Add(new DeviceDefinition { Id = "tick", Type = "timer", Bus = "main" });
         machine.Devices.Add(new DeviceDefinition { Id = "pic", Type = "interruptController", Bus = "main", Connections = { ["irq0"] = "tick", ["irq1"] = "blit" } });
+        machine.Buses.Add(new BusDefinition { Id = "lb" });
+        machine.Devices.Add(new DeviceDefinition { Id = "lmem", Type = "ram", Bus = "lb" });
+        machine.Devices.Add(new DeviceDefinition { Id = "zb", Type = "depthBuffer", Bus = "io" });
+        machine.Devices.Add(new DeviceDefinition { Id = "gmac", Type = "mac", Bus = "main" });
+        machine.Devices.Add(new DeviceDefinition { Id = "rast", Type = "rasterizer", Buses = { ["host"] = "main", ["list"] = "lb", ["video"] = "io" }, Connections = { ["screen"] = "fb", ["depth"] = "zb", ["memory"] = "lmem" } });
         var built = new Machine(machine, ExampleData.MICROCODE, "");
         Assert.Equal(registry.Types.OrderBy(t => t), machine.Devices.Select(d => d.Type).Distinct().OrderBy(t => t));
         foreach (var device in machine.Devices)

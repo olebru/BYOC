@@ -1,0 +1,33 @@
+{
+  "name": "GPU-16",
+  "description": "A CPU with a small 3D graphics pipeline. The CPU turns and projects points with a multiply-accumulate unit, writes triangles into a list on their own bus, and starts the rasterizer, which reads them by itself and fills them on the video bus with shaded colours and a depth buffer, one transfer per tick, while the CPU carries on.",
+  "readme": "README.md",
+  "machine": "machine.json",
+  "programs": [
+    {
+      "name": "One flat triangle",
+      "description": "Copy one triangle into the list and let the rasterizer fill it",
+      "file": "flat.asm"
+    },
+    {
+      "name": "A shaded triangle",
+      "description": "Red, green and blue corners, blended across the triangle",
+      "file": "shaded.asm"
+    },
+    {
+      "name": "Two triangles through each other",
+      "description": "The depth buffer keeps the nearer pixel where they cross",
+      "file": "depth.asm"
+    },
+    {
+      "name": "A pinwheel from one list",
+      "description": "Sixteen triangles and one GO, while the CPU prints on the LCD",
+      "file": "pinwheel.asm"
+    },
+    {
+      "name": "A spinning cube",
+      "description": "The whole pipeline: turn, project, then rasterize with shading and depth",
+      "file": "cube.asm"
+    }
+  ]
+}

@@ -1,0 +1,894 @@
+{
+  "name": "GPU-16",
+  "buses": [
+    {
+      "id": "main",
+      "layout": { "x": 0, "y": 190 }
+    },
+    {
+      "id": "list",
+      "layout": { "x": 0, "y": 470 }
+    },
+    {
+      "id": "video",
+      "layout": { "x": 0, "y": 720 }
+    }
+  ],
+  "devices": [
+    {
+      "id": "pc",
+      "type": "register",
+      "name": "PC",
+      "bus": "main",
+      "layout": { "x": 30, "y": 50 }
+    },
+    {
+      "id": "ir",
+      "type": "instructionRegister",
+      "name": "IR",
+      "bus": "main",
+      "layout": { "x": 216, "y": 50 }
+    },
+    {
+      "id": "mem",
+      "type": "ram",
+      "name": "MEMORY",
+      "bus": "main",
+      "parameters": { "size": 4096 },
+      "layout": { "x": 402, "y": 50 }
+    },
+    {
+      "id": "flags",
+      "type": "statusRegister",
+      "name": "FLAGS",
+      "bus": "main",
+      "layout": { "x": 588, "y": 50 }
+    },
+    {
+      "id": "sp",
+      "type": "register",
+      "name": "SP",
+      "bus": "main",
+      "layout": { "x": 774, "y": 50 }
+    },
+    {
+      "id": "a",
+      "type": "register",
+      "name": "A",
+      "bus": "main",
+      "layout": { "x": 960, "y": 50 }
+    },
+    {
+      "id": "clk",
+      "type": "clock",
+      "name": "CLOCK",
+      "layout": { "x": 1146, "y": 50 }
+    },
+    {
+      "id": "b",
+      "type": "register",
+      "name": "B",
+      "bus": "main",
+      "layout": { "x": 30, "y": 250 }
+    },
+    {
+      "id": "t",
+      "type": "register",
+      "name": "ALU OPERAND",
+      "bus": "main",
+      "layout": { "x": 216, "y": 250 }
+    },
+    {
+      "id": "alu",
+      "type": "alu",
+      "name": "ALU",
+      "bus": "main",
+      "connections": { "a": "a", "b": "t", "status": "flags" },
+      "layout": { "x": 402, "y": 250 }
+    },
+    {
+      "id": "mac",
+      "type": "mac",
+      "name": "MULTIPLY-ACCUMULATE",
+      "bus": "main",
+      "layout": { "x": 588, "y": 250 }
+    },
+    {
+      "id": "lcd",
+      "type": "display",
+      "name": "LCD",
+      "bus": "main",
+      "parameters": { "columns": 32, "rows": 4 },
+      "layout": { "x": 774, "y": 250 }
+    },
+    {
+      "id": "bridge",
+      "type": "dualPortRegister",
+      "name": "TO THE LIST BUS",
+      "buses": { "a": "main", "b": "list" },
+      "layout": { "x": 960, "y": 250 }
+    },
+    {
+      "id": "lmem",
+      "type": "ram",
+      "name": "TRIANGLE LIST",
+      "bus": "list",
+      "parameters": { "size": 4096 },
+      "layout": { "x": 960, "y": 540 }
+    },
+    {
+      "id": "rast",
+      "type": "rasterizer",
+      "name": "RASTERIZER",
+      "buses": { "host": "main", "list": "list", "video": "video" },
+      "connections": { "screen": "fb", "depth": "zb", "memory": "lmem" },
+      "layout": { "x": 402, "y": 540 }
+    },
+    {
+      "id": "fb",
+      "type": "framebuffer",
+      "name": "SCREEN",
+      "bus": "video",
+      "layout": { "x": 216, "y": 780 }
+    },
+    {
+      "id": "zb",
+      "type": "depthBuffer",
+      "name": "DEPTH",
+      "bus": "video",
+      "layout": { "x": 588, "y": 780 }
+    }
+  ],
+  "decoder": {
+    "status": "flags",
+    "instructionRegister": "ir",
+    "microcode": {
+      "name": "GPU-16 microcode",
+      "fetch": {
+        "mnemonic": "FETCH",
+        "description": "Load the opcode at the program counter and step past it",
+        "steps": [
+          {
+            "signals": ["pc.output", "mem.loadmar"]
+          },
+          {
+            "signals": ["mem.output", "ir.load", "pc.inc"]
+          }
+        ]
+      },
+      "instructions": [
+        {
+          "mnemonic": "NOP",
+          "description": "Do nothing",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": ["ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "HLT",
+          "description": "Halt the machine",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": ["clk.disable"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "LDI",
+          "description": "A = value",
+          "operands": 1,
+          "operandTypes": ["value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ir.reset", "a.load"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "LBI",
+          "description": "B = value",
+          "operands": 1,
+          "operandTypes": ["value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ir.reset", "b.load"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "LBA",
+          "description": "B = an address, to walk memory with LDX and STX",
+          "operands": 1,
+          "operandTypes": ["address"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ir.reset", "b.load"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "LDA",
+          "description": "A = the memory cell at the address",
+          "operands": 1,
+          "operandTypes": ["address"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "mem.loadmar", "pc.inc"]
+            },
+            {
+              "signals": ["mem.output", "a.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "STA",
+          "description": "Store A in memory at the address",
+          "operands": 1,
+          "operandTypes": ["address"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "mem.loadmar", "pc.inc"]
+            },
+            {
+              "signals": ["a.output", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "LDX",
+          "description": "A = the memory cell at the address in B",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": ["b.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "a.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "STX",
+          "description": "Store A in memory at the address in B",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": ["b.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["a.output", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "TAB",
+          "description": "B = A",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": ["a.output", "b.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "TBA",
+          "description": "A = B",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": ["b.output", "a.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "INA",
+          "description": "A = A \u002B 1, flags unchanged",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": ["a.inc", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "INB",
+          "description": "B = B \u002B 1, flags unchanged",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": ["b.inc", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "DEB",
+          "description": "B = B - 1, flags unchanged",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": ["b.dec", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "ADD",
+          "description": "A = A \u002B B",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": ["b.output", "t.load"]
+            },
+            {
+              "signals": ["alu.add", "a.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "SUB",
+          "description": "A = A - B",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": ["b.output", "t.load"]
+            },
+            {
+              "signals": ["alu.sub", "a.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "AND",
+          "description": "A = A AND B",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": ["b.output", "t.load"]
+            },
+            {
+              "signals": ["alu.and", "a.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "ADDI",
+          "description": "A = A \u002B value",
+          "operands": 1,
+          "operandTypes": ["value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "t.load", "pc.inc"]
+            },
+            {
+              "signals": ["alu.add", "a.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "SUBI",
+          "description": "A = A - value",
+          "operands": 1,
+          "operandTypes": ["value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "t.load", "pc.inc"]
+            },
+            {
+              "signals": ["alu.sub", "a.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "ANDI",
+          "description": "A = A AND value",
+          "operands": 1,
+          "operandTypes": ["value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "t.load", "pc.inc"]
+            },
+            {
+              "signals": ["alu.and", "a.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "EORI",
+          "description": "A = A XOR value",
+          "operands": 1,
+          "operandTypes": ["value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "t.load", "pc.inc"]
+            },
+            {
+              "signals": ["alu.eor", "a.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "LSRI",
+          "description": "A = A shifted right by value",
+          "operands": 1,
+          "operandTypes": ["value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "t.load", "pc.inc"]
+            },
+            {
+              "signals": ["alu.lsr", "a.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "CMPI",
+          "description": "Set the flags for A - value",
+          "operands": 1,
+          "operandTypes": ["value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "t.load", "pc.inc"]
+            },
+            {
+              "signals": ["alu.cmp", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "JMP",
+          "description": "Jump to the address",
+          "operands": 1,
+          "operandTypes": ["address"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "JEQ",
+          "description": "Jump if equal (Z set)",
+          "operands": 1,
+          "operandTypes": ["address"],
+          "steps": [
+            {
+              "when": { "Z": true },
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "when": { "Z": true },
+              "signals": ["mem.output", "pc.load", "ir.reset"]
+            },
+            {
+              "when": { "Z": false },
+              "signals": ["pc.inc", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "JNE",
+          "description": "Jump if not equal (Z clear)",
+          "operands": 1,
+          "operandTypes": ["address"],
+          "steps": [
+            {
+              "when": { "Z": false },
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "when": { "Z": false },
+              "signals": ["mem.output", "pc.load", "ir.reset"]
+            },
+            {
+              "when": { "Z": true },
+              "signals": ["pc.inc", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "JCS",
+          "description": "Jump if carry set, or a CMP borrowed (A lower)",
+          "operands": 1,
+          "operandTypes": ["address"],
+          "steps": [
+            {
+              "when": { "C": true },
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "when": { "C": true },
+              "signals": ["mem.output", "pc.load", "ir.reset"]
+            },
+            {
+              "when": { "C": false },
+              "signals": ["pc.inc", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "JCC",
+          "description": "Jump if carry clear (A higher or same)",
+          "operands": 1,
+          "operandTypes": ["address"],
+          "steps": [
+            {
+              "when": { "C": false },
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "when": { "C": false },
+              "signals": ["mem.output", "pc.load", "ir.reset"]
+            },
+            {
+              "when": { "C": true },
+              "signals": ["pc.inc", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "CALL",
+          "description": "Call a subroutine: push the return address, then jump",
+          "operands": 1,
+          "operandTypes": ["address"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar", "pc.inc"]
+            },
+            {
+              "signals": ["mem.output", "t.load", "sp.dec"]
+            },
+            {
+              "signals": ["sp.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["pc.output", "mem.load"]
+            },
+            {
+              "signals": ["t.output", "pc.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "RET",
+          "description": "Return from a subroutine",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": ["sp.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.load", "sp.inc", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "PSA",
+          "description": "Push A",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": ["sp.dec"]
+            },
+            {
+              "signals": ["sp.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["a.output", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "POA",
+          "description": "Pop A",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": ["sp.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "a.load", "sp.inc", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "PSB",
+          "description": "Push B",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": ["sp.dec"]
+            },
+            {
+              "signals": ["sp.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["b.output", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "POB",
+          "description": "Pop B",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": ["sp.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "b.load", "sp.inc", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "OUT",
+          "description": "Print the character in A on the LCD",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": ["a.output", "lcd.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "CLT",
+          "description": "Clear the LCD",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": ["lcd.clear", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "CLS",
+          "description": "Clear the screen",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": ["fb.clear", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "JMI",
+          "description": "Jump if negative (N set)",
+          "operands": 1,
+          "operandTypes": ["address"],
+          "steps": [
+            {
+              "when": { "N": true },
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "when": { "N": true },
+              "signals": ["mem.output", "pc.load", "ir.reset"]
+            },
+            {
+              "when": { "N": false },
+              "signals": ["pc.inc", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "JPL",
+          "description": "Jump if positive or zero (N clear)",
+          "operands": 1,
+          "operandTypes": ["address"],
+          "steps": [
+            {
+              "when": { "N": false },
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "when": { "N": false },
+              "signals": ["mem.output", "pc.load", "ir.reset"]
+            },
+            {
+              "when": { "N": true },
+              "signals": ["pc.inc", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "STL",
+          "description": "Store A in the triangle list at the address in B, through the bridge (only while the rasterizer is idle)",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": ["b.output", "bridge.loada"]
+            },
+            {
+              "signals": ["bridge.outputb", "lmem.loadmar"]
+            },
+            {
+              "signals": ["a.output", "bridge.loada"]
+            },
+            {
+              "signals": ["bridge.outputb", "lmem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "GADR",
+          "description": "Tell the rasterizer where its triangles start in the list, from A",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": ["a.output", "rast.loadaddr", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "GCNT",
+          "description": "Tell the rasterizer how many triangles to draw, from A",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": ["a.output", "rast.loadcount", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "GO",
+          "description": "Start the rasterizer; it draws the triangles by itself while the CPU carries on",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": ["rast.start", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "GST",
+          "description": "A = the rasterizer\u0027s status: 1 while it is busy, 0 when it is idle",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": ["rast.status", "a.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "ZCLR",
+          "description": "Clear the depth buffer: every pixel as far as it goes",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": ["zb.clear", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "MA",
+          "description": "Give the multiply-accumulate unit its operand a, from A",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": ["a.output", "mac.loada", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "MB",
+          "description": "Give the multiply-accumulate unit its operand b, from A",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": ["a.output", "mac.loadb", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "MAI",
+          "description": "Give the multiply-accumulate unit its operand a",
+          "operands": 1,
+          "operandTypes": ["value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ir.reset", "mac.loada"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "MBI",
+          "description": "Give the multiply-accumulate unit its operand b",
+          "operands": 1,
+          "operandTypes": ["value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ir.reset", "mac.loadb"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "MUL",
+          "description": "Accumulator = a \u00D7 b",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": ["mac.mul", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "MAC",
+          "description": "Accumulator = accumulator \u002B a \u00D7 b",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": ["mac.mac", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "MDIV",
+          "description": "Accumulator = accumulator / b, keeping the 8.8 scale",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": ["mac.div", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "MRD",
+          "description": "A = the accumulator in 8.8 fixed point: shifted right by 8, clamped to 16 bits",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": ["mac.output", "a.load", "ir.reset"]
+            }
+          ]
+        }
+      ]
+    },
+    "layout": { "x": 1332, "y": 50 }
+  },
+  "halt": "clk",
+  "programMemory": "mem"
+}
