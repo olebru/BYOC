@@ -24,71 +24,51 @@ window.exuarchAsm = {
                 wordPattern: /\.?[A-Za-z_][A-Za-z0-9_]*/,
                 autoClosingPairs: [{ open: '"', close: '"', notIn: ['string', 'comment'] }],
             });
-            monaco.editor.defineTheme('exuarch', {
-                base: 'vs',
-                inherit: true,
-                rules: [
-                    { token: 'keyword', foreground: '17181c', fontStyle: 'bold' },
-                    { token: 'keyword.directive', foreground: '0c8599', fontStyle: 'bold' },
-                    { token: 'type.label', foreground: '7c5cc4', fontStyle: 'bold' },
-                    { token: 'identifier.label', foreground: '7c5cc4' },
-                    { token: 'number', foreground: '2f6fdb' },
-                    { token: 'string', foreground: 'b8340f' },
-                    { token: 'comment', foreground: '9a9ea6' },
-                    { token: 'delimiter', foreground: '7d828c' },
-                ],
-                colors: {
-                    'editor.background': '#ffffff',
-                    'editor.foreground': '#17181c',
-                    'editor.lineHighlightBackground': '#faf9f6',
-                    'editor.lineHighlightBorder': '#00000000',
-                    'editorLineNumber.foreground': '#b9bcc2',
-                    'editorLineNumber.activeForeground': '#17181c',
-                    'editorGutter.background': '#faf9f6',
-                    'editorCursor.foreground': '#f04f23',
-                    'editor.selectionBackground': '#fde6de',
-                    'editor.inactiveSelectionBackground': '#f3f2ee',
-                    'editorIndentGuide.background1': '#ebe9e3',
-                    'editorWidget.background': '#ffffff',
-                    'editorWidget.border': '#cfccc2',
-                    'editorSuggestWidget.selectedBackground': '#f3f2ee',
-                    'editorHoverWidget.background': '#ffffff',
-                    'editorHoverWidget.border': '#cfccc2',
-                },
-            });
-            // The same, for the dark theme (see exuarchTheme in machineEditor.js).
-            monaco.editor.defineTheme('exuarch-dark', {
-                base: 'vs-dark',
-                inherit: true,
-                rules: [
-                    { token: 'keyword', foreground: 'e9e7e2', fontStyle: 'bold' },
-                    { token: 'keyword.directive', foreground: '3bc2d4', fontStyle: 'bold' },
-                    { token: 'type.label', foreground: 'a58fe2', fontStyle: 'bold' },
-                    { token: 'identifier.label', foreground: 'a58fe2' },
-                    { token: 'number', foreground: '6f9ff2' },
-                    { token: 'string', foreground: 'ff9d7c' },
-                    { token: 'comment', foreground: '7a7f89' },
-                    { token: 'delimiter', foreground: '8b909a' },
-                ],
-                colors: {
-                    'editor.background': '#1b1e23',
-                    'editor.foreground': '#e9e7e2',
-                    'editor.lineHighlightBackground': '#20242a',
-                    'editor.lineHighlightBorder': '#00000000',
-                    'editorLineNumber.foreground': '#5f646d',
-                    'editorLineNumber.activeForeground': '#e9e7e2',
-                    'editorGutter.background': '#20242a',
-                    'editorCursor.foreground': '#ff6a3d',
-                    'editor.selectionBackground': '#3b2119',
-                    'editor.inactiveSelectionBackground': '#2b2f36',
-                    'editorIndentGuide.background1': '#2b2f36',
-                    'editorWidget.background': '#1b1e23',
-                    'editorWidget.border': '#3b404a',
-                    'editorSuggestWidget.selectedBackground': '#2b2f36',
-                    'editorHoverWidget.background': '#1b1e23',
-                    'editorHoverWidget.border': '#3b404a',
-                },
-            });
+            // The light and the dark theme are one design in two sets of colours; exuarchTheme in machineEditor.js
+            // picks between them.
+            for (const [name, base, c] of [
+                ['exuarch', 'vs', {
+                    ink: '17181c', directive: '0c8599', label: '7c5cc4', number: '2f6fdb', string: 'b8340f', comment: '9a9ea6', delimiter: '7d828c',
+                    surface: '#ffffff', gutter: '#faf9f6', lineNumber: '#b9bcc2', cursor: '#f04f23', selection: '#fde6de', inactive: '#f3f2ee', guide: '#ebe9e3', border: '#cfccc2',
+                }],
+                ['exuarch-dark', 'vs-dark', {
+                    ink: 'e9e7e2', directive: '3bc2d4', label: 'a58fe2', number: '6f9ff2', string: 'ff9d7c', comment: '7a7f89', delimiter: '8b909a',
+                    surface: '#1b1e23', gutter: '#20242a', lineNumber: '#5f646d', cursor: '#ff6a3d', selection: '#3b2119', inactive: '#2b2f36', guide: '#2b2f36', border: '#3b404a',
+                }],
+            ]) {
+                monaco.editor.defineTheme(name, {
+                    base: base,
+                    inherit: true,
+                    rules: [
+                        { token: 'keyword', foreground: c.ink, fontStyle: 'bold' },
+                        { token: 'keyword.directive', foreground: c.directive, fontStyle: 'bold' },
+                        { token: 'type.label', foreground: c.label, fontStyle: 'bold' },
+                        { token: 'identifier.label', foreground: c.label },
+                        { token: 'number', foreground: c.number },
+                        { token: 'string', foreground: c.string },
+                        { token: 'comment', foreground: c.comment },
+                        { token: 'delimiter', foreground: c.delimiter },
+                    ],
+                    colors: {
+                        'editor.background': c.surface,
+                        'editor.foreground': '#' + c.ink,
+                        'editor.lineHighlightBackground': c.gutter,
+                        'editor.lineHighlightBorder': '#00000000',
+                        'editorLineNumber.foreground': c.lineNumber,
+                        'editorLineNumber.activeForeground': '#' + c.ink,
+                        'editorGutter.background': c.gutter,
+                        'editorCursor.foreground': c.cursor,
+                        'editor.selectionBackground': c.selection,
+                        'editor.inactiveSelectionBackground': c.inactive,
+                        'editorIndentGuide.background1': c.guide,
+                        'editorWidget.background': c.surface,
+                        'editorWidget.border': c.border,
+                        'editorSuggestWidget.selectedBackground': c.inactive,
+                        'editorHoverWidget.background': c.surface,
+                        'editorHoverWidget.border': c.border,
+                    },
+                });
+            }
 
             const self = this;
             monaco.languages.registerCompletionItemProvider(id, {
