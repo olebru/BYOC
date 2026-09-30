@@ -17,7 +17,7 @@ The ALU needs a status register to write its flags into, and the decoder reads t
 1. Find the device `status` on the canvas. It is a [statusRegister](exuarch:reference/statusRegister) on the bus `main`.
 2. Find the card `decoder`. The decoder runs the microcode; it is not on a bus, and its sockets name the devices it works with. Its **status** socket is wired to `status`, and when you select the decoder the inspector shows **Status register** is set to `status`.
 
-If your machine has no status register, for example because you started from **Empty**, drag a **statusRegister** onto the bus, set its ID to `status`, and drag the decoder's **status** socket onto it.
+If you started from **Empty**, the machine has neither: add a decoder first, from the palette's **Decoder** group, then drag a **statusRegister** onto the bus (it gets the ID `status`) and drag the decoder's **status** socket onto it.
 
 ## Add an ALU
 

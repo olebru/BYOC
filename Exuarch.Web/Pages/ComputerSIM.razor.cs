@@ -13,8 +13,8 @@ namespace Exuarch.Web.Pages
 {
     public partial class ComputerSIM : IDisposable
     {
-        // The same names README links use (ReadmeLinks.Tabs).
-        private static readonly string[] Tabs = { "Hardware design", "Microcode", "Program", "JSON", "Run" };
+        // The same names README links use. The machine's JSON is in the drawer, under This machine.
+        private static readonly string[] Tabs = ReadmeLinks.Tabs;
         private static readonly DeviceRegistry Registry = DeviceRegistry.CreateDefault();
 
         [Microsoft.AspNetCore.Components.Inject] private IJSRuntime JS { get; set; }
@@ -118,8 +118,10 @@ namespace Exuarch.Web.Pages
             }
         }
 
+        // Opening a machine starts its undo history afresh (see EditHistory).
         private void LoadPackage(MachinePackage package)
         {
+            History?.Clear();
             Package = package;
             PackageError = null;
             currentProgram = package.Programs.FirstOrDefault();
@@ -128,13 +130,12 @@ namespace Exuarch.Web.Pages
             ApplyDefinition(package.Machine.Clone());
         }
 
-        // Opens a package as it was left, built in or the user's own. Switching is undoable, like any other edit.
+        // Opens a package as it was left, built in or the user's own.
         private void OpenByName(string name)
         {
             if (name == PackageName) return;
             Remember();
             if (workspace.Load(name) is not { } saved) return;
-            History.Record();
             Open(saved);
             drawerSection = "This machine";
         }
@@ -277,7 +278,7 @@ namespace Exuarch.Web.Pages
             if (e.Key == "Escape") newDialog = false;
             else if (e.Key == "Enter") CreateMachine();
         }
-        // Undoable, like switching packages. A name already used by another package gets a number.
+        // A name already used by another package gets a number.
         private void CreateMachine()
         {
             var name = string.IsNullOrWhiteSpace(newName) ? "My machine" : newName.Trim();
@@ -289,7 +290,6 @@ namespace Exuarch.Web.Pages
                 "copy" => MachineTemplates.CopyOf(new MachinePackage { Name = Package.Name, Description = Package.Description, Readme = Package.Readme, Machine = Definition.Clone(), Programs = Package.Programs }, unique),
                 _ => MachineTemplates.Minimal(unique),
             };
-            History.Record();
             LoadPackage(package);
             if (newStart == "minimal") AddProgram("Starter program", MachineTemplates.StarterProgram);
             newDialog = false;
@@ -305,7 +305,6 @@ namespace Exuarch.Web.Pages
                 workspace.Forget(name);
                 if (name == PackageName)
                 {
-                    History.Record();
                     LoadPackage(BuiltInPackages.Get(name));
                 }
                 await Persist();
@@ -321,7 +320,6 @@ namespace Exuarch.Web.Pages
                 workspace.Forget(name);
                 if (name == PackageName && workspace.Load(BuiltInPackages.Default.Name) is { } fallback)
                 {
-                    History.Record();
                     Open(fallback);
                     workspace.Open = PackageName;
                 }
@@ -337,8 +335,12 @@ namespace Exuarch.Web.Pages
             try
             {
                 using var reader = new StreamReader(e.File.OpenReadStream(maxAllowedSize: 16 * 1024 * 1024));
-                package = MachinePackage.FromJson(await reader.ReadToEndAsync());
-                if (string.IsNullOrWhiteSpace(package.Name)) package.Name = Path.GetFileNameWithoutExtension(e.File.Name);
+                var json = await reader.ReadToEndAsync();
+                package = IsMachineFile(json)
+                    ? new MachinePackage { Machine = MachineDefinition.FromJson(json) }
+                    : MachinePackage.FromJson(json);
+                if (string.IsNullOrWhiteSpace(package.Name)) package.Name = package.Machine.Name;
+                if (string.IsNullOrWhiteSpace(package.Name)) package.Name = Path.GetFileNameWithoutExtension(e.File.Name).Replace(".machine", "");
             }
             catch (Exception ex) when (ex is MachineDefinitionException || ex is IOException)
             {
@@ -348,7 +350,6 @@ namespace Exuarch.Web.Pages
             Task Take()
             {
                 Remember();
-                History.Record();
                 LoadPackage(package);
                 MarkChanged();
                 return Task.CompletedTask;
@@ -361,6 +362,22 @@ namespace Exuarch.Web.Pages
             await Take();
         }
 
+        // A machine definition on its own has buses or devices at the top, where a package has "machine".
+        private static bool IsMachineFile(string json)
+        {
+            try
+            {
+                using var document = System.Text.Json.JsonDocument.Parse(json, new System.Text.Json.JsonDocumentOptions { CommentHandling = System.Text.Json.JsonCommentHandling.Skip, AllowTrailingCommas = true });
+                var root = document.RootElement;
+                return root.ValueKind == System.Text.Json.JsonValueKind.Object && !root.TryGetProperty("machine", out _)
+                    && (root.TryGetProperty("buses", out _) || root.TryGetProperty("devices", out _));
+            }
+            catch (System.Text.Json.JsonException)
+            {
+                return false;
+            }
+        }
+
         // The open package as it is now, as a file; a program in the editor that is not one of the package's is
         // added to it.
         private async Task ExportPackage()
@@ -368,7 +385,7 @@ namespace Exuarch.Web.Pages
             var package = Package.Clone();
             package.Machine = Definition.Clone();
             if (!string.IsNullOrWhiteSpace(Program) && !package.Programs.Any(p => p.Source == Program))
-                package.Programs.Add(new PackageProgram { Name = package.Programs.Any(p => p.Name == "My program") ? workspace.UniqueName("My program") : "My program", Source = Program });
+                package.Programs.Add(new PackageProgram { Name = UniqueProgramName(package, "My program"), Source = Program });
             await JS.InvokeVoidAsync("exuarchEditor.download", $"{package.Name}.json", package.ToJson());
         }
 
@@ -428,6 +445,23 @@ namespace Exuarch.Web.Pages
             Rebuild();
         }
 
+        // Picking another program replaces the editor's text. Edits to one of your programs are already in it; edits
+        // to a built in example are only in the editor, so they are not thrown away without asking.
+        private void PickProgram(PackageProgram example)
+        {
+            if (example == currentProgram && IsCurrent(example)) return;
+            if (currentProgram != null && !IsYours(currentProgram) && Program != currentProgram.Source)
+            {
+                Ask($"Throw away your changes to {currentProgram.Name}? To keep them, use ＋ New program and paste them in first.", "Throw away", () =>
+                {
+                    LoadExample(example);
+                    return Task.CompletedTask;
+                });
+                return;
+            }
+            LoadExample(example);
+        }
+
         private void OnProgramChanged(string program)
         {
             Program = program;
@@ -461,11 +495,15 @@ namespace Exuarch.Web.Pages
         }
 
         // A name the package already uses gets a number.
-        private void AddProgram(string name, string source)
+        private static string UniqueProgramName(MachinePackage package, string name)
         {
             var unique = name;
-            for (int n = 2; Package.Programs.Any(p => p.Name == unique); n++) unique = $"{name} {n}";
-            var program = new PackageProgram { Name = unique, Source = source };
+            for (int n = 2; package.Programs.Any(p => p.Name == unique); n++) unique = $"{name} {n}";
+            return unique;
+        }
+        private void AddProgram(string name, string source)
+        {
+            var program = new PackageProgram { Name = UniqueProgramName(Package, name), Source = source };
             Package.Programs.Add(program);
             LoadExample(program);
         }
@@ -494,7 +532,7 @@ namespace Exuarch.Web.Pages
                 case "instruction": OpenMicrocode((link.Target, 0)); break;
                 case "program":
                     var example = Package.Programs.FirstOrDefault(p => p.Name == link.Target);
-                    if (example != null) LoadExample(example);
+                    if (example != null) PickProgram(example);
                     ActiveTab = "Program";
                     break;
                 case "tab":
@@ -515,6 +553,7 @@ namespace Exuarch.Web.Pages
         // Validates the definition, then the microcode against it, then builds a machine to assemble the program.
         private void Rebuild()
         {
+            Package.Machine = Definition;
             MarkChanged();
             DefinitionErrors = Machine.ValidateDefinition(Definition, Registry);
             var microcode = Definition.Decoder?.Microcode;

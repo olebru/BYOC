@@ -13,7 +13,7 @@ Each instruction in the [Microcode](exuarch:tab/Microcode) tab has an **Operands
 - **value**: used as it is, like the number `LAI` loads.
 - **address**: a memory location to read, write or jump to, like the target of `JMP`.
 
-In the [JSON](exuarch:tab/JSON) these are `operands` and `operandTypes`:
+In the machine's JSON these are `operands` and `operandTypes`:
 
 ```json
 { "mnemonic": "LDA", "operands": 1, "operandTypes": ["address"], "steps": [ ... ] }

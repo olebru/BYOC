@@ -12,7 +12,7 @@ loop:   LAI    'A'        ; a label, a mnemonic, one operand and a comment
         JMP    loop
 ```
 
-- A **label** comes first and ends in `:`. It names the address of whatever follows it on the line, or of the next line that puts something in memory. It starts with a letter or `_` and goes on with letters, digits and `_`.
+- A **label** comes first and ends in `:`. It names the address of whatever follows it on the line, or of the next line that puts something in memory. It starts with a letter, `_` or `.` and goes on with letters, digits and `_`.
 - The **mnemonic** is an instruction from the [microcode](exuarch:guide/microcode), or a directive such as `.DATA`. Mnemonics and directives match without regard to case, so `lai` is `LAI`. Labels do not: `Loop` and `loop` are two labels.
 - **Operands** follow the mnemonic, separated by commas.
 - A **comment** starts with `;` and runs to the end of the line.
@@ -56,9 +56,9 @@ Your program starts at address 0 only because the fetch routine reads the cell t
 
 ## Mistakes and help
 
-The editor on the [Program](exuarch:tab/Program) tab checks the program as you type and underlines each problem where it is. The problems include an unknown mnemonic, the wrong number of operands, an unknown label, a label defined twice and a missing `,`. The Program tab's badge counts them. Hover over a mnemonic to see what the instruction does and which operands it takes. Completion offers the instructions and directives at the start of a line and the labels after a mnemonic.
+The editor on the [Program](exuarch:tab/Program) tab checks the program as you type and underlines each problem where it is. The problems include an unknown mnemonic, the wrong number of operands, an unknown label, a label defined twice and a missing `,`. The editor's toolbar counts the errors and warnings, and the Program tab shows a badge while the program does not assemble. Hover over a mnemonic to see what the instruction does and which operands it takes. Completion offers the instructions and directives at the start of a line and the labels after a mnemonic.
 
-Formatting lines up the columns: labels at the left, mnemonics and operands in their own columns, comments after them. It also writes each mnemonic the way the instruction set spells it. The editor tidies each line as you press Enter, and **Format Document** does the whole program.
+Formatting lines up the columns: labels at the left, mnemonics and operands in their own columns, comments after them. It also writes each mnemonic the way the instruction set spells it. The editor tidies each line as you press Enter or paste, and the **Format** button (Shift+Alt+F) does the whole program.
 
 ## The listing
 

@@ -382,7 +382,7 @@
     .flag.on {
         background: var(--ink);
         border-color: var(--ink);
-        color: #fff;
+        color: var(--surface);
         box-shadow: none;
     }
 
@@ -481,7 +481,7 @@
 .cond-1 {
     border: 1px solid var(--ink);
     background: var(--ink);
-    color: #fff;
+    color: var(--surface);
 }
 
 .cond-0 {

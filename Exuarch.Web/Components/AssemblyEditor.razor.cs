@@ -42,13 +42,22 @@ namespace Exuarch.Web.Components
         private int WarningCount { get { return diagnostics.Count(d => d.Severity == DiagnosticSeverity.Warning); } }
         private int cellCount;
         private CancellationTokenSource pending;
+        // The Value the page last gave or was given: the page echoing it back is not a change to show.
+        private string lastValue;
+
+        private string monacoTheme = "exuarch-dark";
+        protected override async Task OnInitializedAsync()
+        {
+            monacoTheme = await JS.InvokeAsync<string>("exuarchTheme.monaco");
+        }
 
         private StandaloneEditorConstructionOptions Options(StandaloneCodeEditor _)
         {
             return new StandaloneEditorConstructionOptions
             {
                 Language = "exuarch-asm",
-                Theme = "exuarch",
+                // Monaco's own theme of the right brightness until ours is defined, when the language registers.
+                Theme = monacoTheme == "exuarch" ? "vs" : "vs-dark",
                 Value = Value ?? "",
                 AutomaticLayout = true,
                 FormatOnType = true,
@@ -77,10 +86,17 @@ namespace Exuarch.Web.Components
                 if (ready) await RegisterLanguage();
                 Analyze(current ?? Value ?? "");
             }
-            if (ready && Value != current)
+            // Only a value the page did not get from this editor replaces the text: while the editor waits to send
+            // what was typed, the page still holds the older text, and putting that back would lose the last
+            // keystrokes and send the cursor to the start.
+            if (ready && Value != lastValue)
             {
-                current = Value;
-                await editor.SetValue(Value ?? "");
+                lastValue = Value;
+                if (Value != current)
+                {
+                    current = Value;
+                    await editor.SetValue(Value ?? "");
+                }
             }
         }
 
@@ -89,9 +105,10 @@ namespace Exuarch.Web.Components
             self = DotNetObjectReference.Create(this);
             ready = true;
             current = Value ?? "";
+            lastValue = Value;
             await RegisterLanguage();
             await Global.SetModelLanguage(JS, await editor.GetModel(), "exuarch-asm");
-            await Global.SetTheme(JS, "exuarch");
+            await Global.SetTheme(JS, await JS.InvokeAsync<string>("exuarchTheme.monaco"));
             Analyze(current);
             await PushMarkers();
             StateHasChanged();
@@ -115,6 +132,7 @@ namespace Exuarch.Web.Components
             catch (TaskCanceledException) { return; }
             Analyze(current);
             await PushMarkers();
+            lastValue = current;
             await ValueChanged.InvokeAsync(current);
             StateHasChanged();
         }

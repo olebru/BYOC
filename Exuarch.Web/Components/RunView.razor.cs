@@ -70,6 +70,12 @@ namespace Exuarch.Web.Components
 
         protected override async Task OnAfterRenderAsync(bool firstRender)
         {
+            // Once per Run view element (it is made again when the machine goes away and comes back).
+            if (Machine != null && runElement.Context != null && guardedElement != runElement.Id)
+            {
+                guardedElement = runElement.Id;
+                await JS.InvokeVoidAsync("exuarchKeys.runView", runElement);
+            }
             if (fitPending && Machine != null)
             {
                 fitPending = false;
@@ -284,6 +290,7 @@ namespace Exuarch.Web.Components
                 _ => null,
             };
         }
+        private string guardedElement;
         private async Task Capture(Keypad keypad)
         {
             capturedKeypad?.ReleaseAll();

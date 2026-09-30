@@ -15,16 +15,16 @@
     gap: 14px;
     height: 44px;
     padding: 0 24px;
-    background: var(--ink);
-    color: #fff;
-    border-bottom: 1px solid #000;
+    background: var(--bar);
+    color: var(--bar-ink);
+    border-bottom: 1px solid var(--bar-line);
 }
 
     .topbar .brand {
         display: flex;
         align-items: center;
         gap: 8px;
-        color: #fff;
+        color: var(--bar-ink);
         text-decoration: none;
     }
 
@@ -32,7 +32,7 @@
         width: 20px;
         height: 20px;
         fill: none;
-        stroke: #fff;
+        stroke: var(--bar-ink);
         stroke-width: 1.4;
     }
 
@@ -71,6 +71,24 @@
         text-transform: uppercase;
         color: #7d828c;
     }
+
+    /* The light and dark switch. */
+    .topbar .theme {
+        border: 1px solid #3a3d44;
+        border-radius: var(--radius-sm);
+        background: none;
+        color: #c9ccd2;
+        font-family: var(--font-mono);
+        font-size: 0.7rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        padding: 2px 8px;
+    }
+
+        .topbar .theme:hover {
+            color: #ffffff;
+            border-color: #6b6f78;
+        }
 
 @media (max-width: 720px) {
     .topbar .tagline, .topbar .spec {

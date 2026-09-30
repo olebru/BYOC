@@ -93,17 +93,9 @@ namespace Exuarch.Core
         {
             return pending != null && pending != "cmp";
         }
-        public string OperationsOnNextClock()
-        {
-            return pending ?? "";
-        }
         public List<String> SignalLines()
         {
             return new List<string>(Operations);
-        }
-        public new string ToString()
-        {
-            return deviceName;
         }
         // 16 bit arithmetic; the top bit is the sign bit for overflow.
         private const int Mask = Bus.Mask;

@@ -22,8 +22,8 @@
     align-items: center;
     height: 44px;
     padding: 0 8px 0 18px;
-    background: var(--ink);
-    color: var(--surface);
+    background: var(--bar);
+    color: var(--bar-ink);
 }
 
 .drawer-title {
@@ -84,13 +84,6 @@
 .drawer-body {
     flex: 1;
     overflow-y: auto;
-}
-
-.guide-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-    padding: 12px 24px 0;
 }
 
 .examples-intro {
@@ -345,4 +338,36 @@
     border: 1px solid var(--signal);
     border-radius: var(--radius-sm);
     color: var(--signal-ink);
+}
+
+/* This machine: its note or its JSON. */
+.machine-views {
+    display: inline-flex;
+    margin-left: 8px;
+    border: 1px solid var(--line-2);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+}
+
+.machine-view {
+    border: none;
+    background: var(--surface);
+    padding: 1px 10px;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.04em;
+    color: var(--ink-3);
+}
+
+    .machine-view + .machine-view {
+        border-left: 1px solid var(--line-2);
+    }
+
+    .machine-view.on {
+        background: var(--ink);
+        color: var(--surface);
+    }
+
+.machine-json {
+    padding: 12px 16px 20px;
 }

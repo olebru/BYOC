@@ -6,7 +6,7 @@ In this tutorial you start from the smallest CPU ExµArch can make, give it a di
 
 1. Click **New…** at the top, pick **Minimal CPU**, give it a name and click **Create**.
 
-The minimal CPU is a program counter `pc`, a memory `mem`, the instruction register `ir`, a status register `status` and a clock `clk`, all on one bus called `main`. Its microcode has a fetch routine and three instructions: `NOP`, `JMP` and `HLT`. It runs, but it has no way to show anything.
+The minimal CPU is a program counter `pc`, a memory `mem`, the instruction register `ir`, a status register `status`, all on one bus called `main`, and a clock `clk`, which needs no bus. Its microcode has a fetch routine and three instructions: `NOP`, `JMP` and `HLT`. It runs, but it has no way to show anything.
 
 ## Add a display
 
@@ -49,7 +49,7 @@ A step is one clock tick. In every tick the devices whose output line is on driv
 1. Open [Run](exuarch:tab/Run) and press **Tick** (→) a few times.
 2. Open the **Trace** tab below the machine.
 
-Each row of the trace is one tick: the micro step that ran (such as `OUT.2`), what moved over the bus and which signals were on. The first two rows of each instruction are fetch; then come `OUT`'s two steps, and an `H` appears on the LCD. The whole program takes 11 ticks: four for each `OUT` (two of fetch and two of its own) and three for `HLT`, whose one step stops the clock.
+Each row of the trace is one tick: the micro step that ran (such as `OUT.2`), what moved over the bus and which signals were on. The newest tick is at the top, so read it from the bottom up: each instruction starts with two rows of fetch, then come `OUT`'s two steps, and an `H` appears on the LCD. The whole program takes 11 ticks: four for each `OUT` (two of fetch and two of its own) and three for `HLT`, whose one step stops the clock.
 
 Press **⟲ Reset** and try **Instruction** (Shift+→), which runs a whole instruction at a time.
 

@@ -8,9 +8,11 @@ Every device has a **type**, which decides what it can do, and an **id**, which 
 
 - **Registers**: `register`, `statusRegister`, `dualPortRegister`
 - **Control**: `instructionRegister`, `clock`, `interruptController`
-- **Arithmetic**: `alu`
+- **Arithmetic**: `alu`, `mac`
 - **Memory**: `ram`, `mmu`
-- **I/O**: `display`, `framebuffer`, `blitter`, `timer`, `keypad`
+- **I/O**: `display`, `framebuffer`, `rasterizer`, `depthBuffer`, `blitter`, `timer`, `keypad`
+
+Below them, **Buses** adds a bus, and a machine without a decoder gets a **Decoder** group to add one.
 
 A new device gets an id from its type, such as `reg`, `reg2` and so on. Select it to change the id in the inspector; an id is one word without spaces and must not clash with another device or a bus. Renaming a device updates every signal in the microcode, every connection and every decoder setting that uses the old id. The display name is only a label for the canvas.
 
@@ -18,11 +20,11 @@ A new device gets an id from its type, such as `reg`, `reg2` and so on. Select i
 
 A device has up to three kinds of wiring, all shown in the inspector:
 
-- **Bus ports** connect it to buses. Most types have one port, `data`. A `dualPortRegister` has `a` and `b`, and a `blitter` has `host` and `video`. A clock has none.
+- **Bus ports** connect it to buses. Most types have one port, `data`. A `dualPortRegister` has `a` and `b`, a `blitter` has `host` and `video`, and a `rasterizer` has `host`, `list` and `video`. A clock has none.
 - **Connections** point at other devices it works with directly, not over a bus. An `alu` is connected to the registers it reads as `a` and `b` and to the register that receives its flags as `status`.
 - **Parameters** set it up: a memory's `size`, a display's `columns` and `rows`, a timer's `period`. Registers have none: every register starts at 0.
 
-In the [JSON](exuarch:tab/JSON) the same device reads:
+In the machine's JSON (under *This machine* in the getting started drawer) the same device reads:
 
 ```json
 {
@@ -45,7 +47,7 @@ A control line is written `device.line`: `pc.output`, `mem.loadmar`, `alu.add`. 
 
 A line is on for exactly one tick. The decoder turns on the lines listed in the current micro step, the tick runs, and every device forgets them again. If you want a register to load on three ticks in a row, three steps must each say `load`. See [Buses and the two-phase tick](exuarch:guide/buses-and-ticks) for what happens within that tick.
 
-Several lines of the same device can be on in one step. A register latches `load` first and then applies `reset`, `inc` and `dec`, so `load` and `inc` together store the bus value plus one. The ALU is the exception: it can do only one operation per tick.
+Several lines of the same device can be on in one step. A register latches `load` first and then applies `reset`, `inc` and `dec`, so `load` and `inc` together store the bus value plus one. The exceptions are the ALU and the multiply-accumulate unit, which do one operation per tick.
 
 ## What each type offers
 

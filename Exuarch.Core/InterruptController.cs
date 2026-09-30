@@ -15,7 +15,7 @@ namespace Exuarch.Core
     // enabled and a pending bit is not masked off. What the CPU does then is up to the microcode.
     //   enable / disable   switch interrupts on or off (they start off)
     //   loadmask           take the mask from the bus: bit n set lets irq n interrupt (starts as all four)
-    //   output             put the pending bits on the bus, so a handler can see who asked
+    //   output             put the pending bits that the mask lets through on the bus, so a handler can see who asked
     //   ack                clear the pending bits that are set in the bus value
     public class InterruptController : IBusDevice
     {

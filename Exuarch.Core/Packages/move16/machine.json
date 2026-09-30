@@ -506,7 +506,7 @@
         },
         {
           "mnemonic": "IMM_TO_JN",
-          "description": "Move the value written after the move into the PC if the last result was negative (or a CMP/SUB borrowed)",
+          "description": "Move the value written after the move into the PC if the last result was negative (N set)",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -846,7 +846,7 @@
         },
         {
           "mnemonic": "R0_TO_JN",
-          "description": "Move R0 into the PC if the last result was negative (or a CMP/SUB borrowed)",
+          "description": "Move R0 into the PC if the last result was negative (N set)",
           "operands": 0,
           "steps": [
             {
@@ -1172,7 +1172,7 @@
         },
         {
           "mnemonic": "R1_TO_JN",
-          "description": "Move R1 into the PC if the last result was negative (or a CMP/SUB borrowed)",
+          "description": "Move R1 into the PC if the last result was negative (N set)",
           "operands": 0,
           "steps": [
             {
@@ -1498,7 +1498,7 @@
         },
         {
           "mnemonic": "R2_TO_JN",
-          "description": "Move R2 into the PC if the last result was negative (or a CMP/SUB borrowed)",
+          "description": "Move R2 into the PC if the last result was negative (N set)",
           "operands": 0,
           "steps": [
             {
@@ -1824,7 +1824,7 @@
         },
         {
           "mnemonic": "R3_TO_JN",
-          "description": "Move R3 (the return address after a CALL) into the PC if the last result was negative (or a CMP/SUB borrowed)",
+          "description": "Move R3 (the return address after a CALL) into the PC if the last result was negative (N set)",
           "operands": 0,
           "steps": [
             {
@@ -2144,7 +2144,7 @@
         },
         {
           "mnemonic": "RES_TO_JN",
-          "description": "Move the last function unit result into the PC if the last result was negative (or a CMP/SUB borrowed)",
+          "description": "Move the last function unit result into the PC if the last result was negative (N set)",
           "operands": 0,
           "steps": [
             {
@@ -2529,7 +2529,7 @@
         },
         {
           "mnemonic": "MEM_TO_JN",
-          "description": "Move the memory cell at MAR into the PC if the last result was negative (or a CMP/SUB borrowed)",
+          "description": "Move the memory cell at MAR into the PC if the last result was negative (N set)",
           "operands": 0,
           "steps": [
             {
@@ -2876,7 +2876,7 @@
         },
         {
           "mnemonic": "KEYS_TO_JN",
-          "description": "Move the keypad (1 up, 2 down, 4 left, 8 right, 16 space) into the PC if the last result was negative (or a CMP/SUB borrowed)",
+          "description": "Move the keypad (1 up, 2 down, 4 left, 8 right, 16 space) into the PC if the last result was negative (N set)",
           "operands": 0,
           "steps": [
             {

@@ -13,7 +13,7 @@
         <span class="zoom">@((int)Math.Round(zoom * 100))%</span>
         <button class="tool" title="Zoom in" @onclick="() => Zoom(1.15)">＋</button>
         <span class="sep"></span>
-        <button class="tool" title="Download the definition as JSON" @onclick="Download">Download JSON</button>
+        <button class="tool" title="Save the hardware and microcode on their own, without programs or note, as a .machine.json file. Export in the header saves the whole package" @onclick="Download">Machine JSON</button>
         <span class="grow"></span>
         @if (Errors.Count == 0)
         {
@@ -40,7 +40,7 @@
     <div class="body">
         <div class="palette" @ref="paletteElement" @onscroll="HideTip">
             <div class="palette-title">Devices<HelpLink Target="devices-and-control-lines" Title="Devices, ports, connections and control lines" /></div>
-            <div class="palette-hint">Drag onto the canvas, or click to add</div>
+            <div class="palette-hint">Drag a device onto the canvas, or click anything to add it</div>
             @foreach (var category in Registry.TypeInfos.GroupBy(i => i.Category))
             {
                 <div class="palette-group">@category.Key</div>
@@ -375,14 +375,14 @@
                 </select>
 
                 <div class="section">Summary</div>
-                <div class="muted">@Definition.Devices.Count devices on @Definition.Buses.Count bus@(Definition.Buses.Count == 1 ? "" : "es")</div>
+                <div class="muted">@Definition.Devices.Count device@(Definition.Devices.Count == 1 ? "" : "s") on @Definition.Buses.Count bus@(Definition.Buses.Count == 1 ? "" : "es")</div>
 
                 <div class="section">Shortcuts</div>
                 <div class="shortcuts">
-                    <div><kbd>Del</kbd> delete</div>
-                    <div><kbd>Ctrl</kbd><kbd>D</kbd> duplicate</div>
-                    <div><kbd>Ctrl</kbd><kbd>Z</kbd> undo</div>
-                    <div><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>Z</kbd> redo</div>
+                    <div><kbd>Del</kbd> or <kbd>⌫</kbd> delete</div>
+                    <div><kbd>Ctrl</kbd>/<kbd>⌘</kbd><kbd>D</kbd> duplicate</div>
+                    <div><kbd>Ctrl</kbd>/<kbd>⌘</kbd><kbd>Z</kbd> undo</div>
+                    <div><kbd>Ctrl</kbd>/<kbd>⌘</kbd><kbd>Shift</kbd><kbd>Z</kbd> or <kbd>Y</kbd> redo</div>
                     <div><kbd>Esc</kbd> deselect</div>
                 </div>
             }

@@ -14,8 +14,8 @@ namespace Exuarch.Core
         // One or two sentences, for lists and the package picker.
         public string Description { get; set; }
         // A longer introduction in Markdown, like a README: the ideas behind the machine, its parts, how its
-        // instructions work and what to try. Links written exuarch:device/<id>, exuarch:instruction/<mnemonic>,
-        // exuarch:program/<name> and exuarch:tab/<tab> jump to that part of the app.
+        // instructions work and what to try. Links written exuarch:<kind>/<target> jump to that part of the app; the
+        // kinds are listed in ReadmeLinks.
         public string Readme { get; set; }
         public MachineDefinition Machine { get; set; }
         public List<PackageProgram> Programs { get; set; } = new List<PackageProgram>();

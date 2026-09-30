@@ -73,13 +73,6 @@ namespace Exuarch.Web.Components
             public string UndoSnapshot;
         }
 
-        private class Rect
-        {
-            public double Left { get; set; }
-            public double Top { get; set; }
-            public double Width { get; set; }
-            public double Height { get; set; }
-        }
 
         protected override void OnParametersSet()
         {
@@ -94,6 +87,16 @@ namespace Exuarch.Web.Components
             {
                 focusVersionSeen = FocusVersion;
                 if (FocusDevice != null && Definition?.FindDevice(FocusDevice) != null) Select(FocusDevice);
+            }
+        }
+
+        private string guardedScroller;
+        protected override async Task OnAfterRenderAsync(bool firstRender)
+        {
+            if (Definition != null && canvasScroller.Context != null && guardedScroller != canvasScroller.Id)
+            {
+                guardedScroller = canvasScroller.Id;
+                await JS.InvokeVoidAsync("exuarchKeys.editor", canvasScroller);
             }
         }
 
@@ -395,7 +398,7 @@ namespace Exuarch.Web.Components
         private async Task Download()
         {
             var name = string.IsNullOrWhiteSpace(Definition.Name) ? "machine" : Definition.Name;
-            await JS.InvokeVoidAsync("exuarchEditor.download", $"{name}.json", Definition.ToJson());
+            await JS.InvokeVoidAsync("exuarchEditor.download", $"{name}.machine.json", Definition.ToJson());
         }
 
         private void Select(string deviceId)
@@ -510,7 +513,7 @@ namespace Exuarch.Web.Components
             newDrag.StartClientY = e.ClientY;
             newDrag.UndoSnapshot = Definition.ToJson();
             drag = newDrag;
-            var rect = await JS.InvokeAsync<Rect>("exuarchEditor.rect", canvasElement);
+            var rect = await JS.InvokeAsync<ElementRect>("exuarchEditor.rect", canvasElement);
             newDrag.CanvasLeft = rect.Left;
             newDrag.CanvasTop = rect.Top;
             newDrag.HasRect = true;

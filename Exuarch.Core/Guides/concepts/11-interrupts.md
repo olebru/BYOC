@@ -4,17 +4,18 @@ Without interrupts, a program finds out about the world by asking. It reads the 
 
 ## Where requests come from
 
-Three device types can raise an interrupt request:
+Four device types can raise an interrupt request:
 
 - a [`timer`](exuarch:reference/timer), every period ticks while it runs;
 - a [`keypad`](exuarch:reference/keypad), when a key goes down (holding it, or key repeat, does not ask again);
-- a [`blitter`](exuarch:reference/blitter), when it finishes a job.
+- a [`blitter`](exuarch:reference/blitter), when it finishes a job;
+- a [`rasterizer`](exuarch:reference/rasterizer), when it finishes its list of triangles.
 
 A request is an event, not a level. Each one is picked up once by the interrupt controller it is connected to.
 
 ## The interrupt controller
 
-An [`interruptController`](exuarch:reference/interruptController) has four sources, connected as `irq0` to `irq3`. Each must name a timer, keypad or blitter. Each source has a pending bit, bit 0 for `irq0` and so on. When a source raises a request, its bit is set and stays set until the program clears it.
+An [`interruptController`](exuarch:reference/interruptController) has four sources, connected as `irq0` to `irq3`. Each must name a timer, keypad, blitter or rasterizer. Each source has a pending bit, bit 0 for `irq0` and so on. When a source raises a request, its bit is set and stays set until the program clears it.
 
 Its control lines are:
 

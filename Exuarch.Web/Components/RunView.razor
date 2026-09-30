@@ -12,7 +12,7 @@
         </button>
         <button class="ctl" title="One clock tick (→)" disabled="@(running || Machine.IsHalted || runtimeError != null)" @onclick="TickOnce">Tick</button>
         <button class="ctl" title="Run the current instruction and fetch the next (Shift+→)" disabled="@(running || Machine.IsHalted || runtimeError != null)" @onclick="StepInstruction">Instruction</button>
-        <button class="ctl" title="Run until the machine halts" disabled="@(running || Machine.IsHalted || runtimeError != null)" @onclick="RunToHalt">Run to halt</button>
+        <button class="ctl" title="Run until the machine halts, reaches a breakpoint, or has run a million ticks" disabled="@(running || Machine.IsHalted || runtimeError != null)" @onclick="RunToHalt">Run to halt</button>
         <button class="ctl" title="Reload the program and reset every device (R)" @onclick="Restart">⟲ Reset</button>
         <span class="sep"></span>
         <label class="speed @(maxSpeed ? "off" : "")" title="Clock speed while running">
@@ -367,7 +367,14 @@
                     {
                         var isCurrent = line.IsInstruction && line.Address == Machine.CurrentInstructionAddress;
                         <div id="listing-@(isCurrent ? line.Address.ToString() : "")" class="lst @(isCurrent ? "current" : "") @(line.IsInstruction ? "" : "data")">
-                            <span class="bp @(breakpoints.Contains(line.Address) ? "on" : "")" @onclick="() => ToggleBreakpoint(line.Address)" title="Toggle breakpoint"></span>
+                            @if (line.IsInstruction)
+                            {
+                                <span class="bp @(breakpoints.Contains(line.Address) ? "on" : "")" @onclick="() => ToggleBreakpoint(line.Address)" title="Toggle breakpoint"></span>
+                            }
+                            else
+                            {
+                                <span class="bp none"></span>
+                            }
                             <span class="addr">@Hex(line.Address)</span>
                             <span class="bytes">@string.Join(" ", line.Cells.Select(b => Hex(b)))</span>
                             <span class="label">@(line.Label == null ? "" : line.Label + ":")</span>

@@ -85,10 +85,12 @@ public class DecoderRomTests
     }
 
     [Fact]
-    public void StatusBitsAboveTheFourFlagsAreIgnored()
+    // The decoder status is five bits, the four flags and I; anything above bit 4 is ignored.
+    public void StatusBitsAboveTheFiveConditionsAreIgnored()
     {
         var rom = new DecoderRom(Row("p", "clk", "disable", "HLT"));
-        Assert.Single(rom.FetchInstruction(0xF0, 0));
+        Assert.Single(rom.FetchInstruction(0xE0, 0));
+        Assert.Equal(rom.FetchInstruction(0x13, 0).Count, rom.FetchInstruction(0xF3, 0).Count);
     }
 
     [Fact]

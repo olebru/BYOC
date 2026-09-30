@@ -82,10 +82,10 @@ namespace Exuarch.Core
 
         // ---- Hover ----
 
-        // Markdown describing the token under the position, or null.
         // Ends a hover with a link to the handbook page on assembly, opened in the app by the editor.
         public const string ReadMore = "\n\n[Read more: Assembly](exuarch:guide/assembly)";
 
+        // Markdown describing the token under the position, or null.
         public string Hover(string source, int lineNumber, int column)
         {
             var result = Analyze(source);
@@ -99,7 +99,8 @@ namespace Exuarch.Core
                     if (instruction == null) return $"**{token.Text}** is not an instruction of this machine.";
                     return InstructionMarkdown(instruction);
                 case TokenKind.Directive:
-                    return (token.Text switch
+                    // Directives are read in any case, like the assembler does.
+                    return (token.Text.ToUpperInvariant() switch
                     {
                         ".DATA" => "**.DATA** values, labels, \"strings\"\n\nStores each value, label address or character of a string in its own 16 bit memory cell.",
                         ".STRING" => "**.STRING** \"text\", values\n\nLike .DATA, then a 0 cell, so a program can find where the string ends.",

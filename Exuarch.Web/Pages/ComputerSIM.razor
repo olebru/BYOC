@@ -29,7 +29,6 @@
                     @if (tab == "Microcode" && MicrocodeErrorCount > 0) { <span class="badge badge-danger ml-1">@MicrocodeErrorCount</span> }
                     @if (tab == "Microcode" && MicrocodeErrorCount == 0 && MicrocodeWarningCount > 0) { <span class="badge badge-warning ml-1">@MicrocodeWarningCount</span> }
                     @if (tab == "Program" && ProgramErrors.Count > 0) { <span class="badge badge-danger ml-1">@ProgramErrors.Count</span> }
-                    @if (tab == "JSON" && ParseErrors.Count > 0) { <span class="badge badge-danger ml-1">@ParseErrors.Count</span> }
                 </a>
             </li>
         }
@@ -37,7 +36,7 @@
     <div class="workspace-actions">
         <button class="btn btn-sm getting-started @(drawerOpen ? "on" : "")" @onclick="@(() => ToggleDrawer("Handbook"))" title="The handbook, the example machines and this machine's note">Getting started</button>
         <span class="package-label silk">Package</span>
-        <button class="package-name" title="@Package.Description" @onclick="@(() => ToggleDrawer("Machines"))">@PackageName@(IsBuiltIn ? (IsEdited ? " · edited" : "") : " · yours")</button>
+        <button class="package-name" title="@Package.Description" @onclick="@(() => ToggleDrawer("Machines"))">@PackageName@(IsBuiltIn ? (IsEdited ? " · edited" : "") : " · yours")@if (ParseErrors.Count > 0) { <span class="badge badge-danger ml-1" title="The machine's JSON has errors: open This machine, JSON">@ParseErrors.Count</span> }</button>
         <button class="btn btn-sm btn-outline-secondary" @onclick="OpenNewDialog" title="Start a new machine of your own">New…</button>
         @if (IsBuiltIn)
         {
@@ -101,7 +100,7 @@ else if (ActiveTab == "Program")
         <span class="examples-label silk">Programs · @PackageName<HelpLink Target="assembly" Title="Assembly: syntax, literals, .DATA and .STRING" /></span>
         @foreach (var example in Package.Programs)
         {
-            <button class="btn btn-sm @(IsCurrent(example) ? "btn-primary" : "btn-outline-primary")" title="@example.Description" @onclick="() => LoadExample(example)">@example.Name</button>
+            <button class="btn btn-sm @(IsCurrent(example) ? "btn-primary" : "btn-outline-primary")" title="@example.Description" @onclick="() => PickProgram(example)">@example.Name</button>
         }
         @if (newProgramName == null)
         {
@@ -118,11 +117,6 @@ else if (ActiveTab == "Program")
     </div>
     <AssemblyEditor Value="@Program" ValueChanged="OnProgramChanged" Microcode="Definition.Decoder?.Microcode" MemorySize="ProgramMemorySize" />
     <ErrorList Errors="@ProgramErrors.Where(e => !e.StartsWith("Line ")).ToList()" />
-}
-else if (ActiveTab == "JSON")
-{
-    <ErrorList Errors="ParseErrors" />
-    <SourceEditorComponent Label="machine.json · microcode inline · synced with the editors" Value="@DefinitionJson" ValueChanged="OnJsonChanged" Rows="34" />
 }
 else if (ActiveTab == "Run")
 {
@@ -142,5 +136,6 @@ else if (ActiveTab == "Run")
 {
     <GettingStarted Package="Package" IsBuiltIn="IsBuiltIn" Workspace="workspace" @bind-Section="drawerSection" @bind-Page="drawerPage" OnClose="() => drawerOpen = false"
                     OnLoadPackage="OpenByName" OnResetPackage="ResetPackage" OnDeletePackage="DeletePackage" OnExportPackage="ExportByName"
-                    OnReadmeChanged="MarkChanged" OnLink="FollowLink" />
+                    OnReadmeChanged="MarkChanged" OnLink="FollowLink"
+                    DefinitionJson="@DefinitionJson" JsonErrors="ParseErrors" OnJsonChanged="OnJsonChanged" />
 }

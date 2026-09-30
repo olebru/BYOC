@@ -10,7 +10,7 @@
             Import
             <InputFile OnChange="Import" accept=".json,.tsv,.csv,.txt" />
         </label>
-        <button class="tool" @onclick="Download">Download JSON</button>
+        <button class="tool" title="Save the microcode on its own as a .microcode.json file, which Import here reads back" @onclick="Download">Microcode JSON</button>
         <span class="sep"></span>
         <span class="meter" title="Micro step addresses used, out of the 65536 a 16 bit micro step register can select">
             <span class="meter-bar"><span class="meter-fill @(OpCodesUsed > AddressSpace ? "over" : "")" style="width:@(Math.Max(OpCodesUsed > 0 ? 1 : 0, Math.Min(100, OpCodesUsed * 100 / AddressSpace)))%"></span></span>
@@ -34,7 +34,7 @@
 
     @if (importError != null)
     {
-        <div class="problems"><div class="problem">Import failed: @importError</div></div>
+        <div class="problems"><div class="problem">Import failed: @importError <button type="button" class="close" title="Dismiss" @onclick="() => importError = null">&times;</button></div></div>
     }
     @if (showProblems && Diagnostics.Count > 0)
     {

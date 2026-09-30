@@ -28,7 +28,7 @@ The JSON may contain comments and trailing commas. Any property the format does 
 
 ## The machine
 
-The `machine` object is what the [JSON](exuarch:tab/JSON) tab shows and edits, with the microcode inline:
+The `machine` object is what the **JSON** view shows and edits (under *This machine* in the getting started drawer), with the microcode inline:
 
 - `name`: the machine's name.
 - `buses`: each bus's `id` and its position on the canvas.
@@ -49,7 +49,7 @@ The `machine` object is what the [JSON](exuarch:tab/JSON) tab shows and edits, w
 
 Each instruction has a `mnemonic`, a `description` and `operands`, the operand count. It can also have `operandTypes`, each `value` or `address`, and `steps`. Each step has its `signals`, written `device.line`, an optional `when` with flag conditions such as `{ "Z": true }`, and an optional `comment`.
 
-Every change you make in the hardware design and microcode editors is a change to this object. The JSON tab is simply the same thing as text. See [devices and control lines](exuarch:guide/devices-and-control-lines) and [microcode](exuarch:guide/microcode).
+Every change you make in the hardware design and microcode editors is a change to this object. The JSON view is simply the same thing as text. See [devices and control lines](exuarch:guide/devices-and-control-lines) and [microcode](exuarch:guide/microcode).
 
 ## Kept in the browser
 
@@ -98,6 +98,7 @@ The examples are packages too. They are stored as folders in the app, with a `pa
 - [MOVE-16](exuarch:package/MOVE-16): only moves between ports.
 - [COPRO-16](exuarch:package/COPRO-16): a CPU and a blitter.
 - [IRQ-16](exuarch:package/IRQ-16): interrupts.
+- [GPU-16](exuarch:package/GPU-16): a small 3D pipeline with a rasterizer, a depth buffer and a multiply-accumulate unit.
 
 To build on one, open it and use **New…** with a copy of the current machine.
 

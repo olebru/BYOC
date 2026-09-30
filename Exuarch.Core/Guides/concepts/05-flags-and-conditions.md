@@ -46,7 +46,7 @@ There is a fifth condition, I. It does not come from the status register but fro
 
 ## Step conditions
 
-Any step can carry a condition: a required value, 0 or 1, for any of N, V, C, Z and I. In the [Microcode](exuarch:tab/Microcode) tab each step has five flag buttons; click one to cycle it through any, 1 and 0. In the [JSON](exuarch:tab/JSON) a condition is a `when`:
+Any step can carry a condition: a required value, 0 or 1, for any of N, V, C, Z and I. In the [Microcode](exuarch:tab/Microcode) tab each step has five flag buttons; click one to cycle it through any, 1 and 0. In the machine's JSON a condition is a `when`:
 
 ```json
 { "when": { "Z": true }, "signals": ["pc.output", "mem.loadmar"] }

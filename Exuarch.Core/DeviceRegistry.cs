@@ -45,7 +45,7 @@ namespace Exuarch.Core
         public string Name { get; set; }
         public string Description { get; set; } = "";
         public int Min { get; set; } = 0;
-        public int Max { get; set; } = 255;
+        public int Max { get; set; } = 65535;
         public int Default { get; set; } = 0;
     }
 
@@ -84,7 +84,7 @@ namespace Exuarch.Core
             registry.Register("register", c => new Register(c.Name, c.Id, c.Bus()),
                 new DeviceTypeInfo { Category = "Registers", Description = "Holds one 16 bit value between ticks. output puts it on the bus and load stores the bus value; reset, inc and dec change it in place, wrapping from 65535 to 0 and back. It starts at 0", ControlLines = RegisterLines() });
             registry.Register("statusRegister", c => new StatusRegister(c.Name, c.Id, c.Bus()),
-                new DeviceTypeInfo { Category = "Registers", Description = "Holds the four ALU flags: N negative, V overflow, C carry and Z zero. The decoder reads them to pick which steps of an instruction run", ControlLines = RegisterLines() });
+                new DeviceTypeInfo { Category = "Registers", Description = "A 16 bit register for the flags. An ALU connected to it writes its low four bits, Z zero, C carry, V overflow and N negative, and the decoder reads those bits to pick which steps of an instruction run. Microcode can load, save or change it like any register", ControlLines = RegisterLines() });
             registry.Register("dualPortRegister", c => new DualPortRegister(c.Name, c.Id, c.Bus("a"), c.Bus("b")),
                 new DeviceTypeInfo
                 {
@@ -117,7 +117,7 @@ namespace Exuarch.Core
                 new DeviceTypeInfo
                 {
                     Category = "Control",
-                    Description = "Drives the ticks and counts cycles. Its disable line stops the clock, which halts the machine",
+                    Description = "Counts the ticks. Its disable line stops it, which halts the machine when this is the clock the machine names as its halt clock",
                     Ports = new List<string>(),
                     ControlLines = { ControlLineInfo.Internal("disable", "Halt the machine") }
                 });
@@ -125,7 +125,7 @@ namespace Exuarch.Core
                 new DeviceTypeInfo
                 {
                     Category = "Arithmetic",
-                    Description = "Arithmetic and logic on the registers connected as a and b. add, sub, and, orr, eor, lsl and lsr put the result on the bus, cmp only compares; each sets the flags in the connected status register",
+                    Description = "Arithmetic and logic on the registers connected as a and b. add, sub, and, orr, eor, lsl and lsr put the result on the bus, cmp only compares. Every operation replaces all four flags in the connected status register: Z when the result is 0, N from its top bit, and C and V as each operation says",
                     Connections =
                     {
                         new ConnectionInfo { Name = "a", Description = "First operand register" },
@@ -134,14 +134,14 @@ namespace Exuarch.Core
                     },
                     ControlLines =
                     {
-                        ControlLineInfo.Output("add", "Put a + b on the bus and set flags"),
-                        ControlLineInfo.Output("sub", "Put a - b on the bus and set flags"),
-                        ControlLineInfo.Internal("cmp", "Set flags for a - b"),
-                        ControlLineInfo.Output("and", "Put a AND b on the bus and set Z and N"),
-                        ControlLineInfo.Output("orr", "Put a OR b on the bus and set Z and N"),
-                        ControlLineInfo.Output("eor", "Put a XOR b on the bus and set Z and N"),
-                        ControlLineInfo.Output("lsl", "Put a shifted left by b on the bus; C is the last bit out"),
-                        ControlLineInfo.Output("lsr", "Put a shifted right by b on the bus; C is the last bit out"),
+                        ControlLineInfo.Output("add", "Put a + b on the bus; C on a carry out, V on signed overflow"),
+                        ControlLineInfo.Output("sub", "Put a - b on the bus; C when a < b unsigned (a borrow), V on signed overflow"),
+                        ControlLineInfo.Internal("cmp", "Set the flags for a - b, like sub, without driving the bus"),
+                        ControlLineInfo.Output("and", "Put a AND b on the bus; C and V are cleared"),
+                        ControlLineInfo.Output("orr", "Put a OR b on the bus; C and V are cleared"),
+                        ControlLineInfo.Output("eor", "Put a XOR b on the bus; C and V are cleared"),
+                        ControlLineInfo.Output("lsl", "Put a shifted left by b (0-15) on the bus; C is the last bit out, V is cleared"),
+                        ControlLineInfo.Output("lsr", "Put a shifted right by b (0-15) on the bus; C is the last bit out, V is cleared"),
                     }
                 });
             registry.Register("ram", c => new RamModule(c.Name, c.Id, c.Bus(), c.IntParameter("size", MemoryModule.DefaultSize, 1, 65536)),
@@ -186,7 +186,7 @@ namespace Exuarch.Core
                 new DeviceTypeInfo
                 {
                     Category = "I/O",
-                    Description = "A 640 x 480 colour screen, one RGB565 word per pixel. loadx and loady move the cursor, plot writes the bus value there and moves right, clear blanks the screen",
+                    Description = "A 640 x 480 colour screen, one RGB565 word per pixel. loadx and loady move the cursor, plot writes the bus value there and moves right, skip moves right without writing, clear blanks the screen",
                     ControlLines =
                     {
                         ControlLineInfo.Input("loadx", "Set the cursor column from the bus (0-639)"),
@@ -252,7 +252,7 @@ namespace Exuarch.Core
                 new DeviceTypeInfo
                 {
                     Category = "I/O",
-                    Description = "A graphics coprocessor. Give it a rectangle and a colour on the host bus and start it: it then fills the rectangle by itself on its video bus, one transfer per tick, driving the connected framebuffer while the CPU carries on. status reads 1 while it is busy",
+                    Description = "A graphics coprocessor. Give it a rectangle and a colour on the host bus and start it: it then fills the rectangle by itself on its video bus, one transfer per tick, driving the connected framebuffer while the CPU carries on. status reads 1 while it is busy, a start while busy is ignored, and it asks for an interrupt when a rectangle is done",
                     Ports = new List<string> { "host", "video" },
                     Connections = { new ConnectionInfo { Name = "screen", Description = "The framebuffer it draws on, on its video bus" } },
                     ControlLines =
@@ -274,7 +274,7 @@ namespace Exuarch.Core
                     Description = "Collects interrupt requests from up to four devices (irq0 to irq3) into pending bits. Name it as decoder.interrupts and microcode can test the I condition: 1 when interrupts are enabled and an unmasked request is pending",
                     Connections =
                     {
-                        new ConnectionInfo { Name = "irq0", Description = "Interrupt source for pending bit 0 (a timer, keypad or blitter)" },
+                        new ConnectionInfo { Name = "irq0", Description = "Interrupt source for pending bit 0 (a timer, keypad, blitter or rasterizer)" },
                         new ConnectionInfo { Name = "irq1", Description = "Interrupt source for pending bit 1" },
                         new ConnectionInfo { Name = "irq2", Description = "Interrupt source for pending bit 2" },
                         new ConnectionInfo { Name = "irq3", Description = "Interrupt source for pending bit 3" },
@@ -306,7 +306,7 @@ namespace Exuarch.Core
                 new DeviceTypeInfo
                 {
                     Category = "I/O",
-                    Description = "The arrow keys and space, read like a register: output puts one bit per key on the bus (1 up, 2 down, 4 left, 8 right, 16 space). A quick tap is kept until the CPU reads it",
+                    Description = "The arrow keys and space, read like a register: output puts one bit per key on the bus (1 up, 2 down, 4 left, 8 right, 16 space). A quick tap is kept until the CPU reads it, and every key pressed asks for an interrupt",
                     ControlLines =
                     {
                         ControlLineInfo.Output("output", "Put the key bits on the bus: 1 up, 2 down, 4 left, 8 right, 16 space"),
@@ -385,7 +385,7 @@ namespace Exuarch.Core
         {
             if (!definition.Connections.TryGetValue(name, out var targetId)) return null;
             var target = resolveDevice(targetId);
-            return target as IInterruptSource ?? throw Error($"connection '{name}' must be a device that raises interrupts (a timer, keypad or blitter), but '{targetId}' is a {target.GetType().Name}");
+            return target as IInterruptSource ?? throw Error($"connection '{name}' must be a device that raises interrupts (a timer, keypad, blitter or rasterizer), but '{targetId}' is a {target.GetType().Name}");
         }
         public int IntParameter(string name, int defaultValue, int min, int max)
         {
@@ -393,15 +393,6 @@ namespace Exuarch.Core
             if (value.ValueKind != JsonValueKind.Number || !value.TryGetInt32(out var result) || result < min || result > max)
             {
                 throw Error($"parameter '{name}' must be a whole number between {min} and {max}");
-            }
-            return result;
-        }
-        public byte ByteParameter(string name, byte defaultValue = 0)
-        {
-            if (!definition.Parameters.TryGetValue(name, out var value)) return defaultValue;
-            if (value.ValueKind != JsonValueKind.Number || !value.TryGetByte(out var result))
-            {
-                throw Error($"parameter '{name}' must be a number between 0 and 255");
             }
             return result;
         }

@@ -58,19 +58,19 @@
     .status.ok {
         background: var(--ok-soft);
         color: var(--ok);
-        border-color: #c7e5cd;
+        border-color: var(--ok-line);
     }
 
     .status.bad {
         background: var(--bad-soft);
         color: var(--bad);
-        border-color: #f1c1c1;
+        border-color: var(--bad-line);
     }
 
     .status.warn {
         background: var(--warn-soft);
         color: var(--warn);
-        border-color: #efd9ae;
+        border-color: var(--warn-line);
     }
 
 .hint {
