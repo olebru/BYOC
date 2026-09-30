@@ -30,3 +30,10 @@ Conditional jumps such as [JEQ](exuarch:instruction/JEQ) show how the flags are 
 2. Run [Fibonacci on the LCD](<exuarch:program/Fibonacci on the LCD>) at ⚡ Max. It prints numbers in decimal without a divide instruction, by subtracting each place value as often as it fits.
 3. Open the [Decoder ROM](exuarch:tab/Run) panel under the schematic while stepping: each tick is one row of it.
 4. Change something: give [INA](exuarch:instruction/INA) a sibling that adds 2, or make [PSA](exuarch:instruction/PSA) shorter, and see what breaks.
+
+## Read more
+
+- [Fetch and the instruction register](exuarch:guide/fetch-and-the-instruction-register): how fetch and the instruction register step through an instruction.
+- [Flags and conditions](exuarch:guide/flags-and-conditions): how JEQ and the other jumps pick their steps.
+- [Memory and banks](exuarch:guide/memory-and-banks): the MMU banks behind the stack.
+- [Registers and the ALU](exuarch:guide/registers-and-the-alu): a tutorial that builds a machine like this one from scratch.

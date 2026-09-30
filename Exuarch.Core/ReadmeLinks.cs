@@ -10,11 +10,13 @@ namespace Exuarch.Core
     //   exuarch:program/Hello, world    that example program (write the link as <exuarch:program/...> when it has spaces)
     //   exuarch:tab/Run                 one of the app's tabs
     //   exuarch:package/RISC-16         a built in package, loaded in place of the current machine
-    // Guides are not about one machine, so they can only link to tabs and packages.
+    //   exuarch:guide/microcode         a handbook page
+    //   exuarch:reference/alu           the reference page of a device type
+    // Guides are not about one machine, so they can only link to tabs, packages, guides and the reference.
     public static class ReadmeLinks
     {
         public const string Scheme = "exuarch:";
-        public static readonly string[] Kinds = { "device", "instruction", "program", "tab", "package" };
+        public static readonly string[] Kinds = { "device", "instruction", "program", "tab", "package", "guide", "reference" };
         public static readonly string[] Tabs = { "Hardware design", "Microcode", "Program", "JSON", "Run" };
         private static readonly Regex Markdown = new Regex(@"\]\(<?(exuarch:[^)>]+)>?\)", RegexOptions.Compiled);
 
@@ -36,12 +38,15 @@ namespace Exuarch.Core
             return markdown == null ? Enumerable.Empty<string>() : Markdown.Matches(markdown).Select(m => m.Groups[1].Value);
         }
 
+        // Links that work without a machine, in guides.
+        public static readonly string[] MachineFreeKinds = { "tab", "package", "guide", "reference" };
+
         // Why the link does not lead anywhere in this package, or null when it does. Without a package (in a guide)
-        // only tab and package links work.
+        // only the machine free kinds work.
         public static string Problem(MachinePackage package, string href)
         {
-            if (!TryParse(href, out var kind, out var target)) return $"'{href}' is not an exuarch: link to a device, instruction, program, tab or package";
-            if (package == null && kind != "tab" && kind != "package") return $"a guide can not link to a {kind}, only to tabs and packages";
+            if (!TryParse(href, out var kind, out var target)) return $"'{href}' is not an exuarch: link to a device, instruction, program, tab, package, guide or reference page";
+            if (package == null && !MachineFreeKinds.Contains(kind)) return $"a guide can not link to a {kind}, only to tabs, packages, guides and the reference";
             switch (kind)
             {
                 case "device":
@@ -52,6 +57,10 @@ namespace Exuarch.Core
                     return package.Programs.Any(p => p.Name == target) ? null : $"there is no program '{target}'";
                 case "package":
                     return BuiltInPackages.All.Any(p => p.Name == target) ? null : $"there is no built in package '{target}'";
+                case "guide":
+                    return Guides.Find(target) != null ? null : $"there is no guide '{target}'";
+                case "reference":
+                    return DeviceReference.Exists(target) ? null : $"there is no device type '{target}'";
                 default:
                     return Tabs.Contains(target) ? null : $"there is no tab '{target}'";
             }

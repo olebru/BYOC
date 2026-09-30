@@ -21,6 +21,7 @@ namespace Exuarch.Web.Components
         private const int DebounceMilliseconds = 250;
 
         [Inject] private IJSRuntime JS { get; set; }
+        [Inject] private HelpService Help { get; set; }
 
         [Parameter] public string Value { get; set; }
         [Parameter] public EventCallback<string> ValueChanged { get; set; }
@@ -164,6 +165,13 @@ namespace Exuarch.Web.Components
         public string Hover(string source, int line, int column)
         {
             return language.Hover(source, line, column);
+        }
+
+        // A handbook link in a hover.
+        [JSInvokable]
+        public void OpenLink(string href)
+        {
+            if (ReadmeLinks.TryParse(href, out var kind, out var target)) Help.Open(kind, target);
         }
 
         [JSInvokable]

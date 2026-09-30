@@ -35,6 +35,9 @@ window.exuarchEditor = {
 
 // Package READMEs: links into the app (exuarch:...) go to .NET, web links open in a new tab.
 window.exuarchReadme = {
+    scrollTop: function (element) {
+        if (element) element.scrollTop = 0;
+    },
     attach: function (element, dotnet) {
         element.addEventListener('click', function (e) {
             const link = e.target.closest('a');

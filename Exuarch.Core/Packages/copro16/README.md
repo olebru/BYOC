@@ -23,3 +23,9 @@ From then on the blitter works by itself. Every tick it puts one value on the vi
 1. Run [Rectangles while the CPU writes](<exuarch:program/Rectangles while the CPU writes>) and step it in the [Run view](exuarch:tab/Run): while the blitter paints, the CPU prints the rectangle's name on the LCD. Watch the main and video buses carry values in the same ticks.
 2. [Checkerboard](<exuarch:program/Checkerboard>) uses the overlap properly: the CPU works out the next square while the blitter fills the current one.
 3. The CPU spends most of its time waiting on `BST`. The IRQ-16 package shows how an interrupt removes that waiting.
+
+## Read more
+
+- [Bus masters and coprocessors](exuarch:guide/bus-masters): how the blitter works on its own bus.
+- [Bridges between buses](exuarch:guide/bridges): the other way to join two buses, with a register that sits on both.
+- [Interrupts](exuarch:guide/interrupts): the next step: the blitter raising an interrupt when it is done.

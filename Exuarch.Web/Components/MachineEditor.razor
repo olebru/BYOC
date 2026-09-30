@@ -38,7 +38,7 @@
 
     <div class="body">
         <div class="palette" @ref="paletteElement" @onscroll="HideTip">
-            <div class="palette-title">Devices</div>
+            <div class="palette-title">Devices<HelpLink Target="devices-and-control-lines" Title="Devices, ports, connections and control lines" /></div>
             <div class="palette-hint">Drag onto the canvas, or click to add</div>
             @foreach (var category in Registry.TypeInfos.GroupBy(i => i.Category))
             {
@@ -170,7 +170,7 @@
             @if (selected != null)
             {
                 var info = Info(selected);
-                <div class="inspector-title"><span class="dot" style="background:@CategoryColor(info)"></span>@selected.Type</div>
+                <div class="inspector-title"><span class="dot" style="background:@CategoryColor(info)"></span>@selected.Type<HelpLink Kind="reference" Target="@selected.Type" Title="@($"Reference: {selected.Type}")" /></div>
                 <div class="inspector-description">@info.Description</div>
 
                 <label>ID</label>
@@ -215,7 +215,7 @@
                     }
                 }
                 var usedBy = UsageSummary(selected.Id);
-                <div class="section">Used by microcode <span class="muted">@(usedBy.Count == 0 ? "not used" : $"{usedBy.Sum(u => u.Steps.Count)} signals in {usedBy.Count} instructions")</span></div>
+                <div class="section">Used by microcode<HelpLink Target="microcode" Title="Microcode: steps and signals" /> <span class="muted">@(usedBy.Count == 0 ? "not used" : $"{usedBy.Sum(u => u.Steps.Count)} signals in {usedBy.Count} instructions")</span></div>
                 @if (usedBy.Count > 0)
                 {
                     <div class="chips">
@@ -246,7 +246,7 @@
             }
             else if (selectedBusDefinition != null)
             {
-                <div class="inspector-title"><span class="dot" style="background:@BusColor(selectedBusDefinition.Id)"></span>bus</div>
+                <div class="inspector-title"><span class="dot" style="background:@BusColor(selectedBusDefinition.Id)"></span>bus<HelpLink Target="buses-and-ticks" Title="Buses and the two-phase tick" /></div>
                 <div class="inspector-description">Shared 16 bit data path. Only one device may drive it per tick.</div>
                 <label>ID</label>
                 <input class="form-control form-control-sm @(renameError != null ? "is-invalid" : "")" value="@selectedBusDefinition.Id" @onchange="e => RenameSelectedBus((string)e.Value)" />
@@ -269,8 +269,8 @@
                 <label>Name</label>
                 <input class="form-control form-control-sm" value="@Definition.Name" @onchange="e => Mutate(() => Definition.Name = Blank((string)e.Value))" />
 
-                <div class="section">Decoder</div>
-                <label>Status register <span class="muted">selects flag variants</span></label>
+                <div class="section">Decoder<HelpLink Target="fetch-and-the-instruction-register" Title="Fetch, the decoder and the instruction register" /></div>
+                <label>Status register <span class="muted">selects flag variants</span><HelpLink Target="flags-and-conditions" Title="Flags and conditions" /></label>
                 <select class="form-control form-control-sm" value="@(Definition.Decoder?.Status ?? "")" @onchange="e => SetDecoder(d => d.Status = Blank((string)e.Value))">
                     <option value="">— none —</option>
                     @foreach (var device in Definition.Devices) { <option value="@device.Id">@device.Id (@device.Type)</option> }
@@ -281,14 +281,14 @@
                     @foreach (var device in Definition.Devices.Where(d => d.Type == "instructionRegister" || d.Id == Definition.Decoder?.InstructionRegister)) { <option value="@device.Id">@device.Id (@device.Type)</option> }
                 </select>
 
-                <label>Interrupts <span class="muted">controller for the I condition, optional</span></label>
+                <label>Interrupts <span class="muted">controller for the I condition, optional</span><HelpLink Target="interrupts" Title="Interrupts" /></label>
                 <select class="form-control form-control-sm" value="@(Definition.Decoder?.Interrupts ?? "")" @onchange="e => SetDecoder(d => d.Interrupts = Blank((string)e.Value))">
                     <option value="">— none —</option>
                     @foreach (var device in Definition.Devices.Where(d => d.Type == "interruptController" || d.Id == Definition.Decoder?.Interrupts)) { <option value="@device.Id">@device.Id (@device.Type)</option> }
                 </select>
 
                 <div class="section">Program</div>
-                <label>Program memory</label>
+                <label>Program memory<HelpLink Target="memory-and-banks" Title="Memory and banks" /></label>
                 <select class="form-control form-control-sm" value="@(Definition.ProgramMemory ?? "")" @onchange="e => Mutate(() => Definition.ProgramMemory = Blank((string)e.Value))">
                     <option value="">— none —</option>
                     @foreach (var device in Definition.Devices.Where(d => d.Type == "ram")) { <option value="@device.Id">@device.Id</option> }

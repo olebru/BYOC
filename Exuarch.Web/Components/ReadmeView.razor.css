@@ -134,6 +134,11 @@
     text-align: left;
 }
 
+/* Line and parameter names stay whole; the description column takes the wrapping. */
+.readme ::deep td code {
+    white-space: nowrap;
+}
+
 .readme ::deep th {
     background: var(--surface-2);
     font-family: var(--font-mono);

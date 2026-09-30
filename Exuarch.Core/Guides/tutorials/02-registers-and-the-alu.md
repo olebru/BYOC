@@ -1,0 +1,76 @@
+# Registers and the ALU
+
+The machine from [Your first machine](exuarch:guide/first-machine) can print what the program spells out, but it cannot compute anything. In this tutorial you give it two registers and an ALU, and it counts along the alphabet: `A`, `B`, `C`.
+
+## Add two registers
+
+1. Open [Hardware design](<exuarch:tab/Hardware design>).
+2. Drag two **register** devices onto the canvas next to the bus.
+3. Set their IDs to `a` and `b`.
+
+A [register](exuarch:reference/register) holds one 16 bit value between ticks. `output` drives it onto the bus, `load` stores the bus value, and `reset`, `inc` and `dec` change it in place. Register `a` will be the accumulator, where results end up; `b` holds the second operand.
+
+## Add an ALU
+
+1. Drag an **alu** onto the canvas. Its ID is already `alu`.
+2. In the inspector, under **Connections**, set **a** to `a`, **b** to `b` and **status** to `status`.
+
+The [alu](exuarch:reference/alu) is not wired to its operands through the bus: it reads the two registers you connect as `a` and `b` directly, and writes its flags straight into the connected status register. What it puts on the bus is the result. `alu.add` drives `a + b`, `alu.sub` drives `a - b`, and there are lines for `and`, `orr`, `eor` and the shifts `lsl` and `lsr`.
+
+## Write four instructions
+
+Open [Microcode](exuarch:tab/Microcode) and add these, with **＋ Instruction** for each.
+
+`LAI` loads `a` with a value, one operand of type **value**:
+
+- step 1: `pc.output` `mem.loadmar`
+- step 2: `mem.output` `a.load` `pc.inc` `ir.reset`
+
+`LBI` is the same for `b`, one **value** operand:
+
+- step 1: `pc.output` `mem.loadmar`
+- step 2: `mem.output` `b.load` `pc.inc` `ir.reset`
+
+`ADD` has no operands and one step:
+
+- step 1: `alu.add` `a.load` `ir.reset`
+
+`OUTA` prints `a`, no operands:
+
+- step 1: `a.output` `lcd.load` `ir.reset`
+
+`LAI` and `LBI` are `OUT` from the last tutorial with a register in place of the display. Duplicate `OUT` and change the signals if you like.
+
+`ADD` does its work in one tick. The ALU reads `a` and `b` in the first half of the tick and drives the sum onto the bus; in the second half `a` stores the sum. `a` changes only at the end of the tick, so reading and writing it in the same step is safe. This is also why `ADD` needs no `pc.inc`: fetch has already stepped past its opcode, and it has no operand to skip.
+
+## Write the program
+
+Open [Program](exuarch:tab/Program) and replace the program with:
+
+```asm
+        LAI 'A'
+        OUTA
+        LBI 1
+        ADD
+        OUTA
+        ADD
+        OUTA
+        HLT
+```
+
+## Run it
+
+Open [Run](exuarch:tab/Run) and run it: the LCD shows `ABC`. `a` starts at 65, the code of `A`, and each `ADD` adds the 1 in `b`.
+
+Watch the **Trace** during an `ADD`: its bus column shows the ALU driving the sum and `a` taking it, in one tick. The ALU also wrote the status register; it does that on every `alu` operation, which the next tutorial uses.
+
+Things to try:
+
+- Print `ACE` by loading `b` with 2.
+- Add `SUB` with the step `alu.sub` `a.load` `ir.reset` and count backwards.
+
+## Next
+
+- [Loops and flags](exuarch:guide/loops-and-flags): make the machine decide what to do next.
+- [Devices and control lines](exuarch:guide/devices-and-control-lines) covers inputs, outputs and connections.
+- [Microcode](exuarch:guide/microcode) covers steps and signals in depth.

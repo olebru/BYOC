@@ -373,6 +373,9 @@
             <button class="btab @(bottomTab == "Memory" ? "on" : "")" @onclick="@(() => bottomTab = "Memory")">Memory</button>
             <button class="btab @(bottomTab == "Decoder" ? "on" : "")" @onclick="@(() => bottomTab = "Decoder")">Decoder ROM</button>
             <button class="btab @(bottomTab == "Trace" ? "on" : "")" @onclick="@(() => bottomTab = "Trace")">Trace</button>
+            @if (bottomTab == "Memory") { <HelpLink Target="memory-and-banks" Title="Memory and banks" /> }
+            else if (bottomTab == "Decoder") { <HelpLink Target="flags-and-conditions" Title="The decoder ROM, flags and conditions" /> }
+            else { <HelpLink Target="buses-and-ticks" Title="Buses and the two-phase tick" /> }
             @if (bottomTab == "Decoder")
             {
                 <span class="sep"></span>

@@ -43,3 +43,9 @@ Look at [IMM_TO_ADD](exuarch:instruction/IMM_TO_ADD) in the microcode: it reads 
 2. [Count from 00 to 99](<exuarch:program/Count from 00 to 99>) calls a subroutine by moving into `CALL` and returns with `R3_TO_JMP`.
 3. [XOR texture](<exuarch:program/XOR texture>) is slow on purpose, a dozen moves per value. Run it at ⚡ Max and watch the [screen](exuarch:tab/Run) fill.
 4. Add a port: a `MUL` trigger would be one more destination, and every source would get a move into it.
+
+## Read more
+
+- [Microcode](exuarch:guide/microcode): what the moves are made of.
+- [Devices and control lines](exuarch:guide/devices-and-control-lines): the devices behind the ports.
+- [Buses and the two-phase tick](exuarch:guide/buses-and-ticks): how one move happens in a tick.

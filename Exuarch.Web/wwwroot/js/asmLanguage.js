@@ -12,6 +12,12 @@ window.exuarchAsm = {
         const id = this.languageId;
         if (!this.registered) {
             this.registered = true;
+            // Links in hovers written exuarch:guide/... open the handbook. Monaco drops links with schemes it does not
+            // know, so the hover turns them into this command, which trusted hover text may run.
+            const language = this;
+            monaco.editor.registerCommand('exuarch.open', function (accessor, href) {
+                language.service.invokeMethodAsync('OpenLink', href);
+            });
             monaco.languages.register({ id: id });
             monaco.languages.setLanguageConfiguration(id, {
                 comments: { lineComment: ';' },
@@ -79,7 +85,11 @@ window.exuarchAsm = {
             monaco.languages.registerHoverProvider(id, {
                 provideHover: async function (model, position) {
                     const markdown = await self.service.invokeMethodAsync('Hover', model.getValue(), position.lineNumber, position.column);
-                    return markdown ? { contents: [{ value: markdown }] } : null;
+                    if (!markdown) return null;
+                    const value = markdown.replace(/\]\((exuarch:[^)]+)\)/g, function (match, href) {
+                        return '](command:exuarch.open?' + encodeURIComponent(JSON.stringify([href])) + ')';
+                    });
+                    return { contents: [{ value: value, isTrusted: true }] };
                 },
             });
             monaco.languages.registerDocumentFormattingEditProvider(id, {

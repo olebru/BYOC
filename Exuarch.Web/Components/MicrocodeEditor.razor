@@ -16,6 +16,7 @@
             <span class="meter-bar"><span class="meter-fill @(OpCodesUsed > AddressSpace ? "over" : "")" style="width:@(Math.Max(OpCodesUsed > 0 ? 1 : 0, Math.Min(100, OpCodesUsed * 100 / AddressSpace)))%"></span></span>
             <span class="meter-count"><strong>@OpCodesUsed</strong> / @AddressSpace</span> <span class="silk">opcodes</span>
         </span>
+        <HelpLink Target="microcode" Title="Microcode: instructions, steps and signals" />
         <span class="grow"></span>
         @if (Diagnostics.Count == 0)
         {
@@ -95,7 +96,7 @@
                     @if (!SelectedIsFetch)
                     {
                         <div class="field operands-field">
-                            <label>Operands</label>
+                            <label>Operands<HelpLink Target="operands" Title="Operands: how many, and value or address" /></label>
                             <input type="number" min="0" max="8" class="form-control form-control-sm" placeholder="?" value="@instruction.Operands" @onchange="e => SetOperands((string)e.Value)" />
                         </div>
                     }
@@ -132,11 +133,11 @@
                 </div>
                 @if (SelectedIsFetch)
                 {
-                    <div class="hint">The fetch routine runs at opcode 0 after every instruction resets the micro step register. It should load the next opcode into it.</div>
+                    <div class="hint">The fetch routine runs at opcode 0 after every instruction resets the micro step register. It should load the next opcode into it.<HelpLink Target="fetch-and-the-instruction-register" Title="Fetch and the instruction register" /></div>
                 }
 
                 <div class="preview">
-                    <span class="preview-label silk">Preview flags</span>
+                    <span class="preview-label silk">Preview flags<HelpLink Target="flags-and-conditions" Title="Flags and conditions: which steps run" /></span>
                     <button class="flag @(previewStatus == null ? "on" : "")" @onclick="() => previewStatus = null">all steps</button>
                     @foreach (var flag in Flags)
                     {
