@@ -177,7 +177,7 @@ public class WordTests
     {
         var rom = new DecoderRom(MicrocodeDefinition.FromJson(ExampleData.MICROCODE));
         var assembler = new Assembler(rom);
-        var cells = assembler.Assemble("\tLAI\t#1000\n\tLBI\t#0xBEEF\n\tJMP\tfar\n\t.WORD\t#65535\nfar:\tHLT");
+        var cells = assembler.Assemble("\tLAI\t#1000\n\tLBI\t#0xBEEF\n\tJMP\tfar\n\t.DATA\t#65535\nfar:\tHLT");
         Assert.Equal(new[] { rom.FetchByteCodeFromMnemonic("LAI"), 1000, rom.FetchByteCodeFromMnemonic("LBI"), 0xBEEF, rom.FetchByteCodeFromMnemonic("JMP"), 7, 65535, rom.FetchByteCodeFromMnemonic("HLT") }, cells);
         Assert.Contains("between 0 and 65535", Assert.Throws<FormatException>(() => assembler.Assemble("\tLAI\t#65536")).Message);
         Assert.Contains("only holds 4", Assert.Throws<FormatException>(() => new Assembler(rom, 4).Assemble("\tLAI\t#1\n\tLBI\t#2\n\tHLT")).Message);

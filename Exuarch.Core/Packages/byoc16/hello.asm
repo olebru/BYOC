@@ -17,4 +17,4 @@ loop:   LNA    msg         ; A = msg[B]
         DWI    'ø'
         DWI    'å'
         HLT
-msg:    .BYTE  "HELLO, WORLD!"
+msg:    .DATA  "HELLO, WORLD!"

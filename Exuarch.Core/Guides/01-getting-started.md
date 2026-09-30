@@ -6,7 +6,7 @@ ExµArch is a workbench for computers that don't exist yet. You wire up the hard
 
 - [Hardware design](<exuarch:tab/Hardware design>): the devices and the buses between them. Drag a device from the palette onto the canvas and it lands on the nearest bus. Select a device to see what it does, its control lines, its connections and its parameters.
 - [Microcode](exuarch:tab/Microcode): the instruction set. An instruction is a list of steps, and each step names the control lines that are on for one tick, written `device.line`, such as `pc.output`. A step can be limited to certain flags, such as Z=1, which is how a conditional jump is made.
-- [Program](exuarch:tab/Program): assembly for the machine. The mnemonics are the instructions from the microcode, followed by their operands. A label ends in `:`, a comment starts with `;`, and `.BYTE` and `.WORD` place data.
+- [Program](exuarch:tab/Program): assembly for the machine. The mnemonics are the instructions from the microcode, followed by their operands. A label ends in `:`, a comment starts with `;`, `.DATA` places values in memory, one cell each, and `.STRING` places text followed by a 0.
 - [JSON](exuarch:tab/JSON): the whole machine as one file, kept in step with the editors.
 - [Run](exuarch:tab/Run): the machine running. **Tick** (→) runs one clock tick, **Instruction** (Shift+→) finishes the current instruction and fetches the next, **Space** runs and pauses, and **R** resets. Below the machine are the memory, the decoder ROM and a trace of every tick.
 

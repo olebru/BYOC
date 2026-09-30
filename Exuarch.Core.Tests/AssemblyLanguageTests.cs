@@ -22,7 +22,7 @@ public class AssemblyLanguageTests
     [Fact]
     public void LiteralsCharactersAndStrings()
     {
-        var result = Language().Analyze("LAI #0x2A\nLBI #'Æ'\ndata: .BYTE \"Hi\\n\", #'\\'', #7");
+        var result = Language().Analyze("LAI #0x2A\nLBI #'Æ'\ndata: .DATA \"Hi\\n\", #'\\'', #7");
         Assert.True(result.Success, string.Join(" | ", result.Diagnostics));
         Assert.Equal(new[] { Op("LAI"), 42, Op("LBI"), 198, 'H', 'i', 10, '\'', 7 }, result.Cells);
     }
@@ -39,13 +39,13 @@ public class AssemblyLanguageTests
             d => Assert.Equal((6, 5, "'#70000' is not a number between 0 and 65535"), (d.Line, d.StartColumn, d.Message)),
             d => Assert.Equal((7, 1, "LAI takes 1 operand, found 2"), (d.Line, d.StartColumn, d.Message)),
             d => Assert.Equal((7, 8, "missing ',' before '#2'"), (d.Line, d.StartColumn, d.Message)),
-            d => Assert.Equal((8, 5, "a string is only allowed in .BYTE and .WORD"), (d.Line, d.StartColumn, d.Message)));
+            d => Assert.Equal((8, 5, "a string is only allowed in .DATA and .STRING"), (d.Line, d.StartColumn, d.Message)));
     }
 
     [Theory]
     [InlineData("LAI #12z", "is not a number")]
     [InlineData("LAI #'ab'", "exactly one character")]
-    [InlineData(".BYTE \"open", "missing closing \"")]
+    [InlineData(".STRING \"open", "missing closing \"")]
     [InlineData("LAI #1,", "missing operand after ','")]
     [InlineData("#1", "needs a mnemonic before it")]
     [InlineData("NOP x: y", "a label must come first")]
@@ -63,7 +63,9 @@ public class AssemblyLanguageTests
         Assert.Equal("value", lai.Detail);
         Assert.Equal("Load A with the operand", lai.Documentation);
         Assert.Equal("LAI ", lai.InsertText);
-        Assert.Contains(start, i => i.Label == ".BYTE" && i.Kind == CompletionKind.Directive);
+        Assert.Contains(start, i => i.Label == ".DATA" && i.Kind == CompletionKind.Directive);
+        Assert.Contains(start, i => i.Label == ".STRING" && i.Kind == CompletionKind.Directive);
+        Assert.DoesNotContain(start, i => i.Label == ".BYTE" || i.Label == ".WORD");
         Assert.DoesNotContain(start, i => i.Label == "FTC");
 
         var operands = Language().Complete(source, 3, 10);
@@ -143,19 +145,42 @@ public class AssemblyLanguageTests
     public void MnemonicsAreCaseInsensitiveAndFormattingNormalisesThem()
     {
         var language = Language();
-        var lower = language.Analyze("start: lai #1\n  jmp start\n  .byte #2");
+        var lower = language.Analyze("start: lai #1\n  jmp start\n  .data #2");
         Assert.True(lower.Success, string.Join(" | ", lower.Diagnostics));
-        Assert.Equal(language.Analyze("start: LAI #1\nJMP start\n.BYTE #2").Cells, lower.Cells);
+        Assert.Equal(language.Analyze("start: LAI #1\nJMP start\n.DATA #2").Cells, lower.Cells);
         Assert.Contains("**LAI**", language.Hover("lai #1", 1, 2));
-        Assert.Equal("start:  LAI    1\n        JMP    start\n        .BYTE  2", language.FormatDocument("start: lai #1\n  jmp start\n  .byte #2"));
+        Assert.Equal("start:  LAI    1\n        JMP    start\n        .DATA  2", language.FormatDocument("start: lai #1\n  jmp start\n  .data #2"));
         Assert.Equal("        LAI   1", language.FormatDocumentLine("start: nop\nlai #1", 2));
+    }
+
+    [Fact]
+    public void StringEndsWithAZeroCell()
+    {
+        var result = Language().Analyze("msg: .STRING \"Hi\", 10\nnext: .DATA 7, msg");
+        Assert.True(result.Success, string.Join(" | ", result.Diagnostics));
+        Assert.Equal(new[] { 'H', 'i', 10, 0, 7, 0 }, result.Cells);
+        // The terminator counts when labels are placed.
+        Assert.Equal(4, result.Labels["next"]);
+        Assert.Equal(new[] { 0 }, Language().Analyze(".STRING \"\"").Cells);
+        Assert.Contains("0 cell", Language().Hover(".STRING \"x\"", 1, 3));
+    }
+
+    [Fact]
+    public void ByteAndWordAreOldNamesForData()
+    {
+        var old = Language().Analyze("a: .BYTE \"ok\", 1\nb: .word 0xBEEF, a");
+        Assert.True(old.Success, string.Join(" | ", old.Diagnostics));
+        Assert.Equal(Language().Analyze("a: .DATA \"ok\", 1\nb: .DATA 0xBEEF, a").Cells, old.Cells);
+        Assert.Equal(2, old.Diagnostics.Count(d => d.Severity == DiagnosticSeverity.Warning && d.Message.Contains("old name for .DATA")));
+        Assert.Contains("old name", Language().Hover(".WORD 1", 1, 3));
+        Assert.Contains(Language().Analyze(".DWORD 1").Diagnostics, d => d.Message == "unknown directive '.DWORD', use .DATA or .STRING");
     }
 
     [Fact]
     public void LiteralsNeedNoHash()
     {
-        var bare = Language().Analyze("LAI 15\nLBI 0x2A\nDWI 'Æ'\nLDA 3\ndata: .BYTE 1, 'x', \"ok\"");
-        var hashed = Language().Analyze("LAI #15\nLBI #0x2A\nDWI #'Æ'\nLDA #3\ndata: .BYTE #1, #'x', \"ok\"");
+        var bare = Language().Analyze("LAI 15\nLBI 0x2A\nDWI 'Æ'\nLDA 3\ndata: .DATA 1, 'x', \"ok\"");
+        var hashed = Language().Analyze("LAI #15\nLBI #0x2A\nDWI #'Æ'\nLDA #3\ndata: .DATA #1, #'x', \"ok\"");
         Assert.True(bare.Success, string.Join(" | ", bare.Diagnostics));
         Assert.Equal(hashed.Cells, bare.Cells);
         Assert.Contains(Language().Analyze("LAI 12z").Diagnostics, d => d.Message.Contains("is not a number"));

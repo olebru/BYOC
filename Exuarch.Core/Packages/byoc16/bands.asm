@@ -70,11 +70,11 @@ white_band:   LRA    white       ; A = the colour
               JNE    white_band
               HLT
 ; RGB565 colours
-red:          .WORD  0xF800
-orange:       .WORD  0xFD20
-yellow:       .WORD  0xFFE0
-green:        .WORD  0x07E0
-cyan:         .WORD  0x07FF
-blue:         .WORD  0x001F
-magenta:      .WORD  0xF81F
-white:        .WORD  0xFFFF
+red:          .DATA  0xF800
+orange:       .DATA  0xFD20
+yellow:       .DATA  0xFFE0
+green:        .DATA  0x07E0
+cyan:         .DATA  0x07FF
+blue:         .DATA  0x001F
+magenta:      .DATA  0xF81F
+white:        .DATA  0xFFFF

@@ -3,14 +3,17 @@ using System.Collections.Generic;
 using System.Linq;
 namespace Exuarch.Core
 {
-    // Two pass assembler. Each opcode and operand takes one 16 bit memory cell; a string in .BYTE or .WORD takes
-    // one cell per character. See AssemblyParser for the syntax.
+    // Two pass assembler. Each opcode and operand takes one 16 bit memory cell; a string in .DATA or .STRING takes
+    // one cell per character, and .STRING ends with a 0 cell. See AssemblyParser for the syntax.
     public class Assembler
     {
         public Dictionary<String, int> labelLUT;
         // One entry per source line that has a label or emits cells, in address order.
         public List<ListingLine> Listing { get; private set; } = new List<ListingLine>();
-        public static readonly string[] Directives = { ".BYTE", ".WORD" };
+        public static readonly string[] Directives = { ".DATA", ".STRING" };
+        // Older names for .DATA: both always stored one value per cell. They still assemble, with a warning.
+        public static readonly string[] OldDirectives = { ".BYTE", ".WORD" };
+        public const string StringDirective = ".STRING";
         private const int cellMask = Bus.Mask;
         private readonly int memorySize;
         private readonly Func<string, int?> opcodeOf;
@@ -116,7 +119,9 @@ namespace Exuarch.Core
                 }
                 if (line.IsDirective)
                 {
-                    if (!Directives.Contains(line.Mnemonic.Text.ToUpperInvariant())) Error(line, line.Mnemonic, $"unknown directive '{line.Mnemonic.Text}'");
+                    var directive = line.Mnemonic.Text.ToUpperInvariant();
+                    if (OldDirectives.Contains(directive)) Warning(line, line.Mnemonic, $"{directive} is an old name for .DATA: every value takes one 16 bit cell either way. Use .DATA, or .STRING for text that ends with 0.");
+                    else if (!Directives.Contains(directive)) Error(line, line.Mnemonic, $"unknown directive '{line.Mnemonic.Text}', use .DATA or .STRING");
                 }
                 else
                 {
@@ -140,7 +145,7 @@ namespace Exuarch.Core
                             cells.Add(operand.Values[0] & cellMask);
                             break;
                         case TokenKind.String:
-                            if (!line.IsDirective) Error(line, operand, "a string is only allowed in .BYTE and .WORD");
+                            if (!line.IsDirective) Error(line, operand, "a string is only allowed in .DATA and .STRING");
                             cells.AddRange(operand.Values);
                             break;
                         case TokenKind.LabelReference:
@@ -160,6 +165,7 @@ namespace Exuarch.Core
                             break;
                     }
                 }
+                if (IsString(line)) cells.Add(0);
                 if (cells.Count > memorySize && start <= memorySize)
                 {
                     Error(line, line.Mnemonic, $"the program is {address} cells, but program memory only holds {memorySize}");
@@ -173,12 +179,17 @@ namespace Exuarch.Core
             return result;
         }
 
-        // Cells a line takes: opcode plus one per operand, and one per character for strings.
+        // Cells a line takes: opcode plus one per operand, one per character for strings, and the 0 after .STRING.
         private static int CellCount(ParsedLine line)
         {
             if (line.Mnemonic == null) return 0;
             int operands = line.Operands.Sum(o => o.Kind == TokenKind.String ? o.Values.Length : 1);
-            return (line.IsDirective ? 0 : 1) + operands;
+            return (line.IsDirective ? 0 : 1) + operands + (IsString(line) ? 1 : 0);
+        }
+
+        private static bool IsString(ParsedLine line)
+        {
+            return line.IsDirective && line.Mnemonic.Text.Equals(StringDirective, StringComparison.OrdinalIgnoreCase);
         }
 
         private static ListingLine ToListing(ParsedLine line, int address, int[] cells)
@@ -219,7 +230,7 @@ namespace Exuarch.Core
         public string[] Operands { get; set; }
         public int Address { get; set; }
         public int[] Cells { get; set; }
-        // False for .BYTE / .WORD data and label only lines.
+        // False for .DATA / .STRING data and label only lines.
         public bool IsInstruction { get; set; }
     }
 }
