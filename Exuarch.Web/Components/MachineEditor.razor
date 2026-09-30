@@ -63,10 +63,10 @@
         </div>
 
         <div class="canvas-scroller" tabindex="0" @ref="canvasScroller" @onkeydown="OnKeyDown">
-            <div class="canvas-sizer" style="width:@Px(CanvasWidth * zoom); height:@Px(CanvasHeight * zoom)">
-                <div class="canvas" @ref="canvasElement" style="width:@Px(CanvasWidth); height:@Px(CanvasHeight); transform:scale(@N(zoom))"
+            <div class="canvas-sizer" style="width:@Px(Layout.CanvasWidth * zoom); height:@Px(Layout.CanvasHeight * zoom)">
+                <div class="canvas" @ref="canvasElement" style="width:@Px(Layout.CanvasWidth); height:@Px(Layout.CanvasHeight); transform:scale(@N(zoom))"
                      @onpointerdown="ClearSelection">
-                    <svg class="wires" width="@N(CanvasWidth)" height="@N(CanvasHeight)">
+                    <svg class="wires" width="@N(Layout.CanvasWidth)" height="@N(Layout.CanvasHeight)">
                         <defs>
                             <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
                                 <path class="arrow-head" d="M 0 0 L 10 5 L 0 10 z" />
@@ -78,9 +78,11 @@
                             var color = BusColor(bus.Id);
                             var hot = drag?.Kind == DragKind.WirePort && BusNear(drag.Y) == bus;
                             <g class="bus @(selectedBus == bus.Id ? "selected" : "") @(hot ? "hot" : "")" @onpointerdown="e => StartMoveBus(e, bus)" @onpointerdown:stopPropagation>
-                                <rect class="bus-hit" x="10" y="@N(bus.Layout.Y - 14)" width="@N(CanvasWidth - 20)" height="28" />
-                                <rect class="bus-bar" x="16" y="@N(bus.Layout.Y - 3)" width="@N(CanvasWidth - 32)" height="6" rx="1" fill="@color" />
-                                <text class="bus-label" x="24" y="@N(bus.Layout.Y - 10)" fill="@color">@($"{bus.Id}[15:0]")</text>
+                                <rect class="bus-hit" x="10" y="@N(bus.Layout.Y - 14)" width="@N(Layout.CanvasWidth - 20)" height="28" />
+                                <rect class="bus-bar" x="16" y="@N(bus.Layout.Y - 3)" width="@N(Layout.CanvasWidth - 32)" height="6" rx="1" fill="@color" />
+                                <text class="bus-label" x="24" y="@N(bus.Layout.Y - 12)" fill="@color">@($"{bus.Id}[15:0]")</text>
+                                <line class="bus-slash" x1="112" y1="@N(bus.Layout.Y + 8)" x2="122" y2="@N(bus.Layout.Y - 8)" />
+                                <text class="bus-width" x="125" y="@N(bus.Layout.Y - 10)">16</text>
                             </g>
                         }
 
@@ -89,9 +91,9 @@
                             foreach (var port in device.Ports())
                             {
                                 if (Definition.FindBus(port.Value)?.Layout == null) continue;
-                                var anchor = PortAnchor(device, port.Key);
-                                <line class="port-wire" x1="@N(anchor.X)" y1="@N(anchor.Y)" x2="@N(anchor.X)" y2="@N(BusY(port.Value))" stroke="@BusColor(port.Value)" />
-                                <circle class="bus-tap" cx="@N(anchor.X)" cy="@N(BusY(port.Value))" r="3" fill="@BusColor(port.Value)" />
+                                var anchor = Layout.PortAnchor(device, port.Key);
+                                <line class="port-wire" x1="@N(anchor.X)" y1="@N(anchor.Y)" x2="@N(anchor.X)" y2="@N(Layout.BusY(port.Value))" stroke="@BusColor(port.Value)" />
+                                <circle class="bus-tap" cx="@N(anchor.X)" cy="@N(Layout.BusY(port.Value))" r="3" fill="@BusColor(port.Value)" />
                             }
                             var connections = Info(device).Connections;
                             for (int i = 0; i < connections.Count; i++)
@@ -99,108 +101,68 @@
                                 if (!device.Connections.TryGetValue(connections[i].Name, out var targetId)) continue;
                                 var target = Definition.FindDevice(targetId);
                                 if (target?.Layout == null) continue;
-                                <path class="connection-wire" d="@ConnectionPath(device, i, target)" marker-end="url(#arrow)" />
+                                <path class="connection-wire" d="@Layout.ConnectionPath(device, i, target)" marker-end="url(#arrow)" />
                             }
                         }
 
                         @if (Definition.Decoder?.Layout != null)
                         {
-                            for (int i = 0; i < DecoderSockets.Length; i++)
+                            for (int i = 0; i < SchematicLayout.DecoderSockets.Length; i++)
                             {
-                                var target = Definition.FindDevice(DecoderTarget(DecoderSockets[i].Name) ?? "");
+                                var target = Definition.FindDevice(Layout.DecoderTarget(SchematicLayout.DecoderSockets[i].Name) ?? "");
                                 if (target?.Layout == null) continue;
-                                <path class="connection-wire decoder-wire" d="@DecoderPath(i, target)" marker-end="url(#arrow)" />
+                                <path class="connection-wire decoder-wire" d="@Layout.DecoderPath(i, target)" marker-end="url(#arrow)" />
                             }
                         }
                         @if (drag?.Kind == DragKind.WireDecoder && drag.Moved)
                         {
-                            var index = Array.FindIndex(DecoderSockets, s => s.Name == drag.Connection);
-                            <path class="rubber-band" d="@CurveTo(Definition.Decoder.Layout.X + CardWidth, Definition.Decoder.Layout.Y + ConnectionRowY(index), drag.X, drag.Y)" />
+                            var index = Array.FindIndex(SchematicLayout.DecoderSockets, s => s.Name == drag.Connection);
+                            <path class="rubber-band" d="@SchematicLayout.CurveTo(Definition.Decoder.Layout.X + SchematicLayout.CardWidth, Definition.Decoder.Layout.Y + SchematicLayout.SocketRowY(index), drag.X, drag.Y)" />
                         }
                         @if (drag?.Kind == DragKind.WirePort && drag.Moved)
                         {
                             var device = Definition.FindDevice(drag.DeviceId);
-                            var anchor = PortAnchor(device, drag.Port);
+                            var anchor = Layout.PortAnchor(device, drag.Port);
                             <line class="rubber-band" x1="@N(anchor.X)" y1="@N(anchor.Y)" x2="@N(drag.X)" y2="@N(drag.Y)" />
                         }
                         @if (drag?.Kind == DragKind.WireConnection && drag.Moved)
                         {
                             var device = Definition.FindDevice(drag.DeviceId);
                             var index = Info(device).Connections.FindIndex(c => c.Name == drag.Connection);
-                            <path class="rubber-band" d="@CurveTo(device.Layout.X + CardWidth, device.Layout.Y + ConnectionRowY(index), drag.X, drag.Y)" />
+                            <path class="rubber-band" d="@SchematicLayout.CurveTo(device.Layout.X + SchematicLayout.CardWidth, device.Layout.Y + SchematicLayout.SocketRowY(index), drag.X, drag.Y)" />
                         }
                     </svg>
 
                     @foreach (var device in Definition.Devices.Where(d => d.Layout != null))
                     {
                         var info = Info(device);
-                        var height = CardHeight(device);
                         var isTarget = drag?.Kind == DragKind.WireConnection && drag.Moved && DeviceAt(drag.X, drag.Y) == device && device.Id != drag.DeviceId;
-                        <div class="card-device @(selectedDevice == device.Id ? "selected" : "") @(HasProblem(device.Id) ? "problem" : "") @(isTarget ? "drop-target" : "")"
-                             style="left:@Px(device.Layout.X); top:@Px(device.Layout.Y); width:@Px(CardWidth); height:@Px(height); border-top-color:@CategoryColor(info)"
-                             @onpointerdown="e => StartMoveDevice(e, device)" @onpointerdown:stopPropagation>
-                            <div class="card-id" title="@info.Description">@device.Id</div>
-                            <div class="card-type" title="@info.Description">@device.Type@(device.Name != null && device.Name != device.Id ? $" · {device.Name}" : "")</div>
-                            @if (Preview?.Device(device.Id) is Register register)
-                            {
-                                <div class="card-value" title="Value">@register.Data.ToString("X4")</div>
-                            }
-                            @for (int i = 0; i < info.Connections.Count; i++)
-                            {
-                                var connection = info.Connections[i];
-                                device.Connections.TryGetValue(connection.Name, out var targetId);
-                                <div class="socket-row" style="top:@Px(ConnectionRowY(i) - ConnectionRowHeight / 2)" title="@connection.Description">
-                                    <span class="socket-name">@connection.Name</span>
-                                    <span class="socket-target @(targetId == null ? "missing" : "")">@(targetId ?? "drag to a device")</span>
-                                    <span class="socket" @onpointerdown="e => StartWireConnection(e, device, connection.Name)" @onpointerdown:stopPropagation></span>
-                                </div>
-                            }
-                            @foreach (var port in info.Ports)
-                            {
-                                var anchor = PortAnchor(device, port);
-                                var busId = device.GetPortBus(port);
-                                <span class="port @(busId == null ? "unconnected" : "")"
-                                      style="left:@Px(anchor.X - device.Layout.X - 7); top:@Px(anchor.Y - device.Layout.Y - 7); background:@(busId == null ? "var(--surface)" : BusColor(busId))"
-                                      title="Port '@port': @(busId == null ? "drag to a bus" : $"on bus {busId}")"
-                                      @onpointerdown="e => StartWirePort(e, device, port)" @onpointerdown:stopPropagation></span>
-                                @if (info.Ports.Count > 1)
-                                {
-                                    <span class="port-label" style="left:@Px(anchor.X - device.Layout.X + 8); top:@Px(anchor.Bottom ? height + 1 : -15)">@port</span>
-                                }
-                            }
-                        </div>
+                        <DeviceCard Device="device" Layout="Layout" Id="@device.Id" Kind="@(device.Name ?? device.Type)" HeadTitle="@($"{device.Type}: {info.Description}")"
+                                    Left="device.Layout.X" Top="device.Layout.Y" Height="Layout.CardHeight(device)" Color="@CategoryColor(info)" BusColor="BusColor"
+                                    CssClass="@($"{(selectedDevice == device.Id ? "selected" : "")} {(HasProblem(device.Id) ? "problem" : "")} {(isTarget ? "drop-target" : "")}")"
+                                    Built="@Preview?.Device(device.Id)" Machine="Preview" Sockets="DeviceCard.SocketsOf(device, info)"
+                                    OnCardPointerDown="e => StartMoveDevice(e, device)"
+                                    OnSocketPointerDown="a => StartWireConnection(a.Item1, device, a.Item2)"
+                                    OnPortPointerDown="a => StartWirePort(a.Item1, device, a.Item2)" />
                     }
 
                     @if (Definition.Decoder?.Layout != null)
                     {
-                        var layout = Definition.Decoder.Layout;
+                        var decoderLayout = Definition.Decoder.Layout;
                         var microcode = Definition.Decoder.Microcode;
-                        <div class="card-device card-decoder @(selectedDecoder ? "selected" : "") @(DecoderHasProblem ? "problem" : "")"
-                             style="left:@Px(layout.X); top:@Px(layout.Y); width:@Px(CardWidth); height:@Px(DecoderHeight)"
-                             title="The decoder runs the microcode: every tick it reads the next step from its ROM and turns on that step's control lines"
-                             @onpointerdown="StartMoveDecoder" @onpointerdown:stopPropagation>
-                            <div class="card-id">decoder</div>
-                            <div class="card-type" title="The decoder ROM holds the microcode">@(microcode == null ? "no microcode" : $"{microcode.Instructions.Count} instructions")</div>
-                            @if (DecoderStep is int step)
-                            {
-                                <div class="card-value" title="The micro step the instruction register points at">@step.ToString("X4")</div>
-                            }
-                            @for (int i = 0; i < DecoderSockets.Length; i++)
-                            {
-                                var socket = DecoderSockets[i];
-                                var targetId = DecoderTarget(socket.Name);
-                                <div class="socket-row" style="top:@Px(ConnectionRowY(i) - ConnectionRowHeight / 2)" title="@socket.Description">
-                                    <span class="socket-name">@socket.Label</span>
-                                    <span class="socket-target @(targetId == null ? "missing" : "")">@(targetId ?? (socket.Name == "interrupts" ? "none" : "drag to a device"))</span>
-                                    <span class="socket" @onpointerdown="e => StartWireDecoder(e, socket.Name)" @onpointerdown:stopPropagation></span>
-                                </div>
-                            }
-                        </div>
+                        <DeviceCard Id="decoder" Kind="decoder rom" Layout="Layout" Color="var(--cat-control)"
+                                    CssClass="@($"decoder {(selectedDecoder ? "selected" : "")} {(DecoderHasProblem ? "problem" : "")}")"
+                                    HeadTitle="The decoder runs the microcode: every tick it reads the next step from its ROM and turns on that step's control lines"
+                                    Left="decoderLayout.X" Top="decoderLayout.Y" Height="SchematicLayout.DecoderHeight" Sockets="DeviceCard.DecoderSocketsOf(Layout)"
+                                    Line="step" LineValue="@(DecoderStep is int step ? step.ToString("X4") : "—")"
+                                    SubLine="@(microcode == null ? "no microcode" : $"{microcode.Instructions.Count} instructions")"
+                                    OnCardPointerDown="StartMoveDecoder"
+                                    OnSocketPointerDown="a => StartWireDecoder(a.Item1, a.Item2)" />
                     }
 
                     @if (drag?.Kind == DragKind.NewDevice && drag.Moved)
                     {
-                        <div class="card-device ghost" style="left:@Px(drag.X - CardWidth / 2); top:@Px(drag.Y - 20); width:@Px(CardWidth); height:@Px(CardBaseHeight)">
+                        <div class="card-device ghost" style="left:@Px(drag.X - SchematicLayout.CardWidth / 2); top:@Px(drag.Y - 20); width:@Px(SchematicLayout.CardWidth); height:@Px(SchematicLayout.CardMinHeight)">
                             <div class="card-id">@drag.NewType</div>
                             <div class="card-type">drop to add</div>
                         </div>
