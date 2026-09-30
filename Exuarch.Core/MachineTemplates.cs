@@ -53,7 +53,13 @@ namespace Exuarch.Core
                 ProgramMemory = "mem",
             };
             machine.EnsureLayout();
-            return new MachinePackage { Name = name, Description = "A new machine, started from the minimal CPU", Machine = machine };
+            return new MachinePackage
+            {
+                Name = name,
+                Description = "A new machine, started from the minimal CPU",
+                Readme = StarterReadme(name, "It started from the minimal CPU: a program counter, memory, the instruction register, a status register and a clock on one bus, with a fetch routine and NOP, JMP and HLT."),
+                Machine = machine,
+            };
         }
 
         // One bus and nothing else: devices, decoder and microcode are all up to you.
@@ -61,7 +67,15 @@ namespace Exuarch.Core
         {
             var machine = new MachineDefinition { Name = name, Buses = { new BusDefinition { Id = "main" } } };
             machine.EnsureLayout();
-            return new MachinePackage { Name = name, Description = "A new, empty machine", Machine = machine };
+            return new MachinePackage { Name = name, Description = "A new, empty machine", Readme = StarterReadme(name, "It started empty: one bus and nothing else."), Machine = machine };
+        }
+
+        // A README to fill in: what a reader of the package would want to know.
+        public static string StarterReadme(string name, string origin)
+        {
+            return $"# {name}\n\n{origin}\n\n## The idea\n\nWhat makes this machine different? Write it here.\n\n## The parts\n\n" +
+                   "Its buses and devices, and what each one is for.\n\n## How an instruction runs\n\nWhat the fetch routine does, and the micro steps of a typical instruction.\n\n" +
+                   "## Things to try\n\nPrograms to run, and what to watch in the Run view.";
         }
 
         // The given machine under a new name, with its programs.
@@ -70,6 +84,7 @@ namespace Exuarch.Core
             var copy = package.Clone();
             copy.Name = name;
             copy.Description = $"A copy of {package.Name}";
+            copy.Readme = string.IsNullOrWhiteSpace(package.Readme) ? StarterReadme(name, $"It started as a copy of {package.Name}.") : package.Readme;
             copy.Machine.Name = name;
             return copy;
         }

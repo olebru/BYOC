@@ -13,15 +13,19 @@ namespace Exuarch.Web.Pages
 {
     public partial class ComputerSIM
     {
-        private static readonly string[] Tabs = { "Design", "Microcode", "Program", "JSON", "Run" };
+        // The same names README links use (ReadmeLinks.Tabs).
+        private static readonly string[] Tabs = { "About", "Hardware design", "Microcode", "Program", "JSON", "Run" };
         private static readonly DeviceRegistry Registry = DeviceRegistry.CreateDefault();
 
         [Microsoft.AspNetCore.Components.Inject] private IJSRuntime JS { get; set; }
 
-        private string ActiveTab = "Design";
+        private string ActiveTab = "Hardware design";
+        // Set when a package is loaded that this browser may not have seen: its README then opens once.
+        private bool introduce = true;
         // The package the machine and the example programs came from, as it was loaded.
         private MachinePackage Package;
         private string PackageName { get { return Package.Name; } }
+        private bool IsBuiltIn { get { return BuiltInPackages.All.Any(p => p.Name == PackageName); } }
         private string PackageError;
         private Machine C;
         // The whole machine, microcode included (Definition.Decoder.Microcode).
@@ -110,6 +114,7 @@ namespace Exuarch.Web.Pages
             if (name == PackageName || !BuiltInPackages.All.Any(p => p.Name == name)) return;
             History.Record();
             LoadPackage(BuiltInPackages.Get(name));
+            introduce = true;
         }
         // ---- New machine ----
         private static readonly (string Value, string Title, string Description)[] NewStarts =
@@ -131,6 +136,19 @@ namespace Exuarch.Web.Pages
         }
         protected override async Task OnAfterRenderAsync(bool firstRender)
         {
+            if (introduce)
+            {
+                introduce = false;
+                if (!await JS.InvokeAsync<bool>("exuarchSeen.has", PackageName))
+                {
+                    await JS.InvokeVoidAsync("exuarchSeen.add", PackageName);
+                    if (!string.IsNullOrWhiteSpace(Package.Readme))
+                    {
+                        ActiveTab = "About";
+                        StateHasChanged();
+                    }
+                }
+            }
             if (focusNewName && newDialog)
             {
                 focusNewName = false;
@@ -151,14 +169,14 @@ namespace Exuarch.Web.Pages
             var package = newStart switch
             {
                 "empty" => MachineTemplates.Empty(unique),
-                "copy" => MachineTemplates.CopyOf(new MachinePackage { Name = Package.Name, Description = Package.Description, Machine = Definition.Clone(), Programs = Package.Programs }, unique),
+                "copy" => MachineTemplates.CopyOf(new MachinePackage { Name = Package.Name, Description = Package.Description, Readme = Package.Readme, Machine = Definition.Clone(), Programs = Package.Programs }, unique),
                 _ => MachineTemplates.Minimal(unique),
             };
             History.Record();
             LoadPackage(package);
             if (newStart == "minimal") { Program = MachineTemplates.StarterProgram; programName = "Starter program"; Rebuild(); }
             newDialog = false;
-            ActiveTab = "Design";
+            ActiveTab = "Hardware design";
         }
 
         private void ResetPackage()
@@ -176,6 +194,7 @@ namespace Exuarch.Web.Pages
                 if (string.IsNullOrWhiteSpace(package.Name)) package.Name = Path.GetFileNameWithoutExtension(e.File.Name);
                 History.Record();
                 LoadPackage(package);
+                introduce = true;
             }
             catch (Exception ex) when (ex is MachineDefinitionException || ex is IOException)
             {
@@ -259,7 +278,25 @@ namespace Exuarch.Web.Pages
         {
             focusDevice = deviceId;
             focusVersion++;
-            ActiveTab = "Design";
+            ActiveTab = "Hardware design";
+        }
+
+        // A link in the package README: open the device, the instruction, the program or the tab it names.
+        private void FollowLink((string Kind, string Target) link)
+        {
+            switch (link.Kind)
+            {
+                case "device": OpenDevice(link.Target); break;
+                case "instruction": OpenMicrocode((link.Target, 0)); break;
+                case "program":
+                    var example = Package.Programs.FirstOrDefault(p => p.Name == link.Target);
+                    if (example != null) LoadExample(example);
+                    ActiveTab = "Program";
+                    break;
+                case "tab":
+                    if (Tabs.Contains(link.Target)) ActiveTab = link.Target;
+                    break;
+            }
         }
 
         // Validates the definition, then the microcode against it, then builds a machine to assemble the program.

@@ -1,6 +1,7 @@
 {
   "name": "IRQ-16",
   "description": "Interrupts. The COPRO-16 CPU and blitter, plus a stack, a timer and an interrupt controller wired to the timer (irq0), the keypad (irq1) and the blitter (irq2). The fetch routine tests the I condition: with an interrupt pending it pushes the PC and flags, switches interrupts off and jumps to the handler; RTI returns. The main program never has to poll.",
+  "readme": "README.md",
   "machine": "machine.json",
   "programs": [
     { "name": "Three things at once", "description": "The main loop only counts; a clock, a key counter and the checkerboard all run from interrupts", "file": "interrupts.asm" }

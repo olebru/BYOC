@@ -32,3 +32,37 @@ window.exuarchEditor = {
         URL.revokeObjectURL(url);
     }
 };
+
+// Package READMEs: links into the app (exuarch:...) go to .NET, web links open in a new tab.
+window.exuarchReadme = {
+    attach: function (element, dotnet) {
+        element.addEventListener('click', function (e) {
+            const link = e.target.closest('a');
+            if (!link || !element.contains(link)) return;
+            const href = link.getAttribute('href') || '';
+            if (href.startsWith('exuarch:')) {
+                e.preventDefault();
+                dotnet.invokeMethodAsync('Follow', href);
+            } else if (/^(https?:|mailto:)/i.test(href)) {
+                link.target = '_blank';
+                link.rel = 'noopener noreferrer';
+            } else if (href === '#') {
+                e.preventDefault();
+            }
+        });
+    },
+};
+
+// Which packages this browser has already been introduced to, so their README opens only the first time.
+window.exuarchSeen = {
+    key: 'exuarch.seenPackages',
+    has: function (name) {
+        try { return JSON.parse(localStorage.getItem(this.key) || '[]').includes(name); } catch { return false; }
+    },
+    add: function (name) {
+        try {
+            const seen = JSON.parse(localStorage.getItem(this.key) || '[]');
+            if (!seen.includes(name)) { seen.push(name); localStorage.setItem(this.key, JSON.stringify(seen)); }
+        } catch { }
+    },
+};

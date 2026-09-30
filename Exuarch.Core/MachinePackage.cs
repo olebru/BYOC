@@ -11,7 +11,12 @@ namespace Exuarch.Core
     public class MachinePackage
     {
         public string Name { get; set; }
+        // One or two sentences, for lists and the package picker.
         public string Description { get; set; }
+        // A longer introduction in Markdown, like a README: the ideas behind the machine, its parts, how its
+        // instructions work and what to try. Links written exuarch:device/<id>, exuarch:instruction/<mnemonic>,
+        // exuarch:program/<name> and exuarch:tab/<tab> jump to that part of the app.
+        public string Readme { get; set; }
         public MachineDefinition Machine { get; set; }
         public List<PackageProgram> Programs { get; set; } = new List<PackageProgram>();
 
@@ -57,6 +62,8 @@ namespace Exuarch.Core
     {
         public string Name { get; set; }
         public string Description { get; set; }
+        // The README file in the package folder, if any.
+        public string Readme { get; set; }
         public string Machine { get; set; }
         public List<ManifestProgram> Programs { get; set; } = new List<ManifestProgram>();
     }
@@ -103,6 +110,7 @@ namespace Exuarch.Core
                 {
                     Name = manifest.Name,
                     Description = manifest.Description,
+                    Readme = manifest.Readme == null ? null : Read(manifest.Readme).TrimEnd('\n', '\r'),
                     Machine = MachineDefinition.FromJson(Read(manifest.Machine)),
                     Programs = manifest.Programs.Select(p => new PackageProgram { Name = p.Name, Description = p.Description, Source = Read(p.File).TrimEnd('\n', '\r') }).ToList(),
                 };

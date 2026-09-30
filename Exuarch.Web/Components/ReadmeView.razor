@@ -1,0 +1,80 @@
+@using Exuarch.Core
+@implements IDisposable
+@inject IJSRuntime JS
+
+<div class="readme-page">
+    <div class="readme-toolbar">
+        <span class="silk">About · @Package?.Name</span>
+        <span class="grow"></span>
+        @if (Editable)
+        {
+            <button class="btn btn-sm @(editing ? "btn-primary" : "btn-outline-secondary")" @onclick="() => editing = !editing">@(editing ? "Done" : "Edit")</button>
+        }
+        else
+        {
+            <span class="readme-hint">A built in package. To write your own, use New… and start from a copy of this machine.</span>
+        }
+    </div>
+    <div class="readme-body @(editing ? "editing" : "")">
+        @if (editing)
+        {
+            <textarea class="readme-source" spellcheck="false" value="@Package?.Readme" @oninput="OnInput"
+                      placeholder="# Your machine&#10;&#10;Write what makes it special, its parts, how an instruction runs and what to try."></textarea>
+        }
+        <article class="readme" @ref="article">
+            @if (string.IsNullOrWhiteSpace(Package?.Readme))
+            {
+                <p class="readme-empty">This package has no README yet.@(Editable ? " Use Edit to write one." : "")</p>
+            }
+            else
+            {
+                @((MarkupString)ReadmeMarkdown.ToHtml(Package.Readme))
+            }
+        </article>
+    </div>
+</div>
+
+@code
+{
+    [Parameter] public MachinePackage Package { get; set; }
+    // Only packages you made yourself can be edited; the built in ones come back unchanged with Reset anyway.
+    [Parameter] public bool Editable { get; set; }
+    [Parameter] public EventCallback ReadmeChanged { get; set; }
+    // An exuarch: link was clicked: its kind (device, instruction, program, tab) and target.
+    [Parameter] public EventCallback<(string Kind, string Target)> OnLink { get; set; }
+
+    private ElementReference article;
+    private bool editing;
+    private DotNetObjectReference<ReadmeView> self;
+
+    protected override void OnParametersSet()
+    {
+        if (!Editable) editing = false;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            self = DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("exuarchReadme.attach", article, self);
+        }
+    }
+
+    private async Task OnInput(ChangeEventArgs e)
+    {
+        Package.Readme = e.Value?.ToString();
+        await ReadmeChanged.InvokeAsync();
+    }
+
+    [JSInvokable]
+    public async Task Follow(string href)
+    {
+        if (ReadmeLinks.TryParse(href, out var kind, out var target)) await OnLink.InvokeAsync((kind, target));
+    }
+
+    public void Dispose()
+    {
+        self?.Dispose();
+    }
+}

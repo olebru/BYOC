@@ -11,8 +11,8 @@
         {
             <li class="nav-item">
                 <a class="nav-link @(ActiveTab == tab ? "active" : "")" href="" @onclick="() => ActiveTab = tab" @onclick:preventDefault>
-                    <span class="tab-index">@((index + 1).ToString("00"))</span>@tab
-                    @if (tab == "Design" && DefinitionErrors.Count > 0) { <span class="badge badge-danger ml-1">@DefinitionErrors.Count</span> }
+                    <span class="tab-index">@index.ToString("00")</span>@tab
+                    @if (tab == "Hardware design" && DefinitionErrors.Count > 0) { <span class="badge badge-danger ml-1">@DefinitionErrors.Count</span> }
                     @if (tab == "Microcode" && MicrocodeErrorCount > 0) { <span class="badge badge-danger ml-1">@MicrocodeErrorCount</span> }
                     @if (tab == "Microcode" && MicrocodeErrorCount == 0 && MicrocodeWarningCount > 0) { <span class="badge badge-warning ml-1">@MicrocodeWarningCount</span> }
                     @if (tab == "Program" && ProgramErrors.Count > 0) { <span class="badge badge-danger ml-1">@ProgramErrors.Count</span> }
@@ -33,6 +33,7 @@
                 <option value="@PackageName">@PackageName (custom)</option>
             }
         </select>
+        <button class="btn btn-sm btn-outline-secondary package-about" title="About this package" @onclick="@(() => ActiveTab = "About")">ⓘ</button>
         <button class="btn btn-sm btn-outline-secondary" @onclick="OpenNewDialog" title="Start a new machine of your own">New…</button>
         <button class="btn btn-sm btn-outline-secondary" @onclick="ResetPackage" title="Load the package's machine and first program again">Reset</button>
         <label class="btn btn-sm btn-outline-secondary mb-0" title="Open a package file: a machine with its microcode and programs">
@@ -66,7 +67,11 @@
     </div>
 }
 
-@if (ActiveTab == "Design")
+@if (ActiveTab == "About")
+{
+    <ReadmeView Package="Package" Editable="@(!IsBuiltIn)" OnLink="FollowLink" />
+}
+else if (ActiveTab == "Hardware design")
 {
     <MachineEditor Definition="Definition" DefinitionChanged="OnDesignChanged" Errors="DefinitionErrors" Preview="C" Registry="Registry"
                    History="History" OnOpenMicrocode="OpenMicrocode" FocusDevice="@focusDevice" FocusVersion="focusVersion" />
