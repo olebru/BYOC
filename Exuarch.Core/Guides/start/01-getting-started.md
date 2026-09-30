@@ -34,7 +34,7 @@ Beyond one bus and one CPU: [bridges](exuarch:guide/bridges) move values between
 
 ## The examples
 
-The built in machines each take a different direction. Load one from **Examples** in this drawer, take it apart, and start your own from a copy with **New…**.
+The built in machines each take a different direction. Load one from **Machines** in this drawer, take it apart, and start your own from a copy with **New…**. Everything you change is kept in the browser; **Export** saves a machine as a file.
 
 - [BYOC-16](exuarch:package/BYOC-16): a classic accumulator machine on one bus.
 - [RISC-16](exuarch:package/RISC-16): load/store with four registers, inspired by ARM.

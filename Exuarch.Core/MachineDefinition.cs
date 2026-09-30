@@ -163,6 +163,7 @@ namespace Exuarch.Core
     [JsonSerializable(typeof(OperandType))]
     [JsonSerializable(typeof(MachinePackage))]
     [JsonSerializable(typeof(PackageManifest))]
+    [JsonSerializable(typeof(Workspace))]
     [JsonSerializable(typeof(string))]
     internal partial class MachineDefinitionJsonContext : JsonSerializerContext
     {

@@ -328,3 +328,21 @@
     .page-step:hover {
         border-color: var(--signal);
     }
+
+.machines-title {
+    margin: 18px 20px 4px;
+    color: var(--ink-3);
+}
+
+.machines-empty {
+    margin: 0 20px 8px;
+    font-size: 0.82rem;
+    color: var(--ink-3);
+}
+
+.example-edited {
+    padding: 0 6px;
+    border: 1px solid var(--signal);
+    border-radius: var(--radius-sm);
+    color: var(--signal-ink);
+}

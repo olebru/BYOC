@@ -18,7 +18,7 @@ A package file is one JSON object:
 }
 ```
 
-- `name` identifies the package. It is also the name of the file Download writes.
+- `name` identifies the package. It is also the name of the file Export writes.
 - `description` is the short text shown on the example cards and as the package's tooltip.
 - `readme` is the machine's note, in Markdown. It is optional.
 - `machine` is the machine itself. It is required.
@@ -51,16 +51,24 @@ Each instruction has a `mnemonic`, a `description` and `operands`, the operand c
 
 Every change you make in the hardware design and microcode editors is a change to this object. The JSON tab is simply the same thing as text. See [devices and control lines](exuarch:guide/devices-and-control-lines) and [microcode](exuarch:guide/microcode).
 
-## New, Open and Download
+## Kept in the browser
 
-Your work lives in the page. Nothing is stored in the browser, so a machine you have not downloaded is gone when you reload.
+Every change is saved in the browser half a second after you make it, and the next visit opens the machine you left, with the program that was in the editor. Nothing leaves your computer: the browser keeps it for this site only, and a private window keeps nothing.
 
-- **New…** starts a machine of your own from the minimal CPU, from an empty bus, or as a copy of the machine that is open. A name that one of the built in packages already uses gets a number added.
-- **Download** saves the open package as `<name>.json`. It includes the machine as it is now and the package's programs. If the program in the editor is not one of them, it is added as "My program".
-- **Open…** loads a package file. If the file has no name, the file name is used.
-- **Reset** loads the open package's machine and first program again.
+The browser keeps two kinds of package:
 
-In the [Program](exuarch:tab/Program) tab, **＋ New program** adds an empty program to the package. The programs of your own machines keep your edits as you type, and Download saves them. A built in example stays as it shipped: when you change it, the change is only in the editor, and its title says "(edited)".
+- **Your own machines**, from **New…** or **Import…**. They are kept until you delete them from **Machines** in the getting started drawer.
+- **Examples you have changed.** A built in package is only kept while it differs from the way it ships; **Reset** throws your changes away and brings it back as it ships, after asking. The package button in the header says "edited" when there is something to reset.
+
+## New, Import and Export
+
+- **New…** starts a machine of your own from the minimal CPU, from an empty bus, or as a copy of the machine that is open. A name another package already uses gets a number added.
+- **Export** saves the open package as `<name>.json`, with the machine as it is now, its programs and its note. If the program in the editor is not one of them, it is added as "My program". **Machines** in the drawer can export any package without opening it.
+- **Import…** opens a package file and keeps it. A file with the name of a package you already have replaces it, after asking; one named after a built in package becomes your changes to it. A file without a name takes the file's name.
+
+Files are how you move machines between browsers or share them: the browser's copy is only in that browser.
+
+In the [Program](exuarch:tab/Program) tab, **＋ New program** adds an empty program to the package. Programs you add, and the programs of your own machines, keep your edits as you type. A built in example program stays as it shipped: when you change it, the text in the editor is kept with the package, but the program itself is not changed, and its title says "(edited)".
 
 ## The note
 

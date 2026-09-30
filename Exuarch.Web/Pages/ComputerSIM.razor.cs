@@ -30,6 +30,18 @@ namespace Exuarch.Web.Pages
         private MachinePackage Package;
         private string PackageName { get { return Package.Name; } }
         private bool IsBuiltIn { get { return BuiltInPackages.All.Any(p => p.Name == PackageName); } }
+
+        // ---- Kept in the browser: every change is saved shortly after it is made ----
+        private const string StorageKey = "exuarch.workspace";
+        private const string UnreadableKey = "exuarch.workspace.unreadable";
+        private Workspace workspace = new Workspace();
+        // Nothing is saved until what the browser kept has been read, so the default machine can not overwrite it.
+        private bool restored;
+        private bool saveScheduled;
+        private string StorageWarning;
+        private bool IsEdited { get { return workspace.IsEdited(PackageName); } }
+        // A question before something is thrown away: the message, the button's label, and what it does.
+        private (string Message, string Action, Func<Task> Run)? pendingConfirm;
         private string PackageError;
         private Machine C;
         // The whole machine, microcode included (Definition.Decoder.Microcode).
@@ -92,8 +104,10 @@ namespace Exuarch.Web.Pages
         // The package program in the editor. Your programs (every program of your own machine, and any made with
         // New program) take the edits; a built in example stays as it is, and the title then says "(edited)".
         private PackageProgram currentProgram;
-        private readonly HashSet<PackageProgram> newPrograms = new HashSet<PackageProgram>();
-        private bool IsYours(PackageProgram program) { return !IsBuiltIn || newPrograms.Contains(program); }
+        private bool IsYours(PackageProgram program)
+        {
+            return !IsBuiltIn || !BuiltInPackages.All.First(p => p.Name == PackageName).Programs.Any(shipped => shipped.Name == program.Name);
+        }
         private bool IsCurrent(PackageProgram program) { return program == currentProgram && (IsYours(program) || program.Source == Program); }
         private string ProgramTitle
         {
@@ -110,18 +124,88 @@ namespace Exuarch.Web.Pages
             PackageError = null;
             currentProgram = package.Programs.FirstOrDefault();
             Program = currentProgram?.Source ?? "";
-            newPrograms.Clear();
             newProgramName = null;
             ApplyDefinition(package.Machine.Clone());
         }
 
-        // Switching or resetting the machine is undoable, like any other edit of it.
-        private void LoadBuiltIn(string name)
+        // Opens a package as it was left, built in or the user's own. Switching is undoable, like any other edit.
+        private void OpenByName(string name)
         {
-            if (name == PackageName || !BuiltInPackages.All.Any(p => p.Name == name)) return;
+            if (name == PackageName) return;
+            Remember();
+            if (workspace.Load(name) is not { } saved) return;
             History.Record();
-            LoadPackage(BuiltInPackages.Get(name));
+            Open(saved);
             drawerSection = "This machine";
+        }
+
+        // A saved package, with the program that was open and the text that was in the editor.
+        private void Open((MachinePackage Package, string ProgramName, string ProgramSource) saved)
+        {
+            LoadPackage(saved.Package);
+            var program = saved.ProgramName == null ? null : Package.Programs.FirstOrDefault(p => p.Name == saved.ProgramName);
+            if (program != null) currentProgram = program;
+            if (saved.ProgramSource != null) Program = saved.ProgramSource;
+            else if (program != null) Program = program.Source;
+            Rebuild();
+        }
+
+        // The open package, as it is now, into the workspace in memory.
+        private void Remember()
+        {
+            if (!restored) return;
+            var snapshot = Package.Clone();
+            snapshot.Machine = Definition.Clone();
+            workspace.Save(snapshot, currentProgram?.Name, Program);
+        }
+
+        // Called after every change: saves half a second later, so a burst of edits is one save.
+        private void MarkChanged()
+        {
+            if (!restored || saveScheduled) return;
+            saveScheduled = true;
+            _ = SaveSoon();
+        }
+        private async Task SaveSoon()
+        {
+            await Task.Delay(500);
+            saveScheduled = false;
+            await SaveNow();
+        }
+        private async Task SaveNow()
+        {
+            Remember();
+            await Persist();
+            StateHasChanged();
+        }
+        private async Task Persist()
+        {
+            var ok = await JS.InvokeAsync<bool>("exuarchStore.set", StorageKey, workspace.ToJson());
+            StorageWarning = ok ? null : "Your changes could not be saved in this browser (its storage is off or full). Use Export to keep them as a file.";
+        }
+
+        // What the browser kept, opened where the user left off. A save that can not be read is put aside, not lost.
+        private async Task Restore()
+        {
+            var json = await JS.InvokeAsync<string>("exuarchStore.get", StorageKey);
+            if (!Workspace.TryFromJson(json, out workspace))
+            {
+                await JS.InvokeVoidAsync("exuarchStore.set", UnreadableKey, json);
+                StorageWarning = "What this browser saved last time could not be read, so it was put aside and you start afresh.";
+            }
+            if (workspace.Open != null && workspace.Load(workspace.Open) is { } saved) Open(saved);
+            restored = true;
+        }
+
+        private void Ask(string message, string action, Func<Task> run)
+        {
+            pendingConfirm = (message, action, run);
+        }
+        private async Task Confirm()
+        {
+            var run = pendingConfirm?.Run;
+            pendingConfirm = null;
+            if (run != null) await run();
         }
 
         // A "?" somewhere in the editors: open that handbook page.
@@ -168,6 +252,8 @@ namespace Exuarch.Web.Pages
             if (firstRender)
             {
                 Help.Requested += OnHelp;
+                await Restore();
+                StateHasChanged();
                 if (!await JS.InvokeAsync<bool>("exuarchWelcome.seen"))
                 {
                     drawerOpen = true;
@@ -191,12 +277,12 @@ namespace Exuarch.Web.Pages
             if (e.Key == "Escape") newDialog = false;
             else if (e.Key == "Enter") CreateMachine();
         }
-        // Undoable, like switching packages. A name already used by a built in package gets a number.
+        // Undoable, like switching packages. A name already used by another package gets a number.
         private void CreateMachine()
         {
             var name = string.IsNullOrWhiteSpace(newName) ? "My machine" : newName.Trim();
-            var unique = name;
-            for (int n = 2; BuiltInPackages.All.Any(p => p.Name == unique); n++) unique = $"{name} {n}";
+            var unique = workspace.UniqueName(name);
+            Remember();
             var package = newStart switch
             {
                 "empty" => MachineTemplates.Empty(unique),
@@ -210,36 +296,88 @@ namespace Exuarch.Web.Pages
             ActiveTab = "Hardware design";
         }
 
-        private void ResetPackage()
+        // A built in package back the way it ships: its changes are forgotten, after asking.
+        private void ResetPackage(string name)
         {
-            History.Record();
-            LoadPackage(Package.Clone());
+            if (!Workspace.IsBuiltIn(name) || !workspace.IsEdited(name)) return;
+            Ask($"Reset {name} to the way it ships? Your changes to it will be lost; Export first to keep them.", "Reset", async () =>
+            {
+                workspace.Forget(name);
+                if (name == PackageName)
+                {
+                    History.Record();
+                    LoadPackage(BuiltInPackages.Get(name));
+                }
+                await Persist();
+            });
         }
 
-        private async Task OpenPackage(InputFileChangeEventArgs e)
+        // One of the user's own packages, removed from the browser after asking. If it is open, the default opens.
+        private void DeletePackage(string name)
         {
+            if (Workspace.IsBuiltIn(name)) return;
+            Ask($"Delete {name} from this browser? Export it first to keep a copy.", "Delete", async () =>
+            {
+                workspace.Forget(name);
+                if (name == PackageName && workspace.Load(BuiltInPackages.Default.Name) is { } fallback)
+                {
+                    History.Record();
+                    Open(fallback);
+                    workspace.Open = PackageName;
+                }
+                await Persist();
+            });
+        }
+
+        // A package file, opened and kept. A file with the name of a package that is already here replaces it,
+        // after asking; one for a built in package becomes that package's changes.
+        private async Task ImportPackage(InputFileChangeEventArgs e)
+        {
+            MachinePackage package;
             try
             {
                 using var reader = new StreamReader(e.File.OpenReadStream(maxAllowedSize: 16 * 1024 * 1024));
-                var package = MachinePackage.FromJson(await reader.ReadToEndAsync());
+                package = MachinePackage.FromJson(await reader.ReadToEndAsync());
                 if (string.IsNullOrWhiteSpace(package.Name)) package.Name = Path.GetFileNameWithoutExtension(e.File.Name);
-                History.Record();
-                LoadPackage(package);
             }
             catch (Exception ex) when (ex is MachineDefinitionException || ex is IOException)
             {
-                PackageError = $"Could not open {e.File.Name}: {ex.Message}";
+                PackageError = $"Could not import {e.File.Name}: {ex.Message}";
+                return;
             }
+            Task Take()
+            {
+                Remember();
+                History.Record();
+                LoadPackage(package);
+                MarkChanged();
+                return Task.CompletedTask;
+            }
+            if (workspace.Find(package.Name) != null || package.Name == PackageName)
+            {
+                Ask($"Replace {package.Name} with the one in {e.File.Name}? The {package.Name} you have now will be lost.", "Replace", Take);
+                return;
+            }
+            await Take();
         }
 
-        // The machine as it is now, with the package's programs; a program that is not one of them is added.
-        private async Task DownloadPackage()
+        // The open package as it is now, as a file; a program in the editor that is not one of the package's is
+        // added to it.
+        private async Task ExportPackage()
         {
             var package = Package.Clone();
             package.Machine = Definition.Clone();
             if (!string.IsNullOrWhiteSpace(Program) && !package.Programs.Any(p => p.Source == Program))
-                package.Programs.Add(new PackageProgram { Name = "My program", Source = Program });
+                package.Programs.Add(new PackageProgram { Name = package.Programs.Any(p => p.Name == "My program") ? workspace.UniqueName("My program") : "My program", Source = Program });
             await JS.InvokeVoidAsync("exuarchEditor.download", $"{package.Name}.json", package.ToJson());
+        }
+
+        // Any package here, as a file, without opening it.
+        private async Task ExportByName(string name)
+        {
+            if (name == PackageName) { await ExportPackage(); return; }
+            if (workspace.Load(name) is not { } saved) return;
+            await JS.InvokeVoidAsync("exuarchEditor.download", $"{name}.json", saved.Package.ToJson());
         }
 
         private void OnDesignChanged(MachineDefinition definition)
@@ -329,7 +467,6 @@ namespace Exuarch.Web.Pages
             for (int n = 2; Package.Programs.Any(p => p.Name == unique); n++) unique = $"{name} {n}";
             var program = new PackageProgram { Name = unique, Source = source };
             Package.Programs.Add(program);
-            newPrograms.Add(program);
             LoadExample(program);
         }
 
@@ -364,7 +501,7 @@ namespace Exuarch.Web.Pages
                     if (Tabs.Contains(link.Target)) ActiveTab = link.Target;
                     break;
                 case "package":
-                    LoadBuiltIn(link.Target);
+                    OpenByName(link.Target);
                     break;
                 case "guide":
                 case "reference":
@@ -378,6 +515,7 @@ namespace Exuarch.Web.Pages
         // Validates the definition, then the microcode against it, then builds a machine to assemble the program.
         private void Rebuild()
         {
+            MarkChanged();
             DefinitionErrors = Machine.ValidateDefinition(Definition, Registry);
             var microcode = Definition.Decoder?.Microcode;
             MicrocodeDiagnostics = microcode == null
