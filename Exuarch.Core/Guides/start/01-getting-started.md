@@ -19,7 +19,7 @@ Each tutorial starts where the last one stopped, beginning from **New…** and t
 - [Hardware design](<exuarch:tab/Hardware design>) holds the devices and the buses between them. Drag a device from the palette onto the canvas and it lands on the nearest bus; select it to see its control lines, connections and parameters.
 - [Microcode](exuarch:tab/Microcode) holds the instruction set: each instruction is a list of steps, and each step names the control lines that are on for one tick.
 - [Program](exuarch:tab/Program) is assembly for the machine, using the mnemonics the microcode defines. **＋ New program** starts an empty one.
-- [JSON](exuarch:tab/JSON) is the whole machine as one file, kept in step with the editors.
+- The machine's **JSON**, the whole machine as one file kept in step with the editors, is under *This machine* in the getting started drawer.
 - [Run](exuarch:tab/Run) runs it: **Tick** (→) runs one clock tick, **Instruction** (Shift+→) finishes the current instruction and fetches the next, **Space** runs and pauses, and **R** resets. Below the machine are the memory, the decoder ROM and a trace of the recent ticks.
 
 ## How the pieces fit

@@ -13,8 +13,8 @@ namespace Exuarch.Web.Pages
 {
     public partial class ComputerSIM : IDisposable
     {
-        // The same names README links use (ReadmeLinks.Tabs).
-        private static readonly string[] Tabs = { "Hardware design", "Microcode", "Program", "JSON", "Run" };
+        // The same names README links use. The machine's JSON is in the drawer, under This machine.
+        private static readonly string[] Tabs = ReadmeLinks.Tabs;
         private static readonly DeviceRegistry Registry = DeviceRegistry.CreateDefault();
 
         [Microsoft.AspNetCore.Components.Inject] private IJSRuntime JS { get; set; }

@@ -28,7 +28,7 @@ The JSON may contain comments and trailing commas. Any property the format does 
 
 ## The machine
 
-The `machine` object is what the [JSON](exuarch:tab/JSON) tab shows and edits, with the microcode inline:
+The `machine` object is what the **JSON** view shows and edits (under *This machine* in the getting started drawer), with the microcode inline:
 
 - `name`: the machine's name.
 - `buses`: each bus's `id` and its position on the canvas.
@@ -49,7 +49,7 @@ The `machine` object is what the [JSON](exuarch:tab/JSON) tab shows and edits, w
 
 Each instruction has a `mnemonic`, a `description` and `operands`, the operand count. It can also have `operandTypes`, each `value` or `address`, and `steps`. Each step has its `signals`, written `device.line`, an optional `when` with flag conditions such as `{ "Z": true }`, and an optional `comment`.
 
-Every change you make in the hardware design and microcode editors is a change to this object. The JSON tab is simply the same thing as text. See [devices and control lines](exuarch:guide/devices-and-control-lines) and [microcode](exuarch:guide/microcode).
+Every change you make in the hardware design and microcode editors is a change to this object. The JSON view is simply the same thing as text. See [devices and control lines](exuarch:guide/devices-and-control-lines) and [microcode](exuarch:guide/microcode).
 
 ## Kept in the browser
 

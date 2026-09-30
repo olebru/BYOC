@@ -1,7 +1,7 @@
 @using Exuarch.Core
 @inject IJSRuntime JS
 
-<aside class="drawer @(editing ? "wide" : "")" aria-label="Getting started">
+<aside class="drawer @(editing || (Section == "This machine" && machineView == "JSON") ? "wide" : "")" aria-label="Getting started">
     <div class="drawer-head">
         <span class="drawer-title">Getting started</span>
         <span class="grow"></span>
@@ -153,18 +153,35 @@
         {
             <div class="machine-toolbar">
                 <span class="silk">@Package.Name</span>
+                <span class="machine-views">
+                    <button class="machine-view @(machineView == "Note" ? "on" : "")" @onclick="@(() => ShowMachine("Note"))">Note</button>
+                    <button class="machine-view @(machineView == "JSON" ? "on" : "")" title="The whole machine as one file, microcode included, kept in step with the editors" @onclick="@(() => ShowMachine("JSON"))">JSON@if ((JsonErrors?.Count ?? 0) > 0) { <span class="badge badge-danger ml-1">@JsonErrors.Count</span> }</button>
+                </span>
                 <span class="grow"></span>
-                @if (IsBuiltIn)
+                @if (machineView == "Note")
                 {
-                    <span class="machine-hint">A built in example. Start your own with New…</span>
-                }
-                else
-                {
-                    <button class="btn btn-sm @(editing ? "btn-primary" : "btn-outline-secondary")" @onclick="() => editing = !editing">@(editing ? "Done" : "Edit")</button>
+                    @if (IsBuiltIn)
+                    {
+                        <span class="machine-hint">A built in example. Start your own with New…</span>
+                    }
+                    else
+                    {
+                        <button class="btn btn-sm @(editing ? "btn-primary" : "btn-outline-secondary")" @onclick="() => editing = !editing">@(editing ? "Done" : "Edit")</button>
+                    }
                 }
             </div>
-            <ReadmeView @key="@("machine" + Package.Name)" Markdown="@Package.Readme" Editing="editing" MarkdownChanged="SetReadme" OnLink="Follow"
-                        Empty="@(IsBuiltIn ? "This machine has no note." : "No note yet. Use Edit to write what your machine is about.")" />
+            @if (machineView == "JSON")
+            {
+                <div class="machine-json">
+                    <ErrorList Errors="@(JsonErrors ?? new List<string>())" />
+                    <SourceEditorComponent Label="machine.json · microcode inline · synced with the editors" Value="@DefinitionJson" ValueChanged="OnJsonChanged" Rows="30" />
+                </div>
+            }
+            else
+            {
+                <ReadmeView @key="@("machine" + Package.Name)" Markdown="@Package.Readme" Editing="editing" MarkdownChanged="SetReadme" OnLink="Follow"
+                            Empty="@(IsBuiltIn ? "This machine has no note." : "No note yet. Use Edit to write what your machine is about.")" />
+            }
         }
     </div>
 </aside>
@@ -188,11 +205,17 @@
     [Parameter] public EventCallback<string> OnDeletePackage { get; set; }
     [Parameter] public EventCallback<string> OnExportPackage { get; set; }
     [Parameter] public EventCallback OnReadmeChanged { get; set; }
+    // The machine as JSON, which this machine's JSON view edits, and why the last edit did not parse.
+    [Parameter] public string DefinitionJson { get; set; }
+    [Parameter] public List<string> JsonErrors { get; set; }
+    [Parameter] public EventCallback<string> OnJsonChanged { get; set; }
     // Every link, handbook pages included: the page decides where it goes.
     [Parameter] public EventCallback<(string Kind, string Target)> OnLink { get; set; }
 
     private ElementReference body;
     private bool editing;
+    // This machine: its note, or its JSON.
+    private string machineView = "Note";
     private string query;
     private (string Kind, string Target)? shownPage;
     private string shownSection;
@@ -217,6 +240,12 @@
             shownSection = Section;
             if (!firstRender) await JS.InvokeVoidAsync("exuarchReadme.scrollTop", body);
         }
+    }
+
+    private void ShowMachine(string view)
+    {
+        machineView = view;
+        editing = false;
     }
 
     private async Task Show(string section)

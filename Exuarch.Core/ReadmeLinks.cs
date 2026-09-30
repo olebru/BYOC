@@ -17,7 +17,7 @@ namespace Exuarch.Core
     {
         public const string Scheme = "exuarch:";
         public static readonly string[] Kinds = { "device", "instruction", "program", "tab", "package", "guide", "reference" };
-        public static readonly string[] Tabs = { "Hardware design", "Microcode", "Program", "JSON", "Run" };
+        public static readonly string[] Tabs = { "Hardware design", "Microcode", "Program", "Run" };
         private static readonly Regex Markdown = new Regex(@"\]\(<?(exuarch:[^)>]+)>?\)", RegexOptions.Compiled);
 
         public static bool TryParse(string href, out string kind, out string target)
