@@ -14,6 +14,7 @@ namespace Exuarch.Core
         private static readonly Dictionary<string, string[]> Concepts = new Dictionary<string, string[]>
         {
             ["register"] = new[] { "registers-and-the-alu" },
+            ["registerFile"] = new[] { "operands", "registers-and-the-alu" },
             ["statusRegister"] = new[] { "flags-and-conditions" },
             ["dualPortRegister"] = new[] { "bridges" },
             ["instructionRegister"] = new[] { "fetch-and-the-instruction-register" },

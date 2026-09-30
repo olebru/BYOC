@@ -32,7 +32,7 @@ public class WordTests
     }
 
     // Every device with inc and dec lines counts round: 65535 + 1 is 0 and 0 - 1 is 65535.
-    private static readonly string[] Counting = { "register", "statusRegister", "dualPortRegister" };
+    private static readonly string[] Counting = { "register", "registerFile", "statusRegister", "dualPortRegister" };
     public static TheoryData<string> CountingTypes => new(Counting);
 
     [Fact]
@@ -53,10 +53,11 @@ public class WordTests
         {
             "register" => new Register("R", "r", bus),
             "statusRegister" => new StatusRegister("S", "s", bus),
+            "registerFile" => new RegisterFile("F", "f", bus),
             _ => new DualPortRegister("D", "d", bus, new Bus()),
         };
         bus.devices.Add(device);
-        int Value() => device is DualPortRegister d ? d.Data : ((Register)device).Data;
+        int Value() => device switch { DualPortRegister d => d.Data, RegisterFile f => f[f.Selected], _ => ((Register)device).Data };
 
         Assert.Equal(0, Value());
         device.Enable("dec");

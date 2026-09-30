@@ -94,6 +94,7 @@ The examples are packages too. They are stored as folders in the app, with a `pa
 
 - [BYOC-16](exuarch:package/BYOC-16): an accumulator machine on one bus.
 - [RISC-16](exuarch:package/RISC-16): load/store with four registers.
+- [RF-16](exuarch:package/RF-16): load/store with a register file, registers as operands.
 - [HARVARD-16](exuarch:package/HARVARD-16): three buses, with separate program and data memory.
 - [MOVE-16](exuarch:package/MOVE-16): only moves between ports.
 - [COPRO-16](exuarch:package/COPRO-16): a CPU and a blitter.

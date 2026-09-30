@@ -137,7 +137,7 @@ namespace Exuarch.Core
         {
             get
             {
-                if (OperandTypes != null && OperandTypes.Count > 0) return Mnemonic + " " + string.Join(", ", OperandTypes.Select(t => t == OperandType.Address ? "address" : "value"));
+                if (OperandTypes != null && OperandTypes.Count > 0) return Mnemonic + " " + string.Join(", ", OperandTypes.Select(OperandTypeNames.Name));
                 return OperandCount switch
                 {
                     null => Mnemonic,
@@ -155,6 +155,15 @@ namespace Exuarch.Core
         }
     }
 
+    // The word used for an operand type in the editors and in JSON.
+    public static class OperandTypeNames
+    {
+        public static string Name(OperandType type)
+        {
+            return type switch { OperandType.Address => "address", OperandType.Register => "register", _ => "value" };
+        }
+    }
+
     [JsonConverter(typeof(JsonStringEnumConverter<OperandType>))]
     public enum OperandType
     {
@@ -162,6 +171,8 @@ namespace Exuarch.Core
         [JsonStringEnumMemberName("value")] Value,
         // A memory address to read, write or jump to.
         [JsonStringEnumMemberName("address")] Address,
+        // A register of the machine's register file, written R0, R1 and so on; the cell holds its number.
+        [JsonStringEnumMemberName("register")] Register,
     }
 
     public class MicroStep

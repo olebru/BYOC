@@ -1321,6 +1321,38 @@
     vertical-align: -1px;
 }
 
+/* Register file card: every register, the selected one lit. */
+.dev-regs {
+    display: grid;
+    grid-template-columns: repeat(2, auto);
+    gap: 0 8px;
+    justify-content: start;
+    line-height: 1.3;
+}
+
+    .dev-regs i {
+        font-style: normal;
+        font-family: var(--font-mono);
+        font-size: 0.7rem;
+        color: var(--ink-2);
+        padding: 0 3px;
+        border-radius: var(--radius-sm);
+    }
+
+        .dev-regs i b {
+            font-weight: 500;
+            color: var(--ink-3);
+        }
+
+        .dev-regs i.on {
+            color: var(--surface);
+            background: var(--signal);
+        }
+
+            .dev-regs i.on b {
+                color: inherit;
+            }
+
 /* Keypad card: five key caps, lit while the CPU would read the key as down. */
 .dev-keys {
     display: inline-flex;

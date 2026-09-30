@@ -6,7 +6,7 @@ A small **load/store** machine in the spirit of ARM, kept deliberately simple. W
 
 RISC designs trade a rich instruction set for a regular one. Every ALU instruction has the same shape, memory is reached by loads and stores (plus the stack), and subroutine calls use a **link register** instead of the stack. That regularity is what made RISC processors easy to pipeline and fast.
 
-To keep the hardware plain, the registers here are explicit: [R0](exuarch:device/r0), [R1](exuarch:device/r1), [R2](exuarch:device/r2) and [R3](exuarch:device/r3) are four ordinary register devices, and the register an instruction uses is part of its name, as in `MOV_R1_R0` or `ADD_R2`. That is how early 8 bit CPUs worked too, and it means there is no register file to decode.
+To keep the hardware plain, the registers here are explicit: [R0](exuarch:device/r0), [R1](exuarch:device/r1), [R2](exuarch:device/r2) and [R3](exuarch:device/r3) are four ordinary register devices, and the register an instruction uses is part of its name, as in `MOV_R1_R0` or `ADD_R2`. That is how early 8 bit CPUs worked too, and it means there is no register file to decode. [RF-16](exuarch:package/RF-16) is the same machine with a register file, where the register is an operand instead.
 
 ## The parts
 

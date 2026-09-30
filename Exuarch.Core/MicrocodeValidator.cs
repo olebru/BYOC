@@ -73,6 +73,10 @@ namespace Exuarch.Core
                     ValidateFlagWrites(instruction, step, machine, Add);
                 }
                 ValidateFlow(instruction, machine, Add);
+                if (instruction.OperandTypes?.Contains(OperandType.Register) == true && RegisterFile.CountIn(machine) == 0)
+                {
+                    Add(DiagnosticSeverity.Error, instruction, null, null, "has a register operand, but the machine has no registerFile for it to name.");
+                }
             }
             if (opCodes > DecoderRom.AddressSpace)
             {

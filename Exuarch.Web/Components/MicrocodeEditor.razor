@@ -109,11 +109,12 @@
                                 {
                                     var index = t;
                                     var type = instruction.OperandTypeAt(index);
-                                    <select class="form-control form-control-sm" title="Operand @(index + 1): a value used as it is, or an address to read, write or jump to"
+                                    <select class="form-control form-control-sm" title="Operand @(index + 1): a value used as it is, an address to read, write or jump to, or a register of the register file"
                                             value="@(type?.ToString() ?? "")" @onchange="e => SetOperandType(index, (string)e.Value)">
                                         <option value="">?</option>
                                         <option value="Value">value</option>
                                         <option value="Address">address</option>
+                                        <option value="Register">register</option>
                                     </select>
                                 }
                             </div>

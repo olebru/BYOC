@@ -115,7 +115,7 @@ else if (ActiveTab == "Program")
             </span>
         }
     </div>
-    <AssemblyEditor Value="@Program" ValueChanged="OnProgramChanged" Microcode="Definition.Decoder?.Microcode" MemorySize="ProgramMemorySize" />
+    <AssemblyEditor Value="@Program" ValueChanged="OnProgramChanged" Microcode="Definition.Decoder?.Microcode" MemorySize="ProgramMemorySize" RegisterCount="RegisterFile.CountIn(Definition)" />
     <ErrorList Errors="@ProgramErrors.Where(e => !e.StartsWith("Line ")).ToList()" />
 }
 else if (ActiveTab == "Run")
