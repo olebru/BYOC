@@ -38,6 +38,7 @@ The built in machines each take a different direction. Load one from **Machines*
 
 - [BYOC-16](exuarch:package/BYOC-16): a classic accumulator machine on one bus.
 - [RISC-16](exuarch:package/RISC-16): load/store with four registers, inspired by ARM.
+- [RF-16](exuarch:package/RF-16): RISC-16 with a register file, so registers are operands: `ADD R0, R2`.
 - [HARVARD-16](exuarch:package/HARVARD-16): three buses, with separate program and data memory.
 - [MOVE-16](exuarch:package/MOVE-16): no instruction set, only moves between ports.
 - [COPRO-16](exuarch:package/COPRO-16): a CPU that hands work to a blitter on its own bus.

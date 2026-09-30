@@ -19,6 +19,9 @@ namespace Exuarch.Core
         private readonly Func<string, int?> opcodeOf;
         private readonly Func<string, int?> operandCountOf;
         private readonly Func<string, int, OperandType?> operandTypeOf;
+        // Registers a register operand can name, R0 up to R(RegisterCount - 1): the machine's register file. 0 when
+        // it has none.
+        public int RegisterCount { get; set; }
 
         // Mnemonics are matched without regard to case.
         public Assembler(DecoderRom completeDecoderRom, int memorySize = MemoryModule.DefaultSize)
@@ -137,6 +140,19 @@ namespace Exuarch.Core
                 for (int index = 0; index < line.Operands.Count; index++)
                 {
                     var operand = line.Operands[index];
+                    // A register operand is a register name, whatever labels there are; anywhere else R1 is a label.
+                    if (!line.IsDirective && operandTypeOf(line.Mnemonic.Text, index) == OperandType.Register)
+                    {
+                        if (TryRegister(operand, RegisterCount, out var register)) cells.Add(register);
+                        else
+                        {
+                            Error(line, operand, RegisterCount == 0
+                                ? $"{line.Mnemonic.Text} takes a register here, but the machine has no register file"
+                                : $"{line.Mnemonic.Text} takes a register here: write R0 to R{RegisterCount - 1}, not '{operand.Text}'");
+                            cells.Add(0);
+                        }
+                        continue;
+                    }
                     switch (operand.Kind)
                     {
                         case TokenKind.Number:
@@ -177,6 +193,16 @@ namespace Exuarch.Core
             result.Labels = new Dictionary<string, int>(labelLUT);
             diagnostics.Sort((a, b) => a.Line != b.Line ? a.Line.CompareTo(b.Line) : a.StartColumn.CompareTo(b.StartColumn));
             return result;
+        }
+
+        // R0, R1 ... in any case, below the number of registers there are.
+        public static bool TryRegister(SourceToken operand, int count, out int register)
+        {
+            register = 0;
+            var name = operand.Kind == TokenKind.LabelReference ? operand.Name : null;
+            return name != null && name.Length >= 2 && (name[0] == 'R' || name[0] == 'r')
+                && int.TryParse(name.Substring(1), System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out register)
+                && register < count;
         }
 
         // Cells a line takes: opcode plus one per operand, one per character for strings, and the 0 after .STRING.

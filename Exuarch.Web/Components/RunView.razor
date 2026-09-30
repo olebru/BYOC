@@ -136,7 +136,7 @@
                             <span class="dev-id">@device.Id</span>
                             <span class="dev-type">@(device.Name ?? device.Type)</span>
                         </div>
-                        <div class="dev-body @(built is MemoryModule || built is MMU || built is Clock || built is ALU || built is CharacterDisplay || built is Framebuffer || built is Blitter || built is InterruptController || built is TickTimer || built is Rasterizer || built is DepthBuffer || built is MultiplyAccumulate ? "stacked" : "") @(Changed(device.Id) ? "changed" : "")" @key="(Changed(device.Id) ? Last.Cycle : 0)">
+                        <div class="dev-body @(built is MemoryModule || built is MMU || built is Clock || built is ALU || built is CharacterDisplay || built is Framebuffer || built is Blitter || built is InterruptController || built is TickTimer || built is Rasterizer || built is DepthBuffer || built is MultiplyAccumulate || built is RegisterFile ? "stacked" : "") @(Changed(device.Id) ? "changed" : "")" @key="(Changed(device.Id) ? Last.Cycle : 0)">
                             @switch (built)
                             {
                                 case StatusRegister status:
@@ -159,6 +159,14 @@
                                 case DualPortRegister dual:
                                     <span class="value">@Hex(dual.Data)</span>
                                     <span class="sub">@dual.Data</span>
+                                    break;
+                                case RegisterFile file:
+                                    <span class="dev-regs">
+                                        @for (int number = 0; number < file.Count; number++)
+                                        {
+                                            <i class="@(number == file.Selected ? "on" : "")" title="@($"R{number} = {file[number]}")"><b>R@(number)</b> @file[number].ToString("X4")</i>
+                                        }
+                                    </span>
                                     break;
                                 case MemoryModule memory:
                                     <span class="mem">MAR <strong>@Hex(memory.memoryAddress)</strong></span>

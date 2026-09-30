@@ -73,7 +73,7 @@ namespace Exuarch.Core
             MicrocodeWarnings = diagnostics.Where(d => d.Severity == DiagnosticSeverity.Warning).ToList();
 
             DecoderRom = new DecoderRom(microcode);
-            Assembler = new Assembler(DecoderRom, programMemory?.Size ?? MemoryModule.DefaultSize);
+            Assembler = new Assembler(DecoderRom, programMemory?.Size ?? MemoryModule.DefaultSize) { RegisterCount = Devices.OfType<RegisterFile>().FirstOrDefault()?.Count ?? 0 };
             ProgramByteCode = Assembler.Assemble(source ?? string.Empty);
             if (ProgramByteCode.Length > 0)
             {
@@ -323,6 +323,10 @@ namespace Exuarch.Core
                         values[device.ID() + ".enabled"] = controller.Enabled ? 1 : 0;
                         break;
                     case TickTimer timer: values[device.ID() + ".count"] = timer.Count; break;
+                    case RegisterFile file:
+                        values[device.ID() + ".select"] = file.Selected;
+                        for (int i = 0; i < file.Count; i++) values[$"{device.ID()}.r{i}"] = file[i];
+                        break;
                     case Blitter blitter:
                         values[device.ID() + ".busy"] = blitter.Busy ? 1 : 0;
                         values[device.ID() + ".row"] = blitter.Row;

@@ -12,15 +12,21 @@ namespace Exuarch.Core
         private readonly DecoderRom rom;
         private readonly Assembler assembler;
 
-        public AssemblyLanguage(MicrocodeDefinition microcode, int memorySize = MemoryModule.DefaultSize)
+        // registerCount: the registers of the machine's register file, which register operands can name (see
+        // RegisterFile.CountIn); 0 when it has none.
+        public AssemblyLanguage(MicrocodeDefinition microcode, int memorySize = MemoryModule.DefaultSize, int registerCount = 0)
         {
+            RegisterCount = registerCount;
             this.microcode = microcode ?? new MicrocodeDefinition();
             try { rom = new DecoderRom(this.microcode); }
             catch (Exception) { rom = null; }
             assembler = rom != null
                 ? new Assembler(rom, memorySize)
                 : new Assembler(m => Instruction(m) != null ? 0 : null, m => Instruction(m)?.OperandCount, memorySize, (m, i) => Instruction(m)?.OperandTypeAt(i));
+            assembler.RegisterCount = registerCount;
         }
+
+        public int RegisterCount { get; }
 
         // Mnemonics a program can use: every instruction except the fetch routine.
         public IEnumerable<InstructionDefinition> Instructions
@@ -70,6 +76,18 @@ namespace Exuarch.Core
             var expected = instruction?.OperandTypeAt(operandIndex);
             var current = line.TokenAt(column - 1);
             if (current != null && (current.Kind == TokenKind.Number || current.Kind == TokenKind.Character || current.Kind == TokenKind.String)) return new List<CompletionItem>();
+            // A register operand takes a register name, not a label.
+            if (expected == OperandType.Register)
+            {
+                return Enumerable.Range(0, RegisterCount).Select(r => new CompletionItem
+                {
+                    Label = $"R{r}",
+                    Kind = CompletionKind.Label,
+                    Detail = $"register {r}",
+                    Documentation = $"{instruction.Mnemonic} takes a register of the register file here.",
+                    InsertText = $"R{r}",
+                }).ToList();
+            }
             return result.Labels.OrderBy(l => l.Value).Select(l => new CompletionItem
             {
                 Label = l.Key,
@@ -107,6 +125,12 @@ namespace Exuarch.Core
                         ".BYTE" or ".WORD" => $"**{token.Text}** is an old name for **.DATA**: every value takes one 16 bit cell either way.",
                         _ => $"**{token.Text}** is not a directive. Use .DATA or .STRING.",
                     }) + ReadMore;
+                case TokenKind.LabelReference when TypeOfOperand(line, token) == Core.OperandType.Register:
+                    return Assembler.TryRegister(token, RegisterCount, out var register)
+                        ? $"register **R{register}** of the register file: the operand cell holds {register}{OperandRole(line, token)}"
+                        : RegisterCount == 0
+                            ? "this machine has no register file for a register operand"
+                            : $"**{token.Name}** is not a register: write R0 to R{RegisterCount - 1}";
                 case TokenKind.Label:
                 case TokenKind.LabelReference:
                     var labelText = result.Labels.TryGetValue(token.Name, out var address)
@@ -123,17 +147,25 @@ namespace Exuarch.Core
             }
         }
 
+        private OperandType? TypeOfOperand(ParsedLine line, SourceToken token)
+        {
+            int index = line.Operands.IndexOf(token);
+            if (index < 0 || line.Mnemonic == null || line.IsDirective) return null;
+            return Instruction(line.Mnemonic.Text)?.OperandTypeAt(index);
+        }
+
         // What an operand means for its instruction, from the instruction's operand types.
         private string OperandRole(ParsedLine line, SourceToken token)
         {
-            int index = line.Operands.IndexOf(token);
-            if (index < 0 || line.Mnemonic == null || line.IsDirective) return "";
-            var instruction = Instruction(line.Mnemonic.Text);
-            var type = instruction?.OperandTypeAt(index);
+            var type = TypeOfOperand(line, token);
             if (type == null) return "";
-            return type == OperandType.Address
-                ? $"\n\n**address** for {instruction.Mnemonic}: the memory location it uses"
-                : $"\n\n**value** for {instruction.Mnemonic}: used as it is";
+            var mnemonic = Instruction(line.Mnemonic.Text).Mnemonic;
+            return type switch
+            {
+                Core.OperandType.Address => $"\n\n**address** for {mnemonic}: the memory location it uses",
+                Core.OperandType.Register => $"\n\n**register** for {mnemonic}: a register of the register file",
+                _ => $"\n\n**value** for {mnemonic}: used as it is",
+            };
         }
 
         private string InstructionMarkdown(InstructionDefinition instruction)
@@ -173,7 +205,7 @@ namespace Exuarch.Core
         {
             if (instruction.OperandTypes != null && instruction.OperandTypes.Count > 0)
             {
-                return string.Join(", ", instruction.OperandTypes.Select(t => t == OperandType.Address ? "address" : "value"));
+                return string.Join(", ", instruction.OperandTypes.Select(OperandTypeNames.Name));
             }
             return instruction.OperandCount switch
             {

@@ -28,12 +28,15 @@ namespace Exuarch.Web.Components
         // The instruction set the program is written for.
         [Parameter] public MicrocodeDefinition Microcode { get; set; }
         [Parameter] public int MemorySize { get; set; } = MemoryModule.DefaultSize;
+        // Registers in the machine's register file, the names a register operand can take; 0 without one.
+        [Parameter] public int RegisterCount { get; set; }
 
         private StandaloneCodeEditor editor;
         private DotNetObjectReference<AssemblyEditor> self;
         private AssemblyLanguage language;
         private MicrocodeDefinition languageMicrocode;
         private int languageMemorySize;
+        private int languageRegisterCount;
         private string registeredMnemonics;
         private string current;
         private bool ready;
@@ -78,11 +81,12 @@ namespace Exuarch.Web.Components
 
         protected override async Task OnParametersSetAsync()
         {
-            if (!ReferenceEquals(Microcode, languageMicrocode) || MemorySize != languageMemorySize)
+            if (!ReferenceEquals(Microcode, languageMicrocode) || MemorySize != languageMemorySize || RegisterCount != languageRegisterCount)
             {
                 languageMicrocode = Microcode;
                 languageMemorySize = MemorySize;
-                language = new AssemblyLanguage(Microcode, MemorySize);
+                languageRegisterCount = RegisterCount;
+                language = new AssemblyLanguage(Microcode, MemorySize, RegisterCount);
                 if (ready) await RegisterLanguage();
                 Analyze(current ?? Value ?? "");
             }

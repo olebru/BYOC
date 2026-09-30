@@ -24,7 +24,7 @@ public class PackageTests
     [Fact]
     public void BuiltInPackagesLoadWithTheDefaultFirst()
     {
-        Assert.Equal(new[] { "BYOC-16", "COPRO-16", "GPU-16", "HARVARD-16", "IRQ-16", "MOVE-16", "RISC-16" }, BuiltInPackages.All.Select(p => p.Name));
+        Assert.Equal(new[] { "BYOC-16", "COPRO-16", "GPU-16", "HARVARD-16", "IRQ-16", "MOVE-16", "RF-16", "RISC-16" }, BuiltInPackages.All.Select(p => p.Name));
         Assert.Same(BuiltInPackages.All[0], BuiltInPackages.Default);
         foreach (var package in BuiltInPackages.All)
         {
@@ -42,7 +42,7 @@ public class PackageTests
     {
         foreach (var package in BuiltInPackages.All)
         {
-            var language = new AssemblyLanguage(package.Machine.Decoder.Microcode, 4096);
+            var language = new AssemblyLanguage(package.Machine.Decoder.Microcode, 4096, RegisterFile.CountIn(package.Machine));
             foreach (var program in package.Programs)
             {
                 var result = language.Analyze(program.Source);
@@ -111,6 +111,75 @@ public class PackageTests
     public void ExampleDataHasTheDefaultPackagesPrograms()
     {
         Assert.Equal(BuiltInPackages.Default.Programs.Select(p => p.Name), ExampleData.Programs.Select(p => p.Name));
+    }
+
+    private static Machine Rf(string source, int limit = 100000)
+    {
+        return Run(BuiltInPackages.Get("RF-16"), source, limit);
+    }
+
+    [Fact]
+    public void RfPrintsWhatRiscPrints()
+    {
+        foreach (var name in new[] { "Hello, world on the LCD", "Fibonacci on the LCD" })
+        {
+            var rf = Rf(BuiltInPackages.Get("RF-16").Program(name).Source, 1_000_000);
+            var risc = Risc(BuiltInPackages.Get("RISC-16").Program(name).Source, 1_000_000);
+            Assert.Equal(risc.Device<CharacterDisplay>("lcd").Text.Replace("RISC-16", "RF-16").Trim(), rf.Device<CharacterDisplay>("lcd").Text.Trim());
+        }
+    }
+
+    [Fact]
+    public void RfInstructionsTakeAnyRegister()
+    {
+        var c = Rf(@"
+            MOVI  R7, 40
+            MOVI  R3, 2
+            ADD   R7, R3
+            MOV   R0, R7
+            ADR   R5, data
+            STR   R0, R5
+            INC   R5
+            LDR   R6, R5
+            SUBI  R6, 1
+            PUSH  R6
+            POP   R1
+            HLT
+    data:   .DATA 0, 10");
+        var data = c.Assembler.labelLUT["data"];
+        Assert.Equal(new[] { 42, 9, 0, 2, 0, data + 1, 9, 42 }, c.Device<RegisterFile>("rf").Values);
+        Assert.Equal(42, c.Device<RamModule>("mem").ValueAt(data));
+    }
+
+    [Theory]
+    [InlineData("BEQ", 5, 5, true)]
+    [InlineData("BNE", 5, 5, false)]
+    [InlineData("BCS", 3, 5, true)]
+    [InlineData("BCC", 3, 5, false)]
+    [InlineData("BMI", 3, 5, true)]
+    [InlineData("BPL", 5, 3, true)]
+    public void RfComparesAnyTwoRegisters(string branch, int a, int b, bool taken)
+    {
+        var c = Rf($@"
+            MOVI  R4, {a}
+            MOVI  R6, {b}
+            CMP   R4, R6
+            {branch} yes
+            MOVI  R2, 1
+            HLT
+    yes:    MOVI  R2, 2
+            HLT");
+        Assert.Equal(taken ? 2 : 1, c.Device<RegisterFile>("rf")[2]);
+        Assert.Equal(new[] { a, b }, new[] { c.Device<RegisterFile>("rf")[4], c.Device<RegisterFile>("rf")[6] });
+    }
+
+    [Fact]
+    public void RfAddTakesTenTicksWithFetch()
+    {
+        var c = new Machine(BuiltInPackages.Get("RF-16").Machine, "ADD R0, R2\nHLT") { RecordHistory = false };
+        int ticks = 0;
+        while (c.Device<Register>("pc").Data < 3 || c.Device<InstructionRegister>("ir").Data != 0) { c.SingleStep(); ticks++; }
+        Assert.Equal(10, ticks);
     }
 
     [Fact]

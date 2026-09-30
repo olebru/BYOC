@@ -83,6 +83,22 @@ namespace Exuarch.Core
             var registry = new DeviceRegistry();
             registry.Register("register", c => new Register(c.Name, c.Id, c.Bus()),
                 new DeviceTypeInfo { Category = "Registers", Description = "Holds one 16 bit value between ticks. output puts it on the bus and load stores the bus value; reset, inc and dec change it in place, wrapping from 65535 to 0 and back. It starts at 0", ControlLines = RegisterLines() });
+            registry.Register("registerFile", c => new RegisterFile(c.Name, c.Id, c.Bus(), c.IntParameter("count", RegisterFile.DefaultCount, 2, 16)),
+                new DeviceTypeInfo
+                {
+                    Category = "Registers",
+                    Description = "A bank of numbered registers behind one select input, as most real CPUs have. select takes a register number from the bus, and output, load, reset, inc and dec then act on that register. Instructions with register operands name them R0, R1 and so on, and the assembler turns the name into the number",
+                    Parameters = { new ParameterInfo { Name = "count", Description = "Number of registers, R0 up to R(count - 1)", Min = 2, Max = 16, Default = RegisterFile.DefaultCount } },
+                    ControlLines =
+                    {
+                        ControlLineInfo.Input("select", "Select the register whose number is on the bus, from the end of the tick"),
+                        ControlLineInfo.Output("output", "Put the selected register on the bus"),
+                        ControlLineInfo.Input("load", "Take the value on the bus into the selected register"),
+                        ControlLineInfo.Internal("reset", "Set the selected register to 0"),
+                        ControlLineInfo.Internal("inc", "Add 1 to the selected register; 65535 wraps to 0"),
+                        ControlLineInfo.Internal("dec", "Subtract 1 from the selected register; 0 wraps to 65535"),
+                    }
+                });
             registry.Register("statusRegister", c => new StatusRegister(c.Name, c.Id, c.Bus()),
                 new DeviceTypeInfo { Category = "Registers", Description = "A 16 bit register for the flags. An ALU connected to it writes its low four bits, Z zero, C carry, V overflow and N negative, and the decoder reads those bits to pick which steps of an instruction run. Microcode can load, save or change it like any register", ControlLines = RegisterLines() });
             registry.Register("dualPortRegister", c => new DualPortRegister(c.Name, c.Id, c.Bus("a"), c.Bus("b")),
