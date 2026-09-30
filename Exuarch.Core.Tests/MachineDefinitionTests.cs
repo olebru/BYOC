@@ -61,7 +61,7 @@ public class MachineDefinitionTests
         Assert.Equal("BYOC-16", c.Definition.Name);
         Assert.Equal(new[] { "regi", "pc", "regsp", "rega", "regb", "regc", "regs", "alu", "regsta", "mem", "mmu", "clk", "lcd", "fb", "keys" },
             c.Devices.Select(d => d.ID()));
-        Assert.Equal(4095, c.Device<Register>("regsp").Data);
+        Assert.Equal(0, c.Device<Register>("regsp").Data);
         Assert.Equal("REGSP", c.Device<Register>("regsp").DisplayName());
     }
 
@@ -199,7 +199,7 @@ public class MachineDefinitionTests
                 { "id": "mem", "type": "ram", "bus": "main" },
                 { "id": "ir", "type": "instructionRegister", "bus": "main" },
                 { "id": "st", "type": "statusRegister", "bus": "main" },
-                { "id": "rega", "type": "register", "bus": "main", "parameters": { "initialValue": 42 } },
+                { "id": "rega", "type": "register", "bus": "main" },
                 { "id": "bridge", "type": "dualPortRegister", "buses": { "a": "main", "b": "io" } },
                 { "id": "out", "type": "register", "bus": "io" },
                 { "id": "clk", "type": "clock" }
@@ -217,6 +217,7 @@ public class MachineDefinitionTests
             Row("s", "ir", "reset", "OUT"));
 
         var c = Machine.FromJson(json, microcode, "\tOUT\n\tHLT");
+        c.Device<Register>("rega").Data = 42;
         foreach (var _ in c.Run().Take(100)) { }
 
         Assert.True(c.IsHalted);
@@ -248,5 +249,33 @@ public class MachineDefinitionTests
     private class CountingRegister : Register
     {
         public CountingRegister(string name, string id, Bus bus) : base(name, id, bus) { }
+    }
+
+    // Registers used to take an initialValue. Files that set it still open, and the register starts at 0.
+    [Fact]
+    public void AnOldInitialValueIsDroppedWhenAFileOpens()
+    {
+        var json = """
+            {
+              "buses": [ { "id": "main" } ],
+              "devices": [
+                { "id": "sp", "type": "register", "bus": "main", "parameters": { "initialValue": 4096 } },
+                { "id": "bridge", "type": "dualPortRegister", "buses": { "a": "main", "b": "main" }, "parameters": { "initialValue": 7 } }
+              ]
+            }
+            """;
+        var definition = MachineDefinition.FromJson(json);
+        Assert.All(definition.Devices, d => Assert.Empty(d.Parameters));
+        Assert.DoesNotContain("initialValue", definition.ToJson());
+        var package = MachinePackage.FromJson("{ \"name\": \"Old\", \"machine\": " + json + " }");
+        Assert.All(package.Machine.Devices, d => Assert.Empty(d.Parameters));
+    }
+
+    [Fact]
+    public void ARegisterHasNoParameters()
+    {
+        var registry = DeviceRegistry.CreateDefault();
+        Assert.Empty(registry.Info("register").Parameters);
+        Assert.Empty(registry.Info("dualPortRegister").Parameters);
     }
 }

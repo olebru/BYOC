@@ -20,7 +20,7 @@ A device has up to three kinds of wiring, all shown in the inspector:
 
 - **Bus ports** connect it to buses. Most types have one port, `data`. A `dualPortRegister` has `a` and `b`, and a `blitter` has `host` and `video`. A clock has none.
 - **Connections** point at other devices it works with directly, not over a bus. An `alu` is connected to the registers it reads as `a` and `b` and to the register that receives its flags as `status`.
-- **Parameters** set it up: a register's `initialValue`, a memory's `size`, a display's `columns` and `rows`.
+- **Parameters** set it up: a memory's `size`, a display's `columns` and `rows`, a timer's `period`. Registers have none: every register starts at 0.
 
 In the [JSON](exuarch:tab/JSON) the same device reads:
 

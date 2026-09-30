@@ -106,7 +106,6 @@
       "type": "register",
       "name": "SP",
       "bus": "dbus",
-      "parameters": { "initialValue": 4096 },
       "layout": { "x": 402, "y": 450 }
     },
     {

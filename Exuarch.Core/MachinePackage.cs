@@ -36,6 +36,7 @@ namespace Exuarch.Core
                 var package = JsonSerializer.Deserialize(json, MachineDefinitionJsonContext.Default.MachinePackage)
                               ?? throw new MachineDefinitionException("Package is empty.");
                 if (package.Machine == null) throw new MachineDefinitionException("A package needs a \"machine\".");
+                package.Machine.DropRemovedParameters();
                 return package;
             }
             catch (JsonException e)

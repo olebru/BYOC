@@ -45,8 +45,8 @@ public class ComputerTests
     {
         var c = RunToHalt("\tLAI\t#7\n\tPSA\n\tLAI\t#0\n\tPOA\n\tHLT");
         Assert.Equal(7, c.Device<Register>("rega").Data);
-        Assert.Equal(4095, c.Device<Register>("regsp").Data);
-        Assert.Equal(7, c.Device<MMU>("mmu").RamBanks[0].memory[4094]);
+        Assert.Equal(0, c.Device<Register>("regsp").Data);
+        Assert.Equal(7, c.Device<MMU>("mmu").RamBanks[0].memory[4095]);
     }
 
     [Fact]

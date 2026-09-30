@@ -21,7 +21,7 @@ public class WordTests
     public void RegistersWrapAtSixteenBits()
     {
         var bus = new Bus();
-        var register = new Register("R", "r", bus, 0xFFFF);
+        var register = new Register("R", "r", bus) { Data = 0xFFFF };
         bus.devices.Add(register);
         register.Enable("inc");
         bus.Clk();
@@ -29,14 +29,76 @@ public class WordTests
         register.Enable("dec");
         bus.Clk();
         Assert.Equal(0xFFFF, register.Data);
-        Assert.Equal(0x1234, new Register("R", "r", bus, 0x71234).Data);
+    }
+
+    // Every device with inc and dec lines counts round: 65535 + 1 is 0 and 0 - 1 is 65535.
+    private static readonly string[] Counting = { "register", "statusRegister", "dualPortRegister" };
+    public static TheoryData<string> CountingTypes => new(Counting);
+
+    [Fact]
+    public void TheCountingDevicesAreTheOnesTested()
+    {
+        var counting = DeviceRegistry.CreateDefault().TypeInfos
+            .Where(i => i.ControlLines.Any(l => l.Name == "inc") || i.ControlLines.Any(l => l.Name == "dec"))
+            .Select(i => i.Type);
+        Assert.Equal(Counting, counting);
+    }
+
+    [Theory]
+    [MemberData(nameof(CountingTypes))]
+    public void IncAndDecWrapAtBothEnds(string type)
+    {
+        var bus = new Bus();
+        IBusDevice device = type switch
+        {
+            "register" => new Register("R", "r", bus),
+            "statusRegister" => new StatusRegister("S", "s", bus),
+            _ => new DualPortRegister("D", "d", bus, new Bus()),
+        };
+        bus.devices.Add(device);
+        int Value() => device is DualPortRegister d ? d.Data : ((Register)device).Data;
+
+        Assert.Equal(0, Value());
+        device.Enable("dec");
+        bus.Clk();
+        Assert.Equal(0xFFFF, Value());
+        device.Enable("dec");
+        bus.Clk();
+        Assert.Equal(0xFFFE, Value());
+        device.Enable("inc");
+        bus.Clk();
+        device.Enable("inc");
+        bus.Clk();
+        Assert.Equal(0, Value());
+        device.Enable("inc");
+        bus.Clk();
+        Assert.Equal(1, Value());
+    }
+
+    // The same through microcode, in a machine: a register counted down from 0 reaches 65535 and back up to 0.
+    [Fact]
+    public void ARegisterStartsAtZeroAndWrapsInAMachine()
+    {
+        var package = MachineTemplates.Minimal("Wrap");
+        package.Machine.Devices.Add(new DeviceDefinition { Id = "n", Type = "register", Bus = "main" });
+        package.Machine.Decoder.Microcode.Instructions.Add(new InstructionDefinition { Mnemonic = "DEC", Operands = 0, Steps = { new MicroStep { Signals = { "n.dec", "ir.reset" } } } });
+        package.Machine.Decoder.Microcode.Instructions.Add(new InstructionDefinition { Mnemonic = "INC", Operands = 0, Steps = { new MicroStep { Signals = { "n.inc", "ir.reset" } } } });
+
+        var down = new Machine(package.Machine, "DEC\nHLT");
+        Assert.Equal(0, down.Device<Register>("n").Data);
+        while (!down.IsHalted) down.SingleStep();
+        Assert.Equal(0xFFFF, down.Device<Register>("n").Data);
+
+        var round = new Machine(package.Machine, "DEC\nINC\nHLT");
+        while (!round.IsHalted) round.SingleStep();
+        Assert.Equal(0, round.Device<Register>("n").Data);
     }
 
     [Fact]
     public void BusCarriesSixteenBitWords()
     {
         var bus = new Bus();
-        var source = new Register("S", "s", bus, 0xBEEF);
+        var source = new Register("S", "s", bus) { Data = 0xBEEF };
         var target = new Register("T", "t", bus);
         bus.devices.Add(source);
         bus.devices.Add(target);
@@ -57,8 +119,8 @@ public class WordTests
     public void AluFlagsAtSixteenBits(string function, int a, int b, int expected, int flags)
     {
         var bus = new Bus();
-        var rega = new Register("A", "a", bus, a);
-        var regb = new Register("B", "b", bus, b);
+        var rega = new Register("A", "a", bus) { Data = a };
+        var regb = new Register("B", "b", bus) { Data = b };
         var sta = new StatusRegister("S", "s", bus);
         var alu = new ALU("ALU", "alu", rega, regb, sta, bus);
         var result = new Register("R", "r", bus);
@@ -97,7 +159,7 @@ public class WordTests
         var mmu = c.Device<MMU>("mmu");
         Assert.Equal(16, mmu.RamBanks.Length);
         Assert.Equal(4096, mmu.RamBanks[0].Size);
-        Assert.Equal(4095, c.Device<Register>("regsp").Data);
+        Assert.Equal(0, c.Device<Register>("regsp").Data);
     }
 
     [Fact]
@@ -155,7 +217,8 @@ public class WordTests
     [InlineData("mem", "size", 0, "between 1 and 65536")]
     [InlineData("mmu", "banks", 300, "between 1 and 256")]
     [InlineData("mmu", "bankSize", 70000, "between 1 and 65536")]
-    [InlineData("regsp", "initialValue", 70000, "between 0 and 65535")]
+    [InlineData("regsp", "size", 1, "a register has no parameter 'size', it has none")]
+    [InlineData("mem", "sise", 1, "a ram has no parameter 'sise', it has size")]
     public void ParametersAreRangeChecked(string device, string parameter, int value, string expected)
     {
         var definition = MachineDefinition.FromJson(ExampleData.MACHINE);
@@ -217,8 +280,8 @@ public class WordTests
     {
         var c = RunToHalt(Default("\tLAI\t#1234\n\tPSA\n\tLAI\t#0\n\tPOA\n\tHLT"));
         Assert.Equal(1234, c.Device<Register>("rega").Data);
-        Assert.Equal(4095, c.Device<Register>("regsp").Data);
-        Assert.Equal(1234, c.Device<MMU>("mmu").RamBanks[0].memory[4094]);
+        Assert.Equal(0, c.Device<Register>("regsp").Data);
+        Assert.Equal(1234, c.Device<MMU>("mmu").RamBanks[0].memory[4095]);
     }
 
     [Fact]

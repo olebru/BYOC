@@ -14,12 +14,11 @@ namespace Exuarch.Core
         protected bool loadEnabled = false;
         protected  bool outputEnabled = false;
         protected bool reset = false;
-        public Register(string DeviceName, string DeviceID, Bus ConnectedBus, int InitialValue = 0)
+        public Register(string DeviceName, string DeviceID, Bus ConnectedBus)
         {
             deviceName = DeviceName;
             deviceID = DeviceID;
             connectedBus = ConnectedBus;
-            Data = InitialValue & Bus.Mask;
         }
         public virtual void Drive()
         {

@@ -12,8 +12,8 @@ public class ALUTests
     private static (int result, int status) Run(string function, int a, int b)
     {
         var bus = new Bus();
-        var rega = new Register("A", "rega", bus, a);
-        var regb = new Register("B", "regb", bus, b);
+        var rega = new Register("A", "rega", bus) { Data = a };
+        var regb = new Register("B", "regb", bus) { Data = b };
         var sta = new StatusRegister("S", "regsta", bus);
         var alu = new ALU("ALU", "alu", rega, regb, sta, bus);
         var result = new Register("R", "res", bus);

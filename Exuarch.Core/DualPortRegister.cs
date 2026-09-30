@@ -12,13 +12,12 @@ namespace Exuarch.Core
         private string deviceID;
         private string deviceName;
         private bool loadA, loadB, outputA, outputB, reset, inc, dec;
-        public DualPortRegister(string DeviceName, string DeviceID, Bus busA, Bus busB, int InitialValue = 0)
+        public DualPortRegister(string DeviceName, string DeviceID, Bus busA, Bus busB)
         {
             deviceName = DeviceName;
             deviceID = DeviceID;
             BusA = busA;
             BusB = busB;
-            Data = InitialValue & Bus.Mask;
         }
         public void Drive()
         {

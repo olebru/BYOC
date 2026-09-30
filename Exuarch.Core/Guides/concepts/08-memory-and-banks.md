@@ -10,7 +10,7 @@ Every memory cell holds one 16 bit word, like every bus and register in the mach
 
 A [`ram`](exuarch:reference/ram) device has a **size** parameter, the number of cells, from 1 to 65536 (4096 if you leave it out), and four control lines:
 
-- `loadmar` takes an address from the bus into the memory address register, the MAR. The address wraps at the size, so in a 4096 cell memory, 4100 addresses cell 4.
+- `loadmar` takes an address from the bus into the memory address register, the MAR. The address wraps at the size, so in a 4096 cell memory, 4100 addresses cell 4, and 65535 addresses cell 4095. That is why a stack pointer can start at 0 like every register: its first decrement wraps to 65535, the top of memory.
 - `output` puts the cell at the MAR on the bus.
 - `load` stores the bus value in the cell at the MAR.
 - `outputmar` puts the MAR itself on the bus.

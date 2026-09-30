@@ -20,8 +20,10 @@ namespace Exuarch.Core
         {
             try
             {
-                return JsonSerializer.Deserialize(json, MachineDefinitionJsonContext.Default.MachineDefinition)
-                       ?? throw new MachineDefinitionException("Machine definition is empty.");
+                var definition = JsonSerializer.Deserialize(json, MachineDefinitionJsonContext.Default.MachineDefinition)
+                                 ?? throw new MachineDefinitionException("Machine definition is empty.");
+                definition.DropRemovedParameters();
+                return definition;
             }
             catch (JsonException e)
             {
@@ -32,6 +34,24 @@ namespace Exuarch.Core
         public string ToJson()
         {
             return CompactJson.Format(JsonSerializer.Serialize(this, MachineDefinitionJsonContext.Default.MachineDefinition));
+        }
+
+        // Parameters that devices once had. Files that still set them open as if they did not: registers used to
+        // take an initialValue, and now always start at 0.
+        private static readonly (string Type, string Parameter)[] RemovedParameters =
+        {
+            ("register", "initialValue"), ("dualPortRegister", "initialValue"),
+        };
+
+        public void DropRemovedParameters()
+        {
+            foreach (var device in Devices)
+            {
+                foreach (var (type, parameter) in RemovedParameters)
+                {
+                    if (device.Type == type) device.Parameters.Remove(parameter);
+                }
+            }
         }
     }
     // Where an editor drew an element. Has no effect on the machine.

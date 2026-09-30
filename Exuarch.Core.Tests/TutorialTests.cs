@@ -69,9 +69,7 @@ public class TutorialTests
     {
         var machine = WithLoops();
         machine.Devices.Add(new DeviceDefinition { Id = "tmp", Type = "register", Bus = "main" });
-        var sp = new DeviceDefinition { Id = "sp", Type = "register", Bus = "main" };
-        sp.Parameters["initialValue"] = System.Text.Json.JsonDocument.Parse("4096").RootElement.Clone();
-        machine.Devices.Add(sp);
+        machine.Devices.Add(new DeviceDefinition { Id = "sp", Type = "register", Bus = "main" });
         Add(machine, "CALL", 1, OperandType.Address,
             Step("pc.output", "mem.loadmar"),
             Step("mem.output", "tmp.load", "pc.inc", "sp.dec"),
@@ -173,11 +171,13 @@ public class TutorialTests
         RunToHalt(c);
         Assert.Equal("OOKK", Lcd(c));
         // Every push was popped again.
-        Assert.Equal(4096, c.Device<Register>("sp").Data);
+        Assert.Equal(0, c.Device<Register>("sp").Data);
+        Assert.Equal(65535, c.History.SelectMany(t => t.Changes).First(ch => ch.Device == "sp").After);
         var page = Page("04-subroutines-and-the-stack.md");
         Assert.StartsWith("# Subroutines and the stack", page);
         PageShows(page, TwiceProgram, "tmp.load", "sp.dec", "sp.output", "mem.load", "tmp.output", "sp.inc");
-        Assert.Contains("4096", page);
+        Assert.DoesNotContain("initialValue", page);
+        Assert.Contains("65535", page);
     }
 
     [Fact]

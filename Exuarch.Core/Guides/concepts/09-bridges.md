@@ -10,7 +10,7 @@ A [`dualPortRegister`](exuarch:reference/dualPortRegister) has two bus ports, `a
 { "id": "opr", "type": "dualPortRegister", "buses": { "a": "ibus", "b": "dbus" } }
 ```
 
-It holds one 16 bit value, starting at its **initialValue** parameter (0 if you leave it out). Its control lines are:
+It holds one 16 bit value, which starts at 0 like every register's. Its control lines are:
 
 - `loada` and `loadb` take the value from bus a or bus b.
 - `outputa` and `outputb` put the value on bus a or bus b.

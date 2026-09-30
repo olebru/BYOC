@@ -6,9 +6,8 @@ A subroutine is code a program can call from several places and that returns to 
 
 1. Open [Hardware design](<exuarch:tab/Hardware design>) and drag two more **register** devices onto the bus.
 2. Set their IDs to `sp` and `tmp`.
-3. Select `sp` and set its **initialValue** parameter to 4096.
 
-The memory holds 4096 cells, addresses 0 to 4095, and the program sits at the bottom. `sp` points at the top of the stack. The stack starts empty just above the last cell and grows downwards, away from the program: a push first moves `sp` down one cell and then writes there. `tmp` is a scratch register that holds a value for a few ticks.
+`sp` points at the top of the stack. Like every register it starts at 0, and the stack grows downwards from there: a push first moves `sp` down one cell and then writes there. Moving down from 0 wraps round to 65535, and because the memory holds 4096 cells it takes an address modulo 4096, so 65535 is cell 4095, the last one. The stack starts at the top of memory and grows away from the program at the bottom, without anything to set up. `tmp` is a scratch register that holds a value for a few ticks.
 
 ## Write CALL
 
@@ -57,7 +56,7 @@ twice:  OUTA
 
 ## Run it
 
-Open [Run](exuarch:tab/Run) and run it: the LCD shows `OOKK`. Step through the first `CALL` with **Tick** (→) and open the **Memory** tab: the return address appears in the last cell, 4095, and `sp` shows 4095. `RET` reads it back, and `sp` is 4096 again. Because every call pushes and every return pops, calls can nest: a subroutine can call another, and each `RET` finds its own return address.
+Open [Run](exuarch:tab/Run) and run it: the LCD shows `OOKK`. Step through the first `CALL` with **Tick** (→) and open the **Memory** tab: the return address appears in the last cell, 4095, and `sp` shows 65535. `RET` reads it back, and `sp` is 0 again. Because every call pushes and every return pops, calls can nest: a subroutine can call another, and each `RET` finds its own return address.
 
 Things to try:
 

@@ -140,7 +140,7 @@ public class InterruptTests
         var instructions = c.History.Where(t => t.StepIndex == 0).Select(t => t.Instruction).ToList();
         Assert.Contains("LDA", instructions);
         Assert.Equal(1, instructions.Count(i => i == "LDA"));
-        Assert.Equal(4094, c.Device<Register>("sp").Data); // PC and flags pushed
+        Assert.Equal(65534, c.Device<Register>("sp").Data); // PC and flags pushed
     }
 
     [Fact]
@@ -217,7 +217,7 @@ public class InterruptTests
             // Whenever the main loop fetches an instruction, with interrupts on again, nothing is left on the stack.
             if (pic.Enabled && c.LastTick?.FetchedFromAddress is int at && at >= main && at < handler)
             {
-                Assert.Equal(4096, c.Device<Register>("sp").Data);
+                Assert.Equal(0, c.Device<Register>("sp").Data);
                 checks++;
             }
         }

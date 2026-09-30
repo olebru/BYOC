@@ -99,7 +99,7 @@ public class HarvardTests
         Assert.Equal(8, Reg(c, "a"));
         Assert.Equal(8, Reg(c, "b"));
         Assert.Equal(8, c.Device<RamModule>("dmem").ValueAt(100));
-        Assert.Equal(4096, Reg(c, "sp"));
+        Assert.Equal(0, Reg(c, "sp"));
         Assert.Equal(0, c.Device<RamModule>("pmem").ValueAt(100));
     }
 
@@ -114,7 +114,7 @@ public class HarvardTests
             RET");
         Assert.Equal((1, 2), (Reg(c, "a"), Reg(c, "b")));
         Assert.Equal(2, c.Device<RamModule>("dmem").ValueAt(4095));
-        Assert.Equal(4096, Reg(c, "sp"));
+        Assert.Equal(0, Reg(c, "sp"));
     }
 
     [Theory]

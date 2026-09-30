@@ -25,7 +25,7 @@ step 2: mem.output, ir.load, pc.inc
 
 Step 1 puts the program counter on the bus as the memory address. Step 2 puts the cell at that address, the opcode, on the bus and loads it into the instruction register, and moves the program counter past it. In the next tick the decoder is at the opcode, so the instruction's first step runs.
 
-The program counter is an ordinary `register`. Nothing makes it special except that fetch uses it that way; the assembled program is loaded into the program memory from address 0, and a register starts at 0 unless its `initialValue` says otherwise.
+The program counter is an ordinary `register`. Nothing makes it special except that fetch uses it that way; the assembled program is loaded into the program memory from address 0, and every register starts at 0, so fetch begins with the first cell.
 
 ## Ending an instruction
 

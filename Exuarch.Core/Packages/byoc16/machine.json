@@ -10,8 +10,7 @@
       "id": "regsp",
       "type": "register",
       "name": "REGSP",
-      "bus": "main",
-      "parameters": { "initialValue": 4095 }
+      "bus": "main"
     },
     { "id": "rega", "type": "register", "name": "REGA", "bus": "main" },
     { "id": "regb", "type": "register", "name": "REGB", "bus": "main" },

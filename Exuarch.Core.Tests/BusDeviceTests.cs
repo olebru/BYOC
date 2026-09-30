@@ -37,7 +37,7 @@ public class BusDeviceTests
     public void RamModuleLoadWorksThroughBusInterface()
     {
         var bus = new Bus();
-        var source = new Register("SRC", "src", bus, 42);
+        var source = new Register("SRC", "src", bus) { Data = 42 };
         var ram = new RamModule("RAM", "mem", bus);
         bus.devices.Add(source);
         bus.devices.Add(ram);
@@ -74,8 +74,8 @@ public class BusDeviceTests
     public void TwoOutputtingDevicesThrowBlueSmoke()
     {
         var bus = new Bus();
-        var a = new Register("A", "a", bus, 1);
-        var b = new Register("B", "b", bus, 2);
+        var a = new Register("A", "a", bus) { Data = 1 };
+        var b = new Register("B", "b", bus) { Data = 2 };
         bus.devices.Add(a);
         bus.devices.Add(b);
 
