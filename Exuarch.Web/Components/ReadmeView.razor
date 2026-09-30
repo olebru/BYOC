@@ -1,0 +1,59 @@
+@using Exuarch.Core
+@implements IDisposable
+@inject IJSRuntime JS
+
+<div class="readme-body @(Editing ? "editing" : "")">
+    @if (Editing)
+    {
+        <textarea class="readme-source" spellcheck="false" value="@Markdown" @oninput="OnInput"
+                  placeholder="# Your machine&#10;&#10;Write what makes it special, its parts, how an instruction runs and what to try."></textarea>
+    }
+    <article class="readme" @ref="article">
+        @if (string.IsNullOrWhiteSpace(Markdown))
+        {
+            <p class="readme-empty">@Empty</p>
+        }
+        else
+        {
+            @((MarkupString)ReadmeMarkdown.ToHtml(Markdown))
+        }
+    </article>
+</div>
+
+@code
+{
+    [Parameter] public string Markdown { get; set; }
+    [Parameter] public bool Editing { get; set; }
+    [Parameter] public EventCallback<string> MarkdownChanged { get; set; }
+    [Parameter] public string Empty { get; set; } = "Nothing written yet.";
+    // An exuarch: link was clicked: its kind (device, instruction, program, tab, package) and target.
+    [Parameter] public EventCallback<(string Kind, string Target)> OnLink { get; set; }
+
+    private ElementReference article;
+    private DotNetObjectReference<ReadmeView> self;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            self = DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("exuarchReadme.attach", article, self);
+        }
+    }
+
+    private Task OnInput(ChangeEventArgs e)
+    {
+        return MarkdownChanged.InvokeAsync(e.Value?.ToString());
+    }
+
+    [JSInvokable]
+    public async Task Follow(string href)
+    {
+        if (ReadmeLinks.TryParse(href, out var kind, out var target)) await OnLink.InvokeAsync((kind, target));
+    }
+
+    public void Dispose()
+    {
+        self?.Dispose();
+    }
+}

@@ -32,3 +32,35 @@ window.exuarchEditor = {
         URL.revokeObjectURL(url);
     }
 };
+
+// Package READMEs: links into the app (exuarch:...) go to .NET, web links open in a new tab.
+window.exuarchReadme = {
+    attach: function (element, dotnet) {
+        element.addEventListener('click', function (e) {
+            const link = e.target.closest('a');
+            if (!link || !element.contains(link)) return;
+            const href = link.getAttribute('href') || '';
+            if (href.startsWith('exuarch:')) {
+                e.preventDefault();
+                dotnet.invokeMethodAsync('Follow', href);
+            } else if (/^(https?:|mailto:)/i.test(href)) {
+                link.target = '_blank';
+                link.rel = 'noopener noreferrer';
+            } else if (href === '#') {
+                e.preventDefault();
+            }
+        });
+    },
+};
+
+// Whether this browser has been here before; the first call remembers that it has, so the guide opens only once.
+window.exuarchWelcome = {
+    key: 'exuarch.welcomed',
+    seen: function () {
+        try {
+            if (localStorage.getItem(this.key)) return true;
+            localStorage.setItem(this.key, '1');
+        } catch { }
+        return false;
+    },
+};

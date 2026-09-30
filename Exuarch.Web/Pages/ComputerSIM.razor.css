@@ -29,18 +29,57 @@
     margin-right: 4px;
 }
 
+.new-program {
+    display: inline-flex;
+    gap: 4px;
+}
+
+    .new-program input {
+        width: 180px;
+        height: calc(1.5em + 0.4rem + 2px);
+        font-family: var(--font-mono);
+        font-size: 0.8rem;
+    }
+
 .package-label {
     margin: 0 2px 0 0;
 }
 
-.package-select {
-    width: auto;
+/* On a wide screen the workspace moves aside for the getting started drawer instead of going under it. */
+@media (min-width: 1200px) {
+    .workspace.drawer-open {
+        margin-right: 440px;
+    }
+}
+
+/* The open package; a click shows its note or the examples in the getting started drawer. */
+.package-name {
     height: calc(1.5em + 0.4rem + 2px);
-    padding: 0.1rem 1.6rem 0.1rem 0.5rem;
+    padding: 0.1rem 0.6rem;
+    border: 1px solid var(--line-2);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
     font-family: var(--font-mono);
     font-size: 0.8rem;
     font-weight: 500;
+    color: var(--ink);
 }
+
+    .package-name:hover {
+        border-color: var(--ink-3);
+    }
+
+.getting-started {
+    border: 1px solid var(--signal);
+    color: var(--signal-ink);
+    background: var(--surface);
+    margin-right: 8px;
+}
+
+    .getting-started:hover, .getting-started.on {
+        background: var(--signal-soft);
+        color: var(--signal-ink);
+    }
 
 
 /* ---- New machine dialog ---- */

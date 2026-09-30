@@ -9,5 +9,5 @@
 loop:   ADD                ; A = A + B
         PSA                ; push the sum
         JMP    loop        ; forever, the stack keeps growing
-letter: .BYTE  65          ; 'A'
-one:    .BYTE  1
+letter: .DATA  65          ; 'A'
+one:    .DATA  1

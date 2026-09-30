@@ -1,0 +1,49 @@
+using System;
+using System.IO;
+using System.Linq;
+using Markdig;
+using Markdig.Renderers;
+using Markdig.Syntax;
+using Markdig.Syntax.Inlines;
+
+namespace Exuarch.Web.Components
+{
+    // Turns a package README into HTML that is safe to show, whoever wrote the package: raw HTML is not allowed,
+    // and links may only go to the web (http, https, mailto), to an anchor, or into the app (exuarch:).
+    public static class ReadmeMarkdown
+    {
+        private static readonly MarkdownPipeline Pipeline = new MarkdownPipelineBuilder()
+            .UsePipeTables()
+            .UseAutoLinks()
+            .UseEmphasisExtras()
+            .DisableHtml()
+            .Build();
+
+        public static string ToHtml(string markdown)
+        {
+            var document = Markdown.Parse(markdown ?? "", Pipeline);
+            foreach (var link in document.Descendants<LinkInline>())
+            {
+                if (!Allowed(link.Url)) link.Url = "#";
+            }
+            foreach (var link in document.Descendants<AutolinkInline>())
+            {
+                if (!Allowed(link.Url)) link.Url = "#";
+            }
+            using var writer = new StringWriter();
+            var renderer = new HtmlRenderer(writer);
+            Pipeline.Setup(renderer);
+            renderer.Render(document);
+            writer.Flush();
+            return writer.ToString();
+        }
+
+        private static bool Allowed(string url)
+        {
+            if (string.IsNullOrEmpty(url)) return true;
+            var trimmed = url.Trim();
+            if (trimmed.StartsWith("#")) return true;
+            return new[] { "http://", "https://", "mailto:", "exuarch:" }.Any(s => trimmed.StartsWith(s, StringComparison.OrdinalIgnoreCase));
+        }
+    }
+}

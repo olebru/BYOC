@@ -1,0 +1,152 @@
+.readme-body {
+    display: grid;
+    grid-template-columns: 1fr;
+    min-height: 100%;
+}
+
+    .readme-body.editing {
+        grid-template-columns: 1fr 1fr;
+    }
+
+.readme-source {
+    border: none;
+    border-right: 1px solid var(--line);
+    outline: none;
+    resize: none;
+    padding: 18px 20px;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    line-height: 1.6;
+    color: var(--ink);
+    background: var(--sunken);
+}
+
+/* The README itself, set like documentation: sans text, mono for code and names. */
+.readme {
+    padding: 18px 24px 40px;
+    max-width: 760px;
+    font-size: 0.92rem;
+    line-height: 1.6;
+    color: var(--ink-2);
+}
+
+.readme-empty {
+    color: var(--ink-3);
+}
+
+.readme ::deep h1 {
+    font-family: var(--font-mono);
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--ink);
+    letter-spacing: 0.02em;
+    margin: 0 0 14px;
+}
+
+.readme ::deep h2 {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin: 28px 0 8px;
+    padding-top: 12px;
+    border-top: 1px solid var(--line);
+}
+
+.readme ::deep h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--ink);
+    margin: 20px 0 6px;
+}
+
+.readme ::deep p, .readme ::deep ul, .readme ::deep ol {
+    margin: 0 0 12px;
+}
+
+.readme ::deep li {
+    margin-bottom: 4px;
+}
+
+.readme ::deep strong {
+    color: var(--ink);
+    font-weight: 600;
+}
+
+.readme ::deep code {
+    font-family: var(--font-mono);
+    font-size: 0.85em;
+    color: var(--ink);
+    background: var(--sunken);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    padding: 0 4px;
+}
+
+.readme ::deep pre {
+    background: var(--sunken);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    overflow-x: auto;
+}
+
+    .readme ::deep pre code {
+        border: none;
+        background: none;
+        padding: 0;
+    }
+
+.readme ::deep a {
+    color: var(--read);
+    text-decoration: none;
+    border-bottom: 1px solid var(--read-soft);
+}
+
+    .readme ::deep a:hover {
+        border-bottom-color: var(--read);
+    }
+
+    /* Links into the app: devices, instructions, programs and tabs. */
+    .readme ::deep a[href^="exuarch:"] {
+        font-family: var(--font-mono);
+        font-size: 0.9em;
+        color: var(--ink);
+        border-bottom: 1px dashed var(--signal);
+    }
+
+        .readme ::deep a[href^="exuarch:"]:hover {
+            color: var(--signal-ink);
+            border-bottom-style: solid;
+        }
+
+.readme ::deep table {
+    border-collapse: collapse;
+    margin: 0 0 14px;
+    font-size: 0.88rem;
+}
+
+.readme ::deep th, .readme ::deep td {
+    border: 1px solid var(--line);
+    padding: 4px 10px;
+    text-align: left;
+}
+
+.readme ::deep th {
+    background: var(--surface-2);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+}
+
+@media (max-width: 900px) {
+    .readme-body.editing {
+        grid-template-columns: 1fr;
+    }
+
+    .readme {
+        padding: 16px;
+    }
+}

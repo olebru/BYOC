@@ -10,7 +10,7 @@ namespace Exuarch.Core
     //     [label:] [MNEMONIC [operand, operand ...]] [; comment]
     //
     // Columns are separated by any whitespace. Operands are 123, 0x1F or 'A' literals (an older leading # is
-    // allowed), "strings" (in .BYTE and .WORD), or label names. The older tab separated form parses the same way.
+    // allowed), "strings" (in .DATA and .STRING), or label names. The older tab separated form parses the same way.
     // Labels start with a letter, _ or ., so a literal is never mistaken for a label.
     public enum TokenKind { Label, Mnemonic, Directive, Number, Character, String, LabelReference, Comma, Comment, Error }
 

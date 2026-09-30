@@ -1,6 +1,7 @@
 {
   "name": "MOVE-16",
   "description": "A transport triggered machine: there is no instruction set, only moves. Every instruction moves a value from a source port (IMM, R0-R3, RES, MEM, KEYS) to a destination port, and the units act on what arrives: moving into ADD adds, into JZ jumps if zero, into CALL calls, into LCD prints, into HALT stops the clock. One opcode per source and destination pair, all generated.",
+  "readme": "README.md",
   "machine": "machine.json",
   "programs": [
     { "name": "Hello, world with nothing but moves", "description": "A string loop where comparing, jumping and printing are all moves", "file": "hello.asm" },

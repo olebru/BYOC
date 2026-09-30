@@ -276,7 +276,7 @@ public class PackageTests
             INC_R1
             STR_R1
             HLT
-    data:   .WORD 41, 0");
+    data:   .DATA 41, 0");
         Assert.Equal(42, Registers(c)[0]);
         var data = c.Assembler.labelLUT["data"];
         Assert.Equal(42, c.Device<RamModule>("mem").ValueAt(data + 1));

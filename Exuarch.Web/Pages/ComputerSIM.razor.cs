@@ -13,15 +13,20 @@ namespace Exuarch.Web.Pages
 {
     public partial class ComputerSIM
     {
-        private static readonly string[] Tabs = { "Design", "Microcode", "Program", "JSON", "Run" };
+        // The same names README links use (ReadmeLinks.Tabs).
+        private static readonly string[] Tabs = { "Hardware design", "Microcode", "Program", "JSON", "Run" };
         private static readonly DeviceRegistry Registry = DeviceRegistry.CreateDefault();
 
         [Microsoft.AspNetCore.Components.Inject] private IJSRuntime JS { get; set; }
 
-        private string ActiveTab = "Design";
+        private string ActiveTab = "Hardware design";
+        // The getting started drawer: guides, the example packages and the note of the machine that is open.
+        private bool drawerOpen;
+        private string drawerSection = "Guide";
         // The package the machine and the example programs came from, as it was loaded.
         private MachinePackage Package;
         private string PackageName { get { return Package.Name; } }
+        private bool IsBuiltIn { get { return BuiltInPackages.All.Any(p => p.Name == PackageName); } }
         private string PackageError;
         private Machine C;
         // The whole machine, microcode included (Definition.Decoder.Microcode).
@@ -81,15 +86,17 @@ namespace Exuarch.Web.Pages
             Rebuild();
         }
 
-        // The example the program was loaded from, if any; edits keep it so the title can say "(edited)".
-        private string programName;
+        // The package program in the editor. Your programs (every program of your own machine, and any made with
+        // New program) take the edits; a built in example stays as it is, and the title then says "(edited)".
+        private PackageProgram currentProgram;
+        private readonly HashSet<PackageProgram> newPrograms = new HashSet<PackageProgram>();
+        private bool IsYours(PackageProgram program) { return !IsBuiltIn || newPrograms.Contains(program); }
+        private bool IsCurrent(PackageProgram program) { return program == currentProgram && (IsYours(program) || program.Source == Program); }
         private string ProgramTitle
         {
             get
             {
-                var example = Package.Programs.FirstOrDefault(p => p.Source == Program);
-                if (example != null) return example.Name;
-                if (programName != null) return $"{programName} (edited)";
+                if (currentProgram != null) return IsCurrent(currentProgram) ? currentProgram.Name : $"{currentProgram.Name} (edited)";
                 return string.IsNullOrWhiteSpace(Program) ? "No program" : "Untitled program";
             }
         }
@@ -98,18 +105,26 @@ namespace Exuarch.Web.Pages
         {
             Package = package;
             PackageError = null;
-            Program = package.Programs.FirstOrDefault()?.Source ?? "";
-            programName = package.Programs.FirstOrDefault()?.Name;
+            currentProgram = package.Programs.FirstOrDefault();
+            Program = currentProgram?.Source ?? "";
+            newPrograms.Clear();
+            newProgramName = null;
             ApplyDefinition(package.Machine.Clone());
         }
 
         // Switching or resetting the machine is undoable, like any other edit of it.
-        private void SelectPackage(Microsoft.AspNetCore.Components.ChangeEventArgs e)
+        private void LoadBuiltIn(string name)
         {
-            var name = e.Value?.ToString();
             if (name == PackageName || !BuiltInPackages.All.Any(p => p.Name == name)) return;
             History.Record();
             LoadPackage(BuiltInPackages.Get(name));
+            drawerSection = "This machine";
+        }
+
+        private void ToggleDrawer(string section)
+        {
+            drawerOpen = !drawerOpen || drawerSection != section;
+            drawerSection = section;
         }
         // ---- New machine ----
         private static readonly (string Value, string Title, string Description)[] NewStarts =
@@ -131,10 +146,21 @@ namespace Exuarch.Web.Pages
         }
         protected override async Task OnAfterRenderAsync(bool firstRender)
         {
+            // The very first visit opens the guide once; after that the drawer stays shut until asked for.
+            if (firstRender && !await JS.InvokeAsync<bool>("exuarchWelcome.seen"))
+            {
+                drawerOpen = true;
+                StateHasChanged();
+            }
             if (focusNewName && newDialog)
             {
                 focusNewName = false;
                 await newNameInput.FocusAsync();
+            }
+            if (focusNewProgram && newProgramName != null)
+            {
+                focusNewProgram = false;
+                await newProgramInput.FocusAsync();
             }
         }
         private void NewDialogKey(Microsoft.AspNetCore.Components.Web.KeyboardEventArgs e)
@@ -151,14 +177,14 @@ namespace Exuarch.Web.Pages
             var package = newStart switch
             {
                 "empty" => MachineTemplates.Empty(unique),
-                "copy" => MachineTemplates.CopyOf(new MachinePackage { Name = Package.Name, Description = Package.Description, Machine = Definition.Clone(), Programs = Package.Programs }, unique),
+                "copy" => MachineTemplates.CopyOf(new MachinePackage { Name = Package.Name, Description = Package.Description, Readme = Package.Readme, Machine = Definition.Clone(), Programs = Package.Programs }, unique),
                 _ => MachineTemplates.Minimal(unique),
             };
             History.Record();
             LoadPackage(package);
-            if (newStart == "minimal") { Program = MachineTemplates.StarterProgram; programName = "Starter program"; Rebuild(); }
+            if (newStart == "minimal") AddProgram("Starter program", MachineTemplates.StarterProgram);
             newDialog = false;
-            ActiveTab = "Design";
+            ActiveTab = "Hardware design";
         }
 
         private void ResetPackage()
@@ -237,14 +263,51 @@ namespace Exuarch.Web.Pages
         private void LoadExample(PackageProgram example)
         {
             Program = example.Source;
-            programName = example.Name;
+            currentProgram = example;
             Rebuild();
         }
 
         private void OnProgramChanged(string program)
         {
             Program = program;
+            if (currentProgram != null && IsYours(currentProgram)) currentProgram.Source = program;
             Rebuild();
+        }
+
+        // ---- New program: named in place in the program bar, then added to the package and opened ----
+        // Null while the name field is closed.
+        private string newProgramName;
+        private Microsoft.AspNetCore.Components.ElementReference newProgramInput;
+        private bool focusNewProgram;
+
+        private void StartNewProgram()
+        {
+            newProgramName = "";
+            focusNewProgram = true;
+        }
+
+        private void CreateProgram()
+        {
+            var name = string.IsNullOrWhiteSpace(newProgramName) ? "My program" : newProgramName.Trim();
+            newProgramName = null;
+            AddProgram(name, $"; {name}\n");
+        }
+
+        private void NewProgramKey(Microsoft.AspNetCore.Components.Web.KeyboardEventArgs e)
+        {
+            if (e.Key == "Enter") CreateProgram();
+            else if (e.Key == "Escape") newProgramName = null;
+        }
+
+        // A name the package already uses gets a number.
+        private void AddProgram(string name, string source)
+        {
+            var unique = name;
+            for (int n = 2; Package.Programs.Any(p => p.Name == unique); n++) unique = $"{name} {n}";
+            var program = new PackageProgram { Name = unique, Source = source };
+            Package.Programs.Add(program);
+            newPrograms.Add(program);
+            LoadExample(program);
         }
 
         private void OpenMicrocode((string Mnemonic, int Step) target)
@@ -259,7 +322,28 @@ namespace Exuarch.Web.Pages
         {
             focusDevice = deviceId;
             focusVersion++;
-            ActiveTab = "Design";
+            ActiveTab = "Hardware design";
+        }
+
+        // A link in the package README: open the device, the instruction, the program or the tab it names.
+        private void FollowLink((string Kind, string Target) link)
+        {
+            switch (link.Kind)
+            {
+                case "device": OpenDevice(link.Target); break;
+                case "instruction": OpenMicrocode((link.Target, 0)); break;
+                case "program":
+                    var example = Package.Programs.FirstOrDefault(p => p.Name == link.Target);
+                    if (example != null) LoadExample(example);
+                    ActiveTab = "Program";
+                    break;
+                case "tab":
+                    if (Tabs.Contains(link.Target)) ActiveTab = link.Target;
+                    break;
+                case "package":
+                    LoadBuiltIn(link.Target);
+                    break;
+            }
         }
 
         // Validates the definition, then the microcode against it, then builds a machine to assemble the program.

@@ -14,5 +14,5 @@ loop:    R1_TO_MAR                 ; MEM now reads the character R1 points at
          IMM_TO_JMP    loop
 done:    R0_TO_HALT                ; moving anything into HALT stops the clock
 
-message: .WORD         "Nothing here but moves!", 0
+message: .STRING       "Nothing here but moves!"
 

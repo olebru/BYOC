@@ -58,8 +58,8 @@ namespace Exuarch.Core
                     Documentation = i.Description ?? "",
                     InsertText = i.Mnemonic + ((i.OperandCount ?? 0) > 0 ? " " : ""),
                 }).ToList();
-                items.Add(new CompletionItem { Label = ".BYTE", Kind = CompletionKind.Directive, Detail = "data", Documentation = "Store values or a \"string\" in memory, one cell each", InsertText = ".BYTE " });
-                items.Add(new CompletionItem { Label = ".WORD", Kind = CompletionKind.Directive, Detail = "data", Documentation = "Store 16 bit values in memory, one cell each", InsertText = ".WORD " });
+                items.Add(new CompletionItem { Label = ".DATA", Kind = CompletionKind.Directive, Detail = "data", Documentation = "Store values, labels or \"strings\" in memory, one 16 bit cell each", InsertText = ".DATA " });
+                items.Add(new CompletionItem { Label = ".STRING", Kind = CompletionKind.Directive, Detail = "text", Documentation = "Store \"text\" and values like .DATA, followed by a 0 cell that ends the string", InsertText = ".STRING \"" });
                 return items;
             }
 
@@ -98,9 +98,10 @@ namespace Exuarch.Core
                 case TokenKind.Directive:
                     return token.Text switch
                     {
-                        ".BYTE" => "**.BYTE** values, \"strings\"\n\nStores each value, or each character of a string, in its own memory cell.",
-                        ".WORD" => "**.WORD** values\n\nStores each 16 bit value in its own memory cell.",
-                        _ => $"**{token.Text}** is not a directive. Use .BYTE or .WORD.",
+                        ".DATA" => "**.DATA** values, labels, \"strings\"\n\nStores each value, label address or character of a string in its own 16 bit memory cell.",
+                        ".STRING" => "**.STRING** \"text\", values\n\nLike .DATA, then a 0 cell, so a program can find where the string ends.",
+                        ".BYTE" or ".WORD" => $"**{token.Text}** is an old name for **.DATA**: every value takes one 16 bit cell either way.",
+                        _ => $"**{token.Text}** is not a directive. Use .DATA or .STRING.",
                     };
                 case TokenKind.Label:
                 case TokenKind.LabelReference:

@@ -65,5 +65,5 @@ skip:   TBA
         JMP    place
 return: RET
 
-places: .WORD  10000, 1000, 100, 10, 1
+places: .DATA  10000, 1000, 100, 10, 1
 
