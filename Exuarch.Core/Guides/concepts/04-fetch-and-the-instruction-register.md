@@ -2,6 +2,10 @@
 
 A machine runs a program by repeating the same loop: fetch the next opcode from memory, run that instruction's steps, go back and fetch again. In ExµArch that loop is not built in. It is made from one device, the instruction register, and one routine you write, fetch. Once you see how they work together you can bend the loop, for example to fetch the next instruction while the current one finishes.
 
+## The decoder
+
+In the [hardware design](<exuarch:tab/Hardware design>) the decoder is a card of its own, next to the devices. It sits on no bus: its control lines reach every device directly. Its three sockets name the devices it works with: **status**, the status register whose flags pick which steps run; **steps**, the instruction register; and **interrupts**, an optional interrupt controller. Drag a socket onto a device to wire it, or select the card and choose them in the inspector.
+
 ## The instruction register
 
 The `instructionRegister` is the decoder's micro step counter. Its value is the micro step address the decoder looks up for the next tick, and it changes at the end of every tick in one of three ways:

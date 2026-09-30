@@ -48,12 +48,13 @@ namespace Exuarch.Web.Components
         private MachineDefinition laidOut;
         private string selectedDevice;
         private string selectedBus;
+        private bool selectedDecoder;
         private string renameError;
         private bool showProblems;
         private double zoom = 0.8;
         private Drag drag;
 
-        private enum DragKind { MoveDevice, MoveBus, NewDevice, WirePort, WireConnection }
+        private enum DragKind { MoveDevice, MoveBus, NewDevice, WirePort, WireConnection, MoveDecoder, WireDecoder }
 
         private class Drag
         {
@@ -112,7 +113,8 @@ namespace Exuarch.Web.Components
             get
             {
                 var right = Definition.Devices.Select(d => d.Layout?.X ?? 0).DefaultIfEmpty(0).Max() + CardWidth + 60;
-                return Math.Max(MinCanvasWidth, right);
+                var decoderRight = (Definition.Decoder?.Layout?.X ?? 0) + CardWidth + 60;
+                return Math.Max(MinCanvasWidth, Math.Max(right, decoderRight));
             }
         }
         private double CanvasHeight
@@ -120,9 +122,76 @@ namespace Exuarch.Web.Components
             get
             {
                 var devicesBottom = Definition.Devices.Select(d => (d.Layout?.Y ?? 0) + CardHeight(d)).DefaultIfEmpty(0).Max();
+                var decoderBottom = (Definition.Decoder?.Layout?.Y ?? 0) + DecoderHeight;
                 var busBottom = Definition.Buses.Select(b => b.Layout?.Y ?? 0).DefaultIfEmpty(0).Max();
-                return Math.Max(MinCanvasHeight, Math.Max(devicesBottom, busBottom) + 100);
+                return Math.Max(MinCanvasHeight, Math.Max(Math.Max(devicesBottom, decoderBottom), busBottom) + 100);
             }
+        }
+
+        // ---- The decoder, drawn as a card: its sockets name the devices it works with ----
+
+        private static readonly (string Name, string Label, string Description)[] DecoderSockets =
+        {
+            ("status", "status", "Status register: its flags pick which steps of an instruction run"),
+            ("instructionRegister", "steps", "Instruction register: the micro step counter that addresses the decoder ROM"),
+            ("interrupts", "interrupts", "Interrupt controller for the I condition, optional"),
+        };
+        private static double DecoderHeight { get { return CardBaseHeight + 12 + DecoderSockets.Length * ConnectionRowHeight; } }
+        private string DecoderTarget(string socket)
+        {
+            var decoder = Definition.Decoder;
+            return socket switch
+            {
+                "status" => decoder?.Status,
+                "instructionRegister" => decoder?.InstructionRegister,
+                _ => decoder?.Interrupts,
+            };
+        }
+        private Task SetDecoderTarget(string socket, string deviceId)
+        {
+            return SetDecoder(d =>
+            {
+                if (socket == "status") d.Status = deviceId;
+                else if (socket == "instructionRegister") d.InstructionRegister = deviceId;
+                else d.Interrupts = deviceId;
+            });
+        }
+        // To a device on its right the wire curves across like any connection. To one on its left it runs like a trace:
+        // out of the socket, up above both cards, across, and down onto the target's top edge. Each socket gets its own
+        // lane so the wires do not lie on top of each other.
+        private string DecoderPath(int index, DeviceDefinition to)
+        {
+            var layout = Definition.Decoder.Layout;
+            var sx = layout.X + CardWidth;
+            var sy = layout.Y + ConnectionRowY(index);
+            if (to.Layout.X >= sx) return CurveTo(sx, sy, to.Layout.X, to.Layout.Y + CardHeight(to) / 2);
+            var out_ = sx + 12 + index * 8;
+            var above = Math.Max(6, Math.Min(layout.Y, to.Layout.Y) - 14 - index * 8);
+            var tx = to.Layout.X + CardWidth / 2 + (index - 1) * 12;
+            return FormattableString.Invariant($"M {sx:0.#} {sy:0.#} H {out_:0.#} V {above:0.#} H {tx:0.#} V {to.Layout.Y:0.#}");
+        }
+        // Problems with the decoder name it: "decoder" or "decoder.status" and so on.
+        private bool DecoderHasProblem
+        {
+            get { return Errors.Any(e => e.Contains("\"decoder")); }
+        }
+        private int? DecoderStep
+        {
+            get
+            {
+                var id = Definition.Decoder?.InstructionRegister;
+                return id != null && Preview?.Device(id) is InstructionRegister register ? register.Data : null;
+            }
+        }
+        private async Task AddDecoder()
+        {
+            if (Definition.Decoder?.Layout != null) { SelectDecoder(); return; }
+            await Mutate(() =>
+            {
+                Definition.Decoder ??= new DecoderDefinition();
+                Definition.EnsureLayout();
+            });
+            SelectDecoder();
         }
         private string BusColor(string busId)
         {
@@ -333,18 +402,28 @@ namespace Exuarch.Web.Components
         {
             selectedDevice = deviceId;
             selectedBus = null;
+            selectedDecoder = false;
             renameError = null;
         }
         private void SelectBus(string busId)
         {
             selectedBus = busId;
             selectedDevice = null;
+            selectedDecoder = false;
+            renameError = null;
+        }
+        private void SelectDecoder()
+        {
+            selectedDecoder = true;
+            selectedDevice = null;
+            selectedBus = null;
             renameError = null;
         }
         private void ClearSelection()
         {
             selectedDevice = null;
             selectedBus = null;
+            selectedDecoder = false;
             renameError = null;
         }
 
@@ -450,6 +529,17 @@ namespace Exuarch.Web.Components
             Select(device.Id);
             return BeginDrag(e, new Drag { Kind = DragKind.MoveDevice, DeviceId = device.Id, OriginX = device.Layout.X, OriginY = device.Layout.Y });
         }
+        private Task StartMoveDecoder(PointerEventArgs e)
+        {
+            SelectDecoder();
+            var layout = Definition.Decoder.Layout;
+            return BeginDrag(e, new Drag { Kind = DragKind.MoveDecoder, OriginX = layout.X, OriginY = layout.Y });
+        }
+        private Task StartWireDecoder(PointerEventArgs e, string socket)
+        {
+            SelectDecoder();
+            return BeginDrag(e, new Drag { Kind = DragKind.WireDecoder, Connection = socket });
+        }
         private Task StartMoveBus(PointerEventArgs e, BusDefinition bus)
         {
             SelectBus(bus.Id);
@@ -498,6 +588,11 @@ namespace Exuarch.Web.Components
             {
                 Definition.FindBus(drag.BusId).Layout.Y = Math.Max(20, Snap(drag.OriginY + dy));
             }
+            else if (drag.Kind == DragKind.MoveDecoder)
+            {
+                Definition.Decoder.Layout.X = Math.Max(0, Snap(drag.OriginX + dx));
+                Definition.Decoder.Layout.Y = Math.Max(0, Snap(drag.OriginY + dy));
+            }
         }
 
         private async Task OnPointerUp(PointerEventArgs e)
@@ -511,6 +606,7 @@ namespace Exuarch.Web.Components
             {
                 case DragKind.MoveDevice:
                 case DragKind.MoveBus:
+                case DragKind.MoveDecoder:
                     if (d.Moved)
                     {
                         PushUndo(d.UndoSnapshot);
@@ -531,6 +627,10 @@ namespace Exuarch.Web.Components
                     var source = Definition.FindDevice(d.DeviceId);
                     if (target != null && target != source) await SetConnection(source, d.Connection, target.Id);
                     break;
+                case DragKind.WireDecoder:
+                    var decoderTarget = DeviceAt(d.X, d.Y);
+                    if (decoderTarget != null && DecoderTarget(d.Connection) != decoderTarget.Id) await SetDecoderTarget(d.Connection, decoderTarget.Id);
+                    break;
             }
         }
 
@@ -539,7 +639,7 @@ namespace Exuarch.Web.Components
         {
             var d = drag;
             drag = null;
-            if (d != null && d.Moved && (d.Kind == DragKind.MoveDevice || d.Kind == DragKind.MoveBus))
+            if (d != null && d.Moved && (d.Kind == DragKind.MoveDevice || d.Kind == DragKind.MoveBus || d.Kind == DragKind.MoveDecoder))
             {
                 await Replace(MachineDefinition.FromJson(d.UndoSnapshot));
             }

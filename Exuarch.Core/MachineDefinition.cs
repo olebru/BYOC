@@ -137,6 +137,8 @@ namespace Exuarch.Core
         }
         // The decoder ROM contents: the fetch routine and the instruction set, driving this machine's control lines.
         public MicrocodeDefinition Microcode { get; set; }
+        // Where the hardware design draws the decoder. Has no effect on the machine.
+        public Position Layout { get; set; }
     }
     public class MachineDefinitionException : Exception
     {

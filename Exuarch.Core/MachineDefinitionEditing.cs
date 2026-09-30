@@ -174,6 +174,14 @@ namespace Exuarch.Core
                     index++;
                 }
             }
+            // The decoder is drawn as a card too, to the right of the devices in the top row.
+            if (definition.Decoder != null && (force || definition.Decoder.Layout == null))
+            {
+                var placed = definition.Devices.Where(d => d.Layout != null).ToList();
+                var top = placed.Count == 0 ? LayoutFirstBusY - 140 : placed.Min(d => d.Layout.Y);
+                var right = placed.Where(d => d.Layout.Y < top + 100).Select(d => d.Layout.X + LayoutCardWidth).DefaultIfEmpty(0).Max();
+                definition.Decoder.Layout = new Position { X = right + 36, Y = top };
+            }
         }
 
         public static MachineDefinition Clone(this MachineDefinition definition)

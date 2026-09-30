@@ -146,6 +146,13 @@ public class TutorialTests
         Assert.StartsWith("# Registers and the ALU", page);
         PageShows(page, AbcProgram, "a.load", "b.load", "alu.add", "a.output");
         foreach (var name in new[] { "LAI", "LBI", "ADD", "OUTA" }) Assert.Contains($"`{name}`", page);
+        // The page points out the status register the minimal CPU comes with, the one the ALU writes and the decoder reads.
+        var minimal = MachineTemplates.Minimal("Mine").Machine;
+        Assert.Equal("statusRegister", minimal.FindDevice("status").Type);
+        Assert.Equal("status", minimal.Decoder.Status);
+        Assert.Contains("## Find the status register", page);
+        Assert.Contains("**Status register** is set to `status`", page);
+        Assert.Contains("the decoder's **status** socket", page);
     }
 
     [Fact]

@@ -31,7 +31,8 @@
             @foreach (var error in Errors)
             {
                 var target = ProblemTarget(error);
-                <div class="problem @(target != null ? "linked" : "")" @onclick="() => { if (target != null) Select(target); }">@error</div>
+                var decoderProblem = target == null && error.Contains("\"decoder") && Definition.Decoder != null;
+                <div class="problem @(target != null || decoderProblem ? "linked" : "")" @onclick="() => { if (target != null) Select(target); else if (decoderProblem) SelectDecoder(); }">@error</div>
             }
         </div>
     }
@@ -54,6 +55,11 @@
             }
             <div class="palette-group">Buses</div>
             <div class="palette-item" @onclick="AddBus"><span class="dot bus-dot"></span><span class="palette-type">bus</span></div>
+            @if (Definition.Decoder == null)
+            {
+                <div class="palette-group">Decoder</div>
+                <div class="palette-item" title="Runs the microcode: every tick it reads the next step from its ROM and turns on that step's control lines" @onclick="AddDecoder"><span class="dot decoder-dot"></span><span class="palette-type">decoder</span></div>
+            }
         </div>
 
         <div class="canvas-scroller" tabindex="0" @ref="canvasScroller" @onkeydown="OnKeyDown">
@@ -97,6 +103,20 @@
                             }
                         }
 
+                        @if (Definition.Decoder?.Layout != null)
+                        {
+                            for (int i = 0; i < DecoderSockets.Length; i++)
+                            {
+                                var target = Definition.FindDevice(DecoderTarget(DecoderSockets[i].Name) ?? "");
+                                if (target?.Layout == null) continue;
+                                <path class="connection-wire decoder-wire" d="@DecoderPath(i, target)" marker-end="url(#arrow)" />
+                            }
+                        }
+                        @if (drag?.Kind == DragKind.WireDecoder && drag.Moved)
+                        {
+                            var index = Array.FindIndex(DecoderSockets, s => s.Name == drag.Connection);
+                            <path class="rubber-band" d="@CurveTo(Definition.Decoder.Layout.X + CardWidth, Definition.Decoder.Layout.Y + ConnectionRowY(index), drag.X, drag.Y)" />
+                        }
                         @if (drag?.Kind == DragKind.WirePort && drag.Moved)
                         {
                             var device = Definition.FindDevice(drag.DeviceId);
@@ -147,6 +167,33 @@
                                 {
                                     <span class="port-label" style="left:@Px(anchor.X - device.Layout.X - 7); top:@Px(anchor.Bottom ? height - 22 : 8)">@port</span>
                                 }
+                            }
+                        </div>
+                    }
+
+                    @if (Definition.Decoder?.Layout != null)
+                    {
+                        var layout = Definition.Decoder.Layout;
+                        var microcode = Definition.Decoder.Microcode;
+                        <div class="card-device card-decoder @(selectedDecoder ? "selected" : "") @(DecoderHasProblem ? "problem" : "")"
+                             style="left:@Px(layout.X); top:@Px(layout.Y); width:@Px(CardWidth); height:@Px(DecoderHeight)"
+                             title="The decoder runs the microcode: every tick it reads the next step from its ROM and turns on that step's control lines"
+                             @onpointerdown="StartMoveDecoder" @onpointerdown:stopPropagation>
+                            <div class="card-id">decoder</div>
+                            <div class="card-type" title="The decoder ROM holds the microcode">@(microcode == null ? "no microcode" : $"{microcode.Instructions.Count} instructions")</div>
+                            @if (DecoderStep is int step)
+                            {
+                                <div class="card-value" title="The micro step the instruction register points at">@step.ToString("X4")</div>
+                            }
+                            @for (int i = 0; i < DecoderSockets.Length; i++)
+                            {
+                                var socket = DecoderSockets[i];
+                                var targetId = DecoderTarget(socket.Name);
+                                <div class="socket-row" style="top:@Px(ConnectionRowY(i) - ConnectionRowHeight / 2)" title="@socket.Description">
+                                    <span class="socket-name">@socket.Label</span>
+                                    <span class="socket-target @(targetId == null ? "missing" : "")">@(targetId ?? (socket.Name == "interrupts" ? "none" : "drag to a device"))</span>
+                                    <span class="socket" @onpointerdown="e => StartWireDecoder(e, socket.Name)" @onpointerdown:stopPropagation></span>
+                                </div>
                             }
                         </div>
                     }
@@ -244,6 +291,42 @@
                     <button class="btn btn-sm btn-outline-danger" title="Delete" @onclick="DeleteSelected">Delete</button>
                 </div>
             }
+            else if (selectedDecoder && Definition.Decoder != null)
+            {
+                var decoder = Definition.Decoder;
+                var microcode = decoder.Microcode;
+                <div class="inspector-title"><span class="dot decoder-dot"></span>decoder<HelpLink Target="fetch-and-the-instruction-register" Title="Fetch, the decoder and the instruction register" /></div>
+                <div class="inspector-description">Runs the microcode. Every tick it looks up the next step in its ROM, from the instruction register's step and the status flags, and turns on that step's control lines. It is not on a bus: its control lines reach every device directly.</div>
+
+                <label>Status register <span class="muted">its flags pick the variant of a step</span><HelpLink Target="flags-and-conditions" Title="Flags and conditions" /></label>
+                <select class="form-control form-control-sm" value="@(decoder.Status ?? "")" @onchange="e => SetDecoder(d => d.Status = Blank((string)e.Value))">
+                    <option value="">— none —</option>
+                    @foreach (var device in Definition.Devices) { <option value="@device.Id">@device.Id (@device.Type)</option> }
+                </select>
+                <label>Instruction register <span class="muted">micro step counter for the ROM</span></label>
+                <select class="form-control form-control-sm" value="@(decoder.InstructionRegister ?? "")" @onchange="e => SetDecoder(d => d.InstructionRegister = Blank((string)e.Value))">
+                    <option value="">— none —</option>
+                    @foreach (var device in Definition.Devices.Where(d => d.Type == "instructionRegister" || d.Id == decoder.InstructionRegister)) { <option value="@device.Id">@device.Id (@device.Type)</option> }
+                </select>
+                <label>Interrupts <span class="muted">controller for the I condition, optional</span><HelpLink Target="interrupts" Title="Interrupts" /></label>
+                <select class="form-control form-control-sm" value="@(decoder.Interrupts ?? "")" @onchange="e => SetDecoder(d => d.Interrupts = Blank((string)e.Value))">
+                    <option value="">— none —</option>
+                    @foreach (var device in Definition.Devices.Where(d => d.Type == "interruptController" || d.Id == decoder.Interrupts)) { <option value="@device.Id">@device.Id (@device.Type)</option> }
+                </select>
+
+                <div class="section">ROM<HelpLink Target="microcode" Title="Microcode: instructions, steps and signals" /></div>
+                @if (microcode == null)
+                {
+                    <div class="muted">No microcode yet. Start it in the Microcode tab.</div>
+                }
+                else
+                {
+                    var steps = microcode.AllInstructions.Sum(i => i.Steps.Count);
+                    <div class="muted">@(microcode.Name ?? "microcode"): fetch and @microcode.Instructions.Count instructions, @steps steps</div>
+                }
+                <button class="btn btn-sm btn-outline-secondary mt-2" @onclick="@(() => OnOpenMicrocode.InvokeAsync((microcode?.Fetch?.Mnemonic, 0)))">Open microcode</button>
+                <div class="inspector-description mt-2">Drag a socket on the card onto a device to wire it. The decoder can not be deleted; it holds the machine's microcode.</div>
+            }
             else if (selectedBusDefinition != null)
             {
                 <div class="inspector-title"><span class="dot" style="background:@BusColor(selectedBusDefinition.Id)"></span>bus<HelpLink Target="buses-and-ticks" Title="Buses and the two-phase tick" /></div>
@@ -269,23 +352,15 @@
                 <label>Name</label>
                 <input class="form-control form-control-sm" value="@Definition.Name" @onchange="e => Mutate(() => Definition.Name = Blank((string)e.Value))" />
 
-                <div class="section">Decoder<HelpLink Target="fetch-and-the-instruction-register" Title="Fetch, the decoder and the instruction register" /></div>
-                <label>Status register <span class="muted">selects flag variants</span><HelpLink Target="flags-and-conditions" Title="Flags and conditions" /></label>
-                <select class="form-control form-control-sm" value="@(Definition.Decoder?.Status ?? "")" @onchange="e => SetDecoder(d => d.Status = Blank((string)e.Value))">
-                    <option value="">— none —</option>
-                    @foreach (var device in Definition.Devices) { <option value="@device.Id">@device.Id (@device.Type)</option> }
-                </select>
-                <label>Instruction register <span class="muted">micro step counter for the decoder ROM</span></label>
-                <select class="form-control form-control-sm" value="@(Definition.Decoder?.InstructionRegister ?? "")" @onchange="e => SetDecoder(d => d.InstructionRegister = Blank((string)e.Value))">
-                    <option value="">— none —</option>
-                    @foreach (var device in Definition.Devices.Where(d => d.Type == "instructionRegister" || d.Id == Definition.Decoder?.InstructionRegister)) { <option value="@device.Id">@device.Id (@device.Type)</option> }
-                </select>
-
-                <label>Interrupts <span class="muted">controller for the I condition, optional</span><HelpLink Target="interrupts" Title="Interrupts" /></label>
-                <select class="form-control form-control-sm" value="@(Definition.Decoder?.Interrupts ?? "")" @onchange="e => SetDecoder(d => d.Interrupts = Blank((string)e.Value))">
-                    <option value="">— none —</option>
-                    @foreach (var device in Definition.Devices.Where(d => d.Type == "interruptController" || d.Id == Definition.Decoder?.Interrupts)) { <option value="@device.Id">@device.Id (@device.Type)</option> }
-                </select>
+                <div class="section">Decoder</div>
+                @if (Definition.Decoder == null)
+                {
+                    <div class="muted">This machine has no decoder. Add one from the palette.</div>
+                }
+                else
+                {
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="SelectDecoder">Select the decoder</button>
+                }
 
                 <div class="section">Program</div>
                 <label>Program memory<HelpLink Target="memory-and-banks" Title="Memory and banks" /></label>

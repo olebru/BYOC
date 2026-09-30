@@ -10,6 +10,15 @@ The machine from [Your first machine](exuarch:guide/first-machine) can print wha
 
 A [register](exuarch:reference/register) holds one 16 bit value between ticks. `output` drives it onto the bus, `load` stores the bus value, and `reset`, `inc` and `dec` change it in place. Register `a` will be the accumulator, where results end up; `b` holds the second operand.
 
+## Find the status register
+
+The ALU needs a status register to write its flags into, and the decoder reads the same register to choose which steps run. The minimal CPU already has one:
+
+1. Find the device `status` on the canvas. It is a [statusRegister](exuarch:reference/statusRegister) on the bus `main`.
+2. Find the card `decoder`. The decoder runs the microcode; it is not on a bus, and its sockets name the devices it works with. Its **status** socket is wired to `status`, and when you select the decoder the inspector shows **Status register** is set to `status`.
+
+If your machine has no status register, for example because you started from **Empty**, drag a **statusRegister** onto the bus, set its ID to `status`, and drag the decoder's **status** socket onto it.
+
 ## Add an ALU
 
 1. Drag an **alu** onto the canvas. Its ID is already `alu`.

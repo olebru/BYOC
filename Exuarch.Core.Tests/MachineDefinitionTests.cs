@@ -271,6 +271,32 @@ public class MachineDefinitionTests
         Assert.All(package.Machine.Devices, d => Assert.Empty(d.Parameters));
     }
 
+    // The hardware design draws the decoder as a card; where it goes is saved with the machine and changes nothing else.
+    [Fact]
+    public void TheDecoderHasAPlaceOnTheCanvas()
+    {
+        var machine = MachineTemplates.Minimal("Mine").Machine;
+        var layout = machine.Decoder.Layout;
+        Assert.NotNull(layout);
+        // Beside the devices of the top row, not on top of one.
+        var top = machine.Devices.Min(d => d.Layout.Y);
+        Assert.Equal(top, layout.Y);
+        Assert.All(machine.Devices.Where(d => d.Layout.Y == top), d => Assert.True(layout.X >= d.Layout.X + MachineDefinitionEditing.LayoutCardWidth));
+
+        layout.X = 999;
+        var back = MachineDefinition.FromJson(machine.ToJson());
+        Assert.Equal(999, back.Decoder.Layout.X);
+        Assert.Empty(Machine.ValidateDefinition(back, DeviceRegistry.CreateDefault()));
+
+        // A file without one gets a place when it is laid out, and a machine without a decoder gets none.
+        back.Decoder.Layout = null;
+        back.EnsureLayout();
+        Assert.NotNull(back.Decoder.Layout);
+        var empty = MachineTemplates.Empty("Blank").Machine;
+        empty.EnsureLayout();
+        Assert.Null(empty.Decoder);
+    }
+
     [Fact]
     public void ARegisterHasNoParameters()
     {
