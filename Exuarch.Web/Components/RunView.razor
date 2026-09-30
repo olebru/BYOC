@@ -20,6 +20,8 @@
             <span>@(maxSpeed ? "max" : $"{Hz} Hz")</span>
         </label>
         <button class="ctl @(maxSpeed ? "on" : "")" title="Run as fast as the browser allows, ignoring the slider (M)" @onclick="() => maxSpeed = !maxSpeed">⚡ Max</button>
+        <span class="sep"></span>
+        <button class="ctl @(Collapsed("side") ? "" : "on")" title="Show or hide the side panels: clock, screens, what is executing and the program" @onclick="@(() => TogglePanel("side"))">Side panels</button>
         <span class="grow"></span>
         @if (!string.IsNullOrEmpty(ProgramName))
         {
@@ -37,20 +39,25 @@
     }
 
     <!-- Control word: every control line, lit when enabled this tick -->
-    <div class="control-strip" title="Control lines driven by the decoder ROM this tick">
-        <span class="strip-title">control lines</span>
+    <div class="control-strip @(Collapsed("lines") ? "collapsed" : "")" title="Control lines driven by the decoder ROM this tick">
+        <button class="strip-title panel-toggle" title="@(Collapsed("lines") ? "Show every control line" : "Show only the lines that are on")" @onclick="@(() => TogglePanel("lines"))"><i class="chev"></i>control lines</button>
+        @{ var anyOn = false; }
         @foreach (var group in ControlLines)
         {
             var groupInfo = Info(group.Device);
+            var shownLines = Collapsed("lines") ? group.Lines.Where(l => LineActive(group.Device.Id, l)).ToList() : group.Lines;
+            if (shownLines.Count == 0) continue;
+            anyOn = true;
             <span class="line-group" style="--cat:@group.Color">
                 <span class="line-device" title="@($"{group.Device.Type}: {groupInfo.Description}")">@group.Device.Id</span>
-                @foreach (var line in group.Lines)
+                @foreach (var line in shownLines)
                 {
                     var lineDescription = groupInfo.ControlLines.FirstOrDefault(l => l.Name == line)?.Description;
                     <span class="led @(LineActive(group.Device.Id, line) ? "on" : "")" title="@($"{group.Device.Id}.{line}{(string.IsNullOrEmpty(lineDescription) ? "" : ": " + lineDescription)}")">@line</span>
                 }
             </span>
         }
+        @if (!anyOn) { <span class="muted">none on this tick</span> }
     </div>
 
     <div class="main">
@@ -245,13 +252,17 @@
         </div>
 
         <!-- Side panel -->
+        @if (!Collapsed("side"))
+        {
         <div class="side">
-            <div class="panel clock-panel">
+            <div class="panel clock-panel @(Collapsed("clock") ? "collapsed" : "")">
                 <div class="clock-head">
-                    <span class="panel-title">Clock speed</span>
+                    <button class="panel-title panel-toggle" @onclick="@(() => TogglePanel("clock"))"><i class="chev"></i>Clock speed</button>
                     <span class="clock-now">@(running || speedSamples.Count > 0 ? FormatHz(CurrentHz) : "—")</span>
                     <span class="muted">@(maxSpeed ? "target: max" : $"target {FormatHz(Hz)}") · peak @FormatHz(PeakHz)</span>
                 </div>
+                @if (!Collapsed("clock"))
+                {
                 <svg class="clock-chart" viewBox="0 0 @N(ChartWidth) @N(ChartHeight)" preserveAspectRatio="none">
                     <line class="grid" x1="0" y1="@N(ChartHeight / 2)" x2="@N(ChartWidth)" y2="@N(ChartHeight / 2)" />
                     @if (!maxSpeed)
@@ -265,29 +276,39 @@
                     }
                 </svg>
                 <div class="clock-axis"><span>@FormatHz(ChartMax)</span><span>last @((int)Math.Round(ChartSpan)) s of running</span></div>
+                }
             </div>
             @foreach (var screen in Machine.Devices.OfType<IScreen>())
             {
-                <div class="panel display-panel">
-                    <FramebufferView Screen="screen" />
+                var screenKey = "device:" + screen.ID();
+                <div class="panel display-panel @(Collapsed(screenKey) ? "collapsed" : "")">
+                    <button class="panel-title panel-toggle" @onclick="@(() => TogglePanel(screenKey))"><i class="chev"></i>Screen <span class="muted">@screen.ID()</span></button>
+                    @if (!Collapsed(screenKey)) { <FramebufferView Screen="screen" /> }
                 </div>
             }
             @foreach (var display in Machine.Devices.OfType<CharacterDisplay>())
             {
                 var write = Last?.Writes.FirstOrDefault(w => w.Device == display.ID());
-                <div class="panel display-panel">
-                    <CharacterDisplayView Display="display" LastWritten="@(write?.Address ?? -1)" Cycle="@(Last?.Cycle ?? 0)" />
+                var displayKey = "device:" + display.ID();
+                <div class="panel display-panel @(Collapsed(displayKey) ? "collapsed" : "")">
+                    <button class="panel-title panel-toggle" @onclick="@(() => TogglePanel(displayKey))"><i class="chev"></i>LCD <span class="muted">@display.ID()</span></button>
+                    @if (!Collapsed(displayKey)) { <CharacterDisplayView Display="display" LastWritten="@(write?.Address ?? -1)" Cycle="@(Last?.Cycle ?? 0)" /> }
                 </div>
             }
             @foreach (var keypad in Machine.Devices.OfType<Keypad>())
             {
-                <div class="panel display-panel">
-                    <KeypadView Keypad="keypad" Captured="@(capturedKeypad == keypad)" CaptureChanged="captured => Capture(captured ? keypad : null)" Changed="StateHasChanged" />
+                var keypadKey = "device:" + keypad.ID();
+                <div class="panel display-panel @(Collapsed(keypadKey) ? "collapsed" : "")">
+                    <button class="panel-title panel-toggle" @onclick="@(() => TogglePanel(keypadKey))"><i class="chev"></i>Keypad <span class="muted">@keypad.ID()</span></button>
+                    @if (!Collapsed(keypadKey)) { <KeypadView Keypad="keypad" Captured="@(capturedKeypad == keypad)" CaptureChanged="captured => Capture(captured ? keypad : null)" Changed="StateHasChanged" /> }
                 </div>
             }
-            <div class="panel now">
-                <div class="panel-title">Now executing</div>
-                @if (current != null)
+            <div class="panel now @(Collapsed("now") ? "collapsed" : "")">
+                <button class="panel-title panel-toggle" @onclick="@(() => TogglePanel("now"))"><i class="chev"></i>Now executing
+                    @if (Collapsed("now") && current != null) { <span class="now-inline">@SourceText(current)</span> }
+                </button>
+                @if (Collapsed("now")) { }
+                else if (current != null)
                 {
                     <div class="now-instr">
                         <span class="addr">@Hex(current.Address)</span>
@@ -301,7 +322,7 @@
                     <div class="now-desc">No instruction fetched yet. Press Tick or Instruction.</div>
                 }
 
-                @if (timeline.Instruction != null)
+                @if (!Collapsed("now") && timeline.Instruction != null)
                 {
                     var variant = timeline.Instruction.StepsFor(timeline.Status);
                     var next = Machine.NextStep;
@@ -329,7 +350,7 @@
                     }
                 }
 
-                @if (Last != null)
+                @if (!Collapsed("now") && Last != null)
                 {
                     <div class="timeline-title">Last tick <span class="muted">cycle @Last.Cycle</span></div>
                     <div class="last-tick">
@@ -360,8 +381,10 @@
                 }
             </div>
 
-            <div class="panel program">
-                <div class="panel-title">Program <span class="muted">click the gutter to set a breakpoint</span></div>
+            <div class="panel program @(Collapsed("program") ? "collapsed" : "")">
+                <button class="panel-title panel-toggle" @onclick="@(() => TogglePanel("program"))"><i class="chev"></i>Program @if (!Collapsed("program")) { <span class="muted">click the gutter to set a breakpoint</span> }</button>
+                @if (!Collapsed("program"))
+                {
                 <div class="listing" style="--d:@Digits; --cw:@(ListingCellColumns * (Digits + 1))">
                     @foreach (var line in Machine.Assembler.Listing)
                     {
@@ -382,26 +405,29 @@
                         </div>
                     }
                 </div>
+                }
             </div>
         </div>
+        }
     </div>
 
     <!-- Bottom: memory and trace -->
-    <div class="bottom">
+    <div class="bottom @(Collapsed("bottom") ? "collapsed" : "")">
         <div class="bottom-tabs">
-            <button class="btab @(bottomTab == "Memory" ? "on" : "")" @onclick="@(() => bottomTab = "Memory")">Memory</button>
-            <button class="btab @(bottomTab == "Decoder" ? "on" : "")" @onclick="@(() => bottomTab = "Decoder")">Decoder ROM</button>
-            <button class="btab @(bottomTab == "Trace" ? "on" : "")" @onclick="@(() => bottomTab = "Trace")">Trace</button>
+            <button class="panel-toggle bottom-toggle" title="@(Collapsed("bottom") ? "Show the memory, decoder ROM and trace" : "Hide the memory, decoder ROM and trace")" @onclick="@(() => TogglePanel("bottom"))"><i class="chev"></i></button>
+            <button class="btab @(!Collapsed("bottom") && bottomTab == "Memory" ? "on" : "")" @onclick="@(() => ShowBottom("Memory"))">Memory</button>
+            <button class="btab @(!Collapsed("bottom") && bottomTab == "Decoder" ? "on" : "")" @onclick="@(() => ShowBottom("Decoder"))">Decoder ROM</button>
+            <button class="btab @(!Collapsed("bottom") && bottomTab == "Trace" ? "on" : "")" @onclick="@(() => ShowBottom("Trace"))">Trace</button>
             @if (bottomTab == "Memory") { <HelpLink Target="memory-and-banks" Title="Memory and banks" /> }
             else if (bottomTab == "Decoder") { <HelpLink Target="flags-and-conditions" Title="The decoder ROM, flags and conditions" /> }
             else { <HelpLink Target="buses-and-ticks" Title="Buses and the two-phase tick" /> }
-            @if (bottomTab == "Decoder")
+            @if (!Collapsed("bottom") && bottomTab == "Decoder")
             {
                 <span class="sep"></span>
                 <label class="bank"><input type="checkbox" @bind="wholeRom" /> whole ROM</label>
                 <span class="legend muted">@Machine.DecoderRom.OpCodesUsed of @DecoderRom.AddressSpace step addresses used · rows shown for status @Bits(DecoderStatus, 5) (INVCZ)</span>
             }
-            @if (bottomTab == "Memory")
+            @if (!Collapsed("bottom") && bottomTab == "Memory")
             {
                 <span class="sep"></span>
                 @foreach (var device in MemoryDevices)
@@ -429,7 +455,8 @@
                 </span>
             }
         </div>
-        @if (bottomTab == "Memory" && MemoryModule != null)
+        @if (Collapsed("bottom")) { }
+        else if (bottomTab == "Memory" && MemoryModule != null)
         {
             var module = MemoryModule;
             var pageStart = Page(module) * PageSize;

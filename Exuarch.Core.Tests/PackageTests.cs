@@ -35,7 +35,7 @@ public class PackageTests
     }
 
     // These loop for ever on purpose: the long running demo and the interactive programs.
-    private static readonly string[] LoopingPrograms = { "Stack and memory", "Sketch with the arrow keys", "Paddle game", "Three things at once", "A spinning cube" };
+    private static readonly string[] LoopingPrograms = { "Sketch with the arrow keys", "Paddle game", "Three things at once", "A spinning cube" };
 
     [Fact]
     public void EveryProgramInEveryPackageAssemblesWithoutWarningsAndHalts()
