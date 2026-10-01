@@ -101,6 +101,7 @@ The examples are packages too. They are stored as folders in the app, with a `pa
 - [COPRO-16](exuarch:package/COPRO-16): a CPU and a blitter.
 - [IRQ-16](exuarch:package/IRQ-16): interrupts.
 - [GPU-16](exuarch:package/GPU-16): a small 3D pipeline with a rasterizer, a depth buffer and a multiply-accumulate unit.
+- [FLIP-16](exuarch:package/FLIP-16): GPU-16 with a double buffered screen.
 
 To build on one, open it and use **New…** with a copy of the current machine.
 

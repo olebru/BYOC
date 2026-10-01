@@ -212,6 +212,21 @@ namespace Exuarch.Core
                         ControlLineInfo.Internal("clear", "Blank the screen and move the cursor home"),
                     }
                 });
+            registry.Register("doubleFramebuffer", c => new DoubleFramebuffer(c.Name, c.Id, c.Bus()),
+                new DeviceTypeInfo
+                {
+                    Category = "I/O",
+                    Description = "A 640 x 480 colour screen with two buffers: the front one is shown while loadx, loady, plot, skip and clear work on the back one, and swap exchanges them, so a whole frame appears at once. Anything that can draw on a framebuffer, such as a blitter or a rasterizer, can draw on it",
+                    ControlLines =
+                    {
+                        ControlLineInfo.Input("loadx", "Set the cursor column from the bus (0-639)"),
+                        ControlLineInfo.Input("loady", "Set the cursor row from the bus (0-479)"),
+                        ControlLineInfo.Input("plot", "Write the RGB565 colour on the bus at the cursor in the back buffer, then move right"),
+                        ControlLineInfo.Internal("skip", "Move the cursor right without writing"),
+                        ControlLineInfo.Internal("clear", "Blank the back buffer and move the cursor home; the screen is unchanged"),
+                        ControlLineInfo.Internal("swap", "Show the back buffer and draw on the old front one from now on; the cursor stays"),
+                    }
+                });
             registry.Register("rasterizer", c => new Rasterizer(c.Name, c.Id, c.Bus("host"), c.Bus("list"), c.Bus("video"),
                     c.Connection<Framebuffer>("screen"), c.OptionalConnection<DepthBuffer>("depth"), c.Connection<MemoryModule>("memory")),
                 new DeviceTypeInfo

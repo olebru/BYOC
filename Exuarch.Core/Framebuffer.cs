@@ -25,17 +25,21 @@ namespace Exuarch.Core
         public const int Width = 640;
         public const int Height = 480;
 
-        // Row by row, top left first.
-        public readonly ushort[] Pixels = new ushort[Width * Height];
+        // The picture plot, skip and clear work on, row by row, top left first. On a double buffered screen this
+        // is the back buffer, and Shown the front one.
+        public ushort[] Pixels { get; protected set; } = new ushort[Width * Height];
+        // The picture on the screen.
+        public virtual ushort[] Shown { get { return Pixels; } }
         public int X { get; private set; }
         public int Y { get; private set; }
         public long WriteCount { get; private set; }
         public int LastWriteAddress { get; private set; } = -1;
+        public int LastWriteValue { get; private set; }
         private readonly Bus bus;
         private readonly string deviceID;
         private readonly string deviceName;
         private bool loadX, loadY, plot, skip, clear;
-        public string Kind { get { return "RGB565"; } }
+        public virtual string Kind { get { return "RGB565"; } }
         public bool IsDepth { get { return false; } }
         public byte[] WordBytes(int x, int y, int width, int height) { return ToRgb565Bytes(x, y, width, height); }
         private int dirtyLeft = Width, dirtyTop = Height, dirtyRight = -1, dirtyBottom = -1;
@@ -52,13 +56,13 @@ namespace Exuarch.Core
         public void Drive()
         {
         }
-        public void Latch()
+        public virtual void Latch()
         {
             if (clear)
             {
                 Array.Clear(Pixels);
                 X = Y = 0;
-                MarkDirty(0, 0, Width - 1, Height - 1);
+                Drew(0, 0, Width - 1, Height - 1);
                 clear = false;
             }
             if (loadX)
@@ -76,8 +80,9 @@ namespace Exuarch.Core
                 int address = Y * Width + X;
                 Pixels[address] = (ushort)bus.Data;
                 LastWriteAddress = address;
+                LastWriteValue = Pixels[address];
                 WriteCount++;
-                MarkDirty(X, Y, X, Y);
+                Drew(X, Y, X, Y);
                 Advance();
                 plot = false;
             }
@@ -97,7 +102,13 @@ namespace Exuarch.Core
             }
         }
 
-        private void MarkDirty(int left, int top, int right, int bottom)
+        // Pixels changed in the buffer being drawn. On a single buffered screen that is what is shown.
+        protected virtual void Drew(int left, int top, int right, int bottom)
+        {
+            MarkDirty(left, top, right, bottom);
+        }
+
+        protected void MarkDirty(int left, int top, int right, int bottom)
         {
             dirtyLeft = Math.Min(dirtyLeft, left);
             dirtyTop = Math.Min(dirtyTop, top);
@@ -115,7 +126,7 @@ namespace Exuarch.Core
             return region;
         }
 
-        // A region as RGBA bytes, 4 per pixel, row by row, ready for a canvas.
+        // A region of the shown picture as RGBA bytes, 4 per pixel, row by row, ready for a canvas.
         public byte[] ToRgba(int x, int y, int width, int height)
         {
             var bytes = new byte[width * height * 4];
@@ -124,7 +135,7 @@ namespace Exuarch.Core
             {
                 for (int column = x; column < x + width; column++)
                 {
-                    var (r, g, b) = ToRgb(Pixels[row * Width + column]);
+                    var (r, g, b) = ToRgb(Shown[row * Width + column]);
                     bytes[i++] = r;
                     bytes[i++] = g;
                     bytes[i++] = b;
@@ -134,14 +145,14 @@ namespace Exuarch.Core
             return bytes;
         }
 
-        // The raw RGB565 words of a region, two little endian bytes per pixel, copied row by row. Much cheaper than
+        // The raw RGB565 words of a region of the shown picture, two little endian bytes per pixel, copied row by row. Much cheaper than
         // ToRgba where .NET is interpreted (WebAssembly): the browser expands the colours itself.
         public byte[] ToRgb565Bytes(int x, int y, int width, int height)
         {
             var bytes = new byte[width * height * 2];
             for (int row = 0; row < height; row++)
             {
-                Buffer.BlockCopy(Pixels, ((y + row) * Width + x) * 2, bytes, row * width * 2, width * 2);
+                Buffer.BlockCopy(Shown, ((y + row) * Width + x) * 2, bytes, row * width * 2, width * 2);
             }
             return bytes;
         }
@@ -158,7 +169,7 @@ namespace Exuarch.Core
         }
 
         public string DisplayName() { return deviceName; }
-        public void Enable(string function)
+        public virtual void Enable(string function)
         {
             switch (function)
             {
@@ -173,9 +184,58 @@ namespace Exuarch.Core
         }
         public string ID() { return deviceID; }
         public bool IsOutputEnabled() { return false; }
-        public List<string> SignalLines()
+        public virtual List<string> SignalLines()
         {
             return new List<string> { "loadx", "loady", "plot", "skip", "clear" };
+        }
+    }
+
+    // A framebuffer with two pictures: the front buffer is on the screen while plot, skip and clear work on the back
+    // buffer, so a program can draw a whole frame out of sight. swap exchanges the two, in the latch half, after any
+    // plot in the same tick; the new back buffer holds the frame before last, until it is cleared or drawn over.
+    // The cursor stays where it is.
+    public class DoubleFramebuffer : Framebuffer
+    {
+        private ushort[] front = new ushort[Width * Height];
+        private bool swap;
+        public override ushort[] Shown { get { return front; } }
+        // Which buffer is in front, 0 or 1; it changes with every swap.
+        public int FrontBuffer { get; private set; }
+        public long Swaps { get; private set; }
+        public override string Kind { get { return $"RGB565 · double buffered, buffer {FrontBuffer} shown"; } }
+
+        public DoubleFramebuffer(string DeviceName, string DeviceID, Bus bus) : base(DeviceName, DeviceID, bus)
+        {
+        }
+
+        public override void Latch()
+        {
+            base.Latch();
+            if (swap)
+            {
+                (front, Pixels) = (Pixels, front);
+                FrontBuffer ^= 1;
+                Swaps++;
+                MarkDirty(0, 0, Width - 1, Height - 1);
+                swap = false;
+            }
+        }
+
+        // Drawing in the back buffer changes nothing on the screen.
+        protected override void Drew(int left, int top, int right, int bottom)
+        {
+        }
+
+        public override void Enable(string function)
+        {
+            if (function == "swap") swap = true;
+            else base.Enable(function);
+        }
+        public override List<string> SignalLines()
+        {
+            var lines = base.SignalLines();
+            lines.Add("swap");
+            return lines;
         }
     }
 }

@@ -12,6 +12,12 @@ A [`framebuffer`](exuarch:reference/framebuffer) is a 640 × 480 colour screen. 
 - `skip` moves the cursor one pixel right the same way, without writing.
 - `clear` blanks the screen and puts the cursor at the top left.
 
+A [`doubleFramebuffer`](exuarch:reference/doubleFramebuffer) is the same screen with two pictures, and one more line:
+
+- `swap` shows the picture that was being drawn, and from then on drawing goes to the other one.
+
+`plot`, `skip` and `clear` always work on the back buffer, out of sight, while the front buffer stays on the screen. A program draws a whole frame and then swaps, so the screen never shows a frame half drawn. After a swap the back buffer still holds the frame before last; clear it, or draw over all of it. A swap is instant, and there is no waiting for the screen's refresh as on real hardware. It can stand in for a framebuffer anywhere, including as the screen of a blitter or a rasterizer.
+
 A CPU can drive these lines from its own microcode, as BYOC-16 does. Filling a rectangle that way costs at least one tick per pixel, and the CPU can do nothing else meanwhile.
 
 ## The blitter

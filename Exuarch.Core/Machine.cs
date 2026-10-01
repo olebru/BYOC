@@ -335,6 +335,7 @@ namespace Exuarch.Core
                     case Framebuffer framebuffer:
                         values[device.ID() + ".x"] = framebuffer.X;
                         values[device.ID() + ".y"] = framebuffer.Y;
+                        if (framebuffer is DoubleFramebuffer pages) values[device.ID() + ".front"] = pages.FrontBuffer;
                         break;
                     case MMU mmu:
                         values[device.ID() + ".cs"] = mmu.ChipSelectRegister.Data;
