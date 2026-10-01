@@ -505,4 +505,19 @@ public class GpuTests
         m.Mac.Enable("mul");
         Assert.Throws<Exception>(() => m.Mac.Enable("mac"));
     }
+
+    // The list bus has two masters and no arbiter: the cube waits for the rasterizer before writing the list, and
+    // without that wait an STL and a triangle read meet on the list bus (the GPU-16 README shows this).
+    [Fact]
+    public void CubeWithoutItsWaitShortsTheListBus()
+    {
+        var package = BuiltInPackages.Get("GPU-16");
+        var source = package.Program("A spinning cube").Source;
+        var unguarded = source.Replace("wait:      GST\n           CMPI   0\n           JNE    wait\n", "wait:      NOP\n");
+        Assert.NotEqual(source, unguarded);
+        var c = new Machine(package.Machine, unguarded) { RecordHistory = false };
+        var e = Record.Exception(() => { for (int i = 0; i < 1_000_000; i++) c.SingleStep(); });
+        Assert.NotNull(e);
+        Assert.Contains("on bus 'list'", e.Message);
+    }
 }
