@@ -55,9 +55,9 @@ public class MachineDefinitionTests
     }
 
     [Fact]
-    public void DefaultMachineLoads()
+    public void ExampleMachineLoads()
     {
-        var c = Machine.CreateDefault();
+        var c = Machine.CreateExample();
         Assert.Equal("BYOC-16", c.Definition.Name);
         Assert.Equal(new[] { "regi", "pc", "regsp", "rega", "regb", "regc", "regs", "alu", "regsta", "mem", "mmu", "clk", "lcd", "fb", "keys" },
             c.Devices.Select(d => d.ID()));

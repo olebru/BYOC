@@ -94,7 +94,7 @@ namespace Exuarch.Core
         {
             return new Machine(MachineDefinition.FromJson(definitionJson), source, registry);
         }
-        public static Machine CreateDefault()
+        public static Machine CreateExample()
         {
             return FromJson(ExampleData.MACHINE, ExampleData.SRC);
         }

@@ -24,8 +24,9 @@ public class PackageTests
     [Fact]
     public void BuiltInPackagesLoadWithTheDefaultFirst()
     {
-        Assert.Equal(new[] { "BYOC-16", "COPRO-16", "GPU-16", "HARVARD-16", "IRQ-16", "MOVE-16", "RF-16", "RISC-16" }, BuiltInPackages.All.Select(p => p.Name));
+        Assert.Equal(new[] { "TINY-16", "BYOC-16", "COPRO-16", "GPU-16", "HARVARD-16", "IRQ-16", "MOVE-16", "RF-16", "RISC-16" }, BuiltInPackages.All.Select(p => p.Name));
         Assert.Same(BuiltInPackages.All[0], BuiltInPackages.Default);
+        Assert.Equal("TINY-16", BuiltInPackages.Default.Name);
         foreach (var package in BuiltInPackages.All)
         {
             Assert.False(string.IsNullOrWhiteSpace(package.Description), package.Name);
@@ -108,9 +109,9 @@ public class PackageTests
     }
 
     [Fact]
-    public void ExampleDataHasTheDefaultPackagesPrograms()
+    public void ExampleDataHasByocsPrograms()
     {
-        Assert.Equal(BuiltInPackages.Default.Programs.Select(p => p.Name), ExampleData.Programs.Select(p => p.Name));
+        Assert.Equal(BuiltInPackages.Get("BYOC-16").Programs.Select(p => p.Name), ExampleData.Programs.Select(p => p.Name));
     }
 
     private static Machine Rf(string source, int limit = 100000)
@@ -418,5 +419,59 @@ public class PackageTests
     yes:    MOVI_R3 2
             HLT");
         Assert.Equal(taken ? 2 : 1, Registers(c)[3]);
+    }
+
+    private static Machine Tiny(string source)
+    {
+        return Run(BuiltInPackages.Get("TINY-16"), source);
+    }
+
+    [Theory]
+    [InlineData("Say Hi", "Hi")]
+    [InlineData("2 + 3", "2+3=5")]
+    [InlineData("Count down from 9 to 0", "9876543210")]
+    public void TinyProgramsPrint(string name, string expected)
+    {
+        var c = Tiny(BuiltInPackages.Get("TINY-16").Program(name).Source);
+        Assert.Equal(expected, c.Device<CharacterDisplay>("lcd").Text.Replace("\n", "").Trim());
+    }
+
+    // The README lists the opcodes, each the ROM address of the instruction's first step, and the cells Say Hi
+    // assembles to.
+    [Fact]
+    public void TinyOpcodesAreWhereEachInstructionsStepsStart()
+    {
+        var instructions = BuiltInPackages.Get("TINY-16").Machine.Decoder.Microcode.Instructions;
+        Assert.Equal(new[] { "LOAD", "ADD", "SUB", "OUT", "JUMP", "JZ", "HALT" }, instructions.Select(i => i.Mnemonic));
+        var c = new Machine(BuiltInPackages.Get("TINY-16").Machine, BuiltInPackages.Get("TINY-16").Program("Say Hi").Source);
+        Assert.Equal(new[] { 2, 72, 10, 2, 105, 10, 15 }, Enumerable.Range(0, 7).Select(c.Device<RamModule>("mem").ValueAt));
+    }
+
+    [Fact]
+    public void TinyLoadTakesFourTicksAndOutThree()
+    {
+        var c = new Machine(BuiltInPackages.Get("TINY-16").Machine, "LOAD 'H'\nOUT\nHALT") { RecordHistory = false };
+        for (int i = 0; i < 4; i++) c.SingleStep();
+        Assert.Equal('H', c.Device<Register>("a").Data);
+        Assert.Equal(2, c.Device<Register>("pc").Data);
+        for (int i = 0; i < 3; i++) c.SingleStep();
+        Assert.Equal("H", c.Device<CharacterDisplay>("lcd").Text.Trim());
+        Assert.Equal(3, c.Device<Register>("pc").Data);
+    }
+
+    [Fact]
+    public void TinySubSetsZeroOnlyWhenTheAnswerIsZero()
+    {
+        var c = Tiny(@"
+            LOAD 5
+            SUB  5
+            JZ   yes
+            LOAD 1
+            HALT
+    yes:    LOAD 2
+            ADD  1
+            JZ   yes
+            HALT");
+        Assert.Equal(3, c.Device<Register>("a").Data);
     }
 }

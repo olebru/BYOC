@@ -92,6 +92,7 @@ When the target has spaces, write the link target in angle brackets: `<exuarch:p
 
 The examples are packages too. They are stored as folders in the app, with a `package.json`, a `machine.json`, one `.asm` file per program and a `README.md`, and they load as the same kind of package. Each takes a different direction:
 
+- [TINY-16](exuarch:package/TINY-16): one register and seven instructions, to start with.
 - [BYOC-16](exuarch:package/BYOC-16): an accumulator machine on one bus.
 - [RISC-16](exuarch:package/RISC-16): load/store with four registers.
 - [RF-16](exuarch:package/RF-16): load/store with a register file, registers as operands.
