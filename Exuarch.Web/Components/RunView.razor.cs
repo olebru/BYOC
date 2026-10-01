@@ -271,9 +271,9 @@ namespace Exuarch.Web.Components
         private double PeakHz { get { return speedSamples.Count == 0 ? 0 : speedSamples.Max(s => s.Hz); } }
         private static string FormatHz(double hz)
         {
-            if (hz >= 1_000_000) return $"{hz / 1_000_000:0.##} MHz";
-            if (hz >= 1_000) return $"{hz / 1_000:0.##} kHz";
-            return $"{hz:0.#} Hz";
+            if (hz >= 1_000_000) return $"{hz / 1_000_000:0.00} MHz";
+            if (hz >= 1_000) return $"{hz / 1_000:0.00} kHz";
+            return $"{hz:0.0} Hz";
         }
         // The chart's top value: a round number above the highest sample and the target.
         private double ChartMax

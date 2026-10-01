@@ -7,7 +7,7 @@
         <div class="screen-frame" @onclick:stopPropagation>
             <div class="screen-head">
                 <span class="screen-name">@Screen.ID()</span>
-                <span class="screen-info">@Framebuffer.Width × @Framebuffer.Height · @Screen.Kind · cursor @Screen.X, @Screen.Y</span>
+                <span class="screen-info">@Framebuffer.Width × @Framebuffer.Height · @Screen.Kind · cursor <span class="screen-num">@Screen.X</span>, <span class="screen-num">@Screen.Y</span></span>
                 <span class="screen-hint">@(large ? "actual size · click or Esc to close" : "click to view at actual size")</span>
             </div>
             <canvas id="@canvasId" width="@Framebuffer.Width" height="@Framebuffer.Height" class="screen-canvas" @onclick="() => large = !large"></canvas>

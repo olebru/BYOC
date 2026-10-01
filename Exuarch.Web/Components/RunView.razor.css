@@ -1157,10 +1157,22 @@
     padding: 8px 12px 6px;
 }
 
+/* Values change every frame while running, so the row never wraps: the current speed has a fixed width at the
+   right, and the target and peak fill what is left, right aligned, and are cut short before they push it. */
 .clock-head {
     display: flex;
     align-items: baseline;
     gap: 8px;
+    white-space: nowrap;
+}
+
+.clock-target {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
 }
 
     .clock-head .panel-title {
@@ -1172,7 +1184,9 @@
     font-size: 1.05rem;
     font-weight: 600;
     color: var(--ink);
-    margin-left: auto;
+    width: 10ch;
+    flex-shrink: 0;
+    text-align: right;
 }
 
 .clock-chart {
@@ -1214,6 +1228,7 @@
 .clock-axis {
     display: flex;
     justify-content: space-between;
+    white-space: nowrap;
     font-size: 0.6rem;
     margin-top: 3px;
 }

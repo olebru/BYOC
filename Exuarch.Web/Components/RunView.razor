@@ -178,8 +178,8 @@
             <div class="panel clock-panel @(Collapsed("clock") ? "collapsed" : "")">
                 <div class="clock-head">
                     <button class="panel-title panel-toggle" @onclick="@(() => TogglePanel("clock"))"><i class="chev"></i>Clock speed</button>
+                    <span class="muted clock-target">@(maxSpeed ? "target: max" : $"target {FormatHz(Hz)}") · peak @FormatHz(PeakHz)</span>
                     <span class="clock-now">@(running || speedSamples.Count > 0 ? FormatHz(CurrentHz) : "—")</span>
-                    <span class="muted">@(maxSpeed ? "target: max" : $"target {FormatHz(Hz)}") · peak @FormatHz(PeakHz)</span>
                 </div>
                 @if (!Collapsed("clock"))
                 {
