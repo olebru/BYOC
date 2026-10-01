@@ -17,7 +17,6 @@ namespace Exuarch.Web.Components
 
 
         [Inject] private IJSRuntime JS { get; set; }
-        [Inject] private Analytics Analytics { get; set; }
 
         [Parameter] public MachineDefinition Definition { get; set; }
         [Parameter] public EventCallback<MachineDefinition> DefinitionChanged { get; set; }
@@ -319,7 +318,6 @@ namespace Exuarch.Web.Components
         private async Task AutoLayout()
         {
             await Mutate(() => EnsureLayout(force: true));
-            await Analytics.AutoLayout();
         }
         private async Task Download()
         {
