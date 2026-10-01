@@ -8,11 +8,15 @@ This handbook has three parts: tutorials that build a machine step by step, conc
 
 Each tutorial starts where the last one stopped, beginning from **New…** and the minimal CPU. Every step is checked by a test, so what you build will run.
 
-1. [Your first machine](exuarch:guide/first-machine): add a display and an instruction that writes to it, then print "Hi".
-2. [Registers and the ALU](exuarch:guide/registers-and-the-alu): two registers and an ALU, and a program that computes the characters it prints.
-3. [Loops and flags](exuarch:guide/loops-and-flags): a conditional jump built from steps that only run for one value of a flag, and a countdown.
-4. [Subroutines and the stack](exuarch:guide/subroutines-and-the-stack): a stack pointer, `CALL` and `RET`.
-5. [Reading the keypad](exuarch:guide/reading-the-keypad): input, and a program that echoes the keys you press.
+1. [Ground zero](exuarch:guide/ground-zero): clear the microcode to nothing and watch the decoder's counter count on its own.
+2. [Fetch](exuarch:guide/fetch-routine): two steps that read the next opcode from memory.
+3. [Opcodes are addresses](exuarch:guide/opcodes-are-addresses): `HLT`, and how the counter and the flags address the decoder ROM.
+4. [Ending an instruction](exuarch:guide/ending-an-instruction): `NOP` and `JMP`, and what happens when the counter is not sent back to fetch.
+5. [Your first machine](exuarch:guide/first-machine): add a display and an instruction that writes to it, then print "Hi".
+6. [Registers and the ALU](exuarch:guide/registers-and-the-alu): two registers and an ALU, and a program that computes the characters it prints.
+7. [Loops and flags](exuarch:guide/loops-and-flags): a conditional jump built from steps that only run for one value of a flag, and a countdown.
+8. [Subroutines and the stack](exuarch:guide/subroutines-and-the-stack): a stack pointer, `CALL` and `RET`.
+9. [Reading the keypad](exuarch:guide/reading-the-keypad): input, and a program that echoes the keys you press.
 
 ## The tabs
 

@@ -44,7 +44,7 @@ The program polls: it reads the keypad over and over.
 - **got** runs when a key is down. If it is space, `a` equals 16, Z is 1 and the program halts.
 - **show** adds the character `'0'` to the key's bit and prints it, so up shows `1`, down `2`, left `4` and right `8`. Then it goes back to waiting.
 
-`JMP` came with the minimal CPU; it jumps without looking at the flags.
+`JMP` is the one you wrote in [Ending an instruction](exuarch:guide/ending-an-instruction); it jumps without looking at the flags.
 
 ## Run it
 

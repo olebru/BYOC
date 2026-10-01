@@ -73,4 +73,5 @@ The instruction register's value also decides when interrupts are noticed: a req
 - [Flags and conditions](exuarch:guide/flags-and-conditions)
 - [Operands](exuarch:guide/operands)
 - [The instruction register](exuarch:reference/instructionRegister)
+- [Fetch](exuarch:guide/fetch-routine), a tutorial that builds fetch tick by tick
 - [Your first machine](exuarch:guide/first-machine), a tutorial

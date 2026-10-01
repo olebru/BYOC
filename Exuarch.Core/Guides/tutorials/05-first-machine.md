@@ -1,12 +1,12 @@
 # Your first machine
 
-In this tutorial you start from the smallest CPU ExµArch can make, give it a display, and write the one instruction it needs to print. By the end it says "Hi". The next tutorials keep building on this machine, so keep it open.
+In this tutorial you give the machine from [Ending an instruction](exuarch:guide/ending-an-instruction) a display, and write the one instruction it needs to print. By the end it says "Hi". The next tutorials keep building on this machine, so keep it open.
 
-## Start from the minimal CPU
+## Start from the last tutorial
 
-1. Click **New…** at the top, pick **Minimal CPU**, give it a name and click **Create**.
+The machine is a program counter `pc`, a memory `mem`, the instruction register `ir`, a status register `status`, all on one bus called `main`, and a clock `clk`, which needs no bus. Its microcode has the fetch routine you wrote and three instructions: `HLT`, `NOP` and `JMP`. It runs, but it has no way to show anything.
 
-The minimal CPU is a program counter `pc`, a memory `mem`, the instruction register `ir`, a status register `status`, all on one bus called `main`, and a clock `clk`, which needs no bus. Its microcode has a fetch routine and three instructions: `NOP`, `JMP` and `HLT`. It runs, but it has no way to show anything.
+If you skipped the first four tutorials, click **New…**, pick **Minimal CPU**, give it a name and click **Create**. It is the same machine, with the instructions in the order `NOP`, `JMP`, `HLT`, which changes their opcodes and nothing else.
 
 ## Add a display
 
