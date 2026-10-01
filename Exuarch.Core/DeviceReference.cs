@@ -17,7 +17,7 @@ namespace Exuarch.Core
             ["registerFile"] = new[] { "operands", "registers-and-the-alu" },
             ["statusRegister"] = new[] { "flags-and-conditions" },
             ["dualPortRegister"] = new[] { "bridges" },
-            ["instructionRegister"] = new[] { "fetch-and-the-instruction-register" },
+            ["instructionRegister"] = new[] { "fetch-and-the-instruction-register", "ground-zero", "fetch-routine" },
             ["clock"] = new[] { "buses-and-ticks" },
             ["alu"] = new[] { "registers-and-the-alu", "flags-and-conditions" },
             ["ram"] = new[] { "memory-and-banks" },

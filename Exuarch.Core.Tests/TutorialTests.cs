@@ -30,9 +30,39 @@ public class TutorialTests
 
     // ---- The machine after each tutorial ----
 
-    private static MachineDefinition FirstMachine()
+    // The minimal CPU with its microcode cleared to one empty fetch step and no instructions.
+    private static MachineDefinition GroundZero()
     {
         var machine = MachineTemplates.Minimal("Mine").Machine;
+        var microcode = machine.Decoder.Microcode;
+        microcode.Fetch.Steps = new List<MicroStep> { Step() };
+        microcode.Instructions.Clear();
+        return machine;
+    }
+
+    private static MachineDefinition WithFetch()
+    {
+        var machine = GroundZero();
+        machine.Decoder.Microcode.Fetch.Steps = new List<MicroStep>
+        {
+            Step("pc.output", "mem.loadmar"),
+            Step("mem.output", "ir.load", "pc.inc"),
+        };
+        return machine;
+    }
+
+    private static MachineDefinition FetchFromScratch()
+    {
+        var machine = WithFetch();
+        Add(machine, "HLT", 0, null, Step("clk.disable"));
+        Add(machine, "NOP", 0, null, Step("ir.reset"));
+        Add(machine, "JMP", 1, OperandType.Address, Step("pc.output", "mem.loadmar"), Step("mem.output", "pc.load", "ir.reset"));
+        return machine;
+    }
+
+    private static MachineDefinition FirstMachine()
+    {
+        var machine = FetchFromScratch();
         machine.Devices.Add(new DeviceDefinition { Id = "lcd", Type = "display", Bus = "main" });
         Add(machine, "OUT", 1, OperandType.Value,
             Step("pc.output", "mem.loadmar"),
@@ -92,6 +122,9 @@ public class TutorialTests
 
     // ---- The programs, as the pages write them ----
 
+    private const string HaltProgram = "        HLT";
+    private const string NopProgram = "        NOP\n        NOP\n        HLT";
+    private const string LoopProgram = "loop:   NOP\n        JMP loop";
     private const string HiProgram = "        OUT 'H'\n        OUT 'i'\n        HLT";
     private const string AbcProgram = "        LAI 'A'\n        OUTA\n        LBI 1\n        ADD\n        OUTA\n        ADD\n        OUTA\n        HLT";
     private const string CountdownProgram = "        LAI '5'\nloop:   OUTA\n        LBI 1\n        SUB\n        LBI '0'\n        CMP\n        JNZ loop\n        HLT";
@@ -124,12 +157,124 @@ public class TutorialTests
     }
 
     [Fact]
+    public void AtGroundZeroTheCounterCounts()
+    {
+        // One empty step at ROM address 0, so nothing happens but the counter counting.
+        var empty = Build(GroundZero(), "");
+        for (int i = 0; i < 5; i++) empty.SingleStep();
+        Assert.Equal(5, empty.MicroStepRegister);
+        Assert.Equal(0, empty.Device<Register>("pc").Data);
+        Assert.Equal(new[] { 0, 1, 2, 3, 4 }, empty.History.Select(t => t.RomAddress));
+        Assert.All(empty.History, t => Assert.Empty(t.Signals));
+        Assert.Equal("FETCH", empty.History[0].Instruction);
+        Assert.All(empty.History.Skip(1), t => Assert.Null(t.Instruction));
+        Assert.All(empty.History, t => Assert.Equal(new[] { ("ir", t.MicroStep, t.MicroStep + 1) }, t.Changes.Select(c => (c.Device, c.Before, c.After))));
+        Assert.Equal(1, new DecoderRom(GroundZero().Decoder.Microcode).OpCodesUsed);
+
+        var page = Page("01-ground-zero.md");
+        Assert.StartsWith("# Ground zero", page);
+        var registry = DeviceRegistry.CreateDefault();
+        Assert.Equal(17, GroundZero().Devices.Sum(d => registry.Info(d.Type).ControlLines.Count));
+        foreach (var text in new[] { "17 control lines", "`pc.output`", "`pc.load`", "`ir.reset`", "`ir.load`", "`ir 0000→0001`", "`FETCH.1`" }) Assert.Contains(text, page);
+    }
+
+    [Fact]
+    public void FetchWalksThroughEmptyMemory()
+    {
+        // Every cell is 0, the opcode of fetch, so the machine walks through memory.
+        var walking = Build(WithFetch(), "");
+        for (int i = 0; i < 6; i++) walking.SingleStep();
+        Assert.Equal(3, walking.Device<Register>("pc").Data);
+        Assert.Equal(0, walking.MicroStepRegister);
+        Assert.Equal(new int?[] { null, 0, null, 1, null, 2 }, walking.History.Select(t => t.FetchedFromAddress));
+        Assert.Equal(new[] { ("main", "mem", 0) }, walking.History[1].Transfers.Select(t => (t.Bus, t.Driver, t.Value)));
+        Assert.Equal(new[] { "ir" }, walking.History[1].Transfers[0].Readers);
+
+        // Fetch in one step puts two values on the one bus.
+        var oneStep = WithFetch();
+        oneStep.Decoder.Microcode.Fetch.Steps = new List<MicroStep> { Step("pc.output", "mem.loadmar", "mem.output", "ir.load", "pc.inc") };
+        Assert.Contains(MicrocodeValidator.Validate(oneStep.Decoder.Microcode, oneStep),
+            d => d.Severity == DiagnosticSeverity.Error && d.Message.Contains("pc.output and mem.output all drive bus 'main'"));
+
+        var page = Page("02-fetch-routine.md");
+        Assert.StartsWith("# Fetch", page);
+        foreach (var text in new[] { "`pc.output` `mem.loadmar`", "`mem.output` `ir.load` `pc.inc`", "pc.output and mem.output all drive bus 'main'", "`mem → main 0000 → ir`" }) Assert.Contains(text, page);
+    }
+
+    [Fact]
+    public void AnOpcodeIsWhereTheStepsStart()
+    {
+        var machine = FetchFromScratch();
+        var rom = new DecoderRom(machine.Decoder.Microcode);
+        Assert.Equal(2, rom.FetchByteCodeFromMnemonic("HLT"));
+        Assert.Equal(0x10003, DecoderRom.RomAddress(StatusRegister.ZeroFlag, 3));
+
+        var halt = Build(machine, HaltProgram);
+        Assert.Equal(new[] { 2 }, halt.ProgramByteCode);
+        Assert.Equal(3, RunToHalt(halt));
+        Assert.Equal(new[] { 0, 1, 2 }, halt.History.Select(t => t.RomAddress));
+        Assert.Equal(("pc", 0, "mem"), (halt.History[0].Transfers[0].Driver, halt.History[0].Transfers[0].Value, halt.History[0].Transfers[0].Readers.Single()));
+        Assert.Equal(("mem", 2, "ir"), (halt.History[1].Transfers[0].Driver, halt.History[1].Transfers[0].Value, halt.History[1].Transfers[0].Readers.Single()));
+
+        var page = Page("03-opcodes-are-addresses.md");
+        Assert.StartsWith("# Opcodes are addresses", page);
+        PageShows(page, HaltProgram, "clk.disable", "ir.reset");
+        foreach (var text in new[] { "`HLT` is opcode 2", "3 ticks", "`0002`", "`10003`", "`pc → main 0000 → mem`", "`mem → main 0002 → ir`" }) Assert.Contains(text, page);
+    }
+
+    [Fact]
+    public void InstructionsEndByGoingBackToFetch()
+    {
+        var machine = FetchFromScratch();
+        var rom = new DecoderRom(machine.Decoder.Microcode);
+        Assert.Equal((3, 4), (rom.FetchByteCodeFromMnemonic("NOP"), rom.FetchByteCodeFromMnemonic("JMP")));
+        Assert.Equal(6, rom.OpCodesUsed);
+
+        var nops = Build(machine, NopProgram);
+        Assert.Equal(new[] { 3, 3, 2 }, nops.ProgramByteCode);
+        Assert.Equal(9, RunToHalt(nops));
+        Assert.Equal(new[] { "FETCH.1", "FETCH.2", "NOP.1", "FETCH.1", "FETCH.2", "NOP.1", "FETCH.1", "FETCH.2", "HLT.1" },
+            nops.History.Select(t => $"{t.Instruction}.{t.StepIndex + 1}"));
+
+        // Without ir.load the counter runs on from fetch into whatever comes next in the ROM: HLT, whatever memory says.
+        var forgot = FetchFromScratch();
+        forgot.Decoder.Microcode.Fetch.Steps[1].Signals.Remove("ir.load");
+        Assert.Contains(MicrocodeValidator.Validate(forgot.Decoder.Microcode, forgot), d => d.Instruction == "FETCH" && d.Message.Contains("never resets or loads 'ir'"));
+        var runsOn = new Machine(forgot, NopProgram);
+        Assert.Equal(3, RunToHalt(runsOn));
+        Assert.Equal("HLT", runsOn.History.Last().Instruction);
+
+        // JMP loops for ever: NOP takes three ticks and JMP four, and then the program counter is back at 0.
+        var loop = Build(machine, LoopProgram);
+        Assert.Equal(new[] { 3, 4, 0 }, loop.ProgramByteCode);
+        for (int i = 0; i < 7; i++) loop.SingleStep();
+        Assert.Equal((0, 0), (loop.Device<Register>("pc").Data, loop.MicroStepRegister));
+        for (int i = 0; i < 700; i++) loop.SingleStep();
+        Assert.False(loop.IsHalted);
+
+        var page = Page("04-ending-an-instruction.md");
+        Assert.StartsWith("# Ending an instruction", page);
+        PageShows(page, NopProgram, "ir.reset", "ir.load");
+        PageShows(page, LoopProgram, "pc.output", "mem.loadmar", "mem.output", "pc.load");
+        foreach (var text in new[] { "`NOP` is opcode 3", "`JMP` is opcode 4", "9 ticks", "3 ticks", "`0003 0003 0002`", "`0003 0004 0000`" }) Assert.Contains(text, page);
+        // The ROM table lists every step.
+        foreach (var block in rom.Blocks)
+        {
+            for (int i = 0; i < block.Count; i++)
+            {
+                var signals = string.Join(" ", block.Instruction.Steps[i].Signals.Select(x => $"`{x}`"));
+                Assert.Contains($"| `{block.Base + i:X5}` | `{block.Instruction.Mnemonic}.{i + 1}` | {signals} |", page);
+            }
+        }
+    }
+
+    [Fact]
     public void YourFirstMachineSaysHi()
     {
         var c = Build(FirstMachine(), HiProgram);
         Assert.Equal(11, RunToHalt(c));
         Assert.Equal("Hi", Lcd(c));
-        var page = Page("01-first-machine.md");
+        var page = Page("05-first-machine.md");
         Assert.StartsWith("# Your first machine", page);
         PageShows(page, HiProgram, "pc.output", "mem.loadmar", "mem.output", "lcd.load", "pc.inc", "ir.reset");
         Assert.Contains("`lcd`", page);
@@ -142,7 +287,7 @@ public class TutorialTests
         var c = Build(WithAlu(), AbcProgram);
         RunToHalt(c);
         Assert.Equal("ABC", Lcd(c));
-        var page = Page("02-registers-and-the-alu.md");
+        var page = Page("06-registers-and-the-alu.md");
         Assert.StartsWith("# Registers and the ALU", page);
         PageShows(page, AbcProgram, "a.load", "b.load", "alu.add", "a.output");
         foreach (var name in new[] { "LAI", "LBI", "ADD", "OUTA" }) Assert.Contains($"`{name}`", page);
@@ -164,7 +309,7 @@ public class TutorialTests
         // The trace numbers steps as written: the jump is step 2, falling through is step 3.
         Assert.Contains(c.History, t => t.Instruction == "JNZ" && t.StepIndex == 1);
         Assert.Contains(c.History, t => t.Instruction == "JNZ" && t.StepIndex == 2);
-        var page = Page("03-loops-and-flags.md");
+        var page = Page("07-loops-and-flags.md");
         Assert.StartsWith("# Loops and flags", page);
         PageShows(page, CountdownProgram, "alu.sub", "alu.cmp", "mem.output", "pc.load", "pc.inc");
         Assert.Contains("Z=0", page);
@@ -180,7 +325,7 @@ public class TutorialTests
         // Every push was popped again.
         Assert.Equal(0, c.Device<Register>("sp").Data);
         Assert.Equal(65535, c.History.SelectMany(t => t.Changes).First(ch => ch.Device == "sp").After);
-        var page = Page("04-subroutines-and-the-stack.md");
+        var page = Page("08-subroutines-and-the-stack.md");
         Assert.StartsWith("# Subroutines and the stack", page);
         PageShows(page, TwiceProgram, "tmp.load", "sp.dec", "sp.output", "mem.load", "tmp.output", "sp.inc");
         Assert.DoesNotContain("initialValue", page);
@@ -209,7 +354,7 @@ public class TutorialTests
         RunToHalt(c, 200);
         Assert.Equal("18", Lcd(c));
 
-        var page = Page("05-reading-the-keypad.md");
+        var page = Page("09-reading-the-keypad.md");
         Assert.StartsWith("# Reading the keypad", page);
         PageShows(page, KeysProgram, "keypad.output", "a.load");
         Assert.Contains("`keypad`", page);
@@ -218,7 +363,7 @@ public class TutorialTests
     [Fact]
     public void ATutorialsLinksLeadSomewhere()
     {
-        foreach (var file in new[] { "01-first-machine.md", "02-registers-and-the-alu.md", "03-loops-and-flags.md", "04-subroutines-and-the-stack.md", "05-reading-the-keypad.md" })
+        foreach (var file in new[] { "01-ground-zero.md", "02-fetch-routine.md", "03-opcodes-are-addresses.md", "04-ending-an-instruction.md", "05-first-machine.md", "06-registers-and-the-alu.md", "07-loops-and-flags.md", "08-subroutines-and-the-stack.md", "09-reading-the-keypad.md" })
         {
             var page = Page(file);
             Assert.Contains("## Next", page);
