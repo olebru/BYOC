@@ -12,15 +12,8 @@ namespace Exuarch.Web.Components
 {
     public partial class MachineEditor
     {
-        public const double CardWidth = 150;
-        private const double CardBaseHeight = 58;
-        private const double ConnectionRowHeight = 18;
         private const double Grid = 10;
-        private const double BusSpacing = 320;
-        private const double FirstBusY = 190;
         private const double BusSnapDistance = 22;
-        private const double MinCanvasWidth = 1200;
-        private const double MinCanvasHeight = 560;
 
 
         [Inject] private IJSRuntime JS { get; set; }
@@ -102,54 +95,27 @@ namespace Exuarch.Web.Components
 
         // ---- Geometry ----
 
-        private DeviceTypeInfo Info(DeviceDefinition device)
-        {
-            return Registry.Info(device.Type) ?? new DeviceTypeInfo { Type = device.Type, Ports = device.Ports().Select(p => p.Key).ToList() };
-        }
-        private double CardHeight(DeviceDefinition device)
-        {
-            var connections = Info(device).Connections.Count;
-            return CardBaseHeight + (connections > 0 ? 12 + connections * ConnectionRowHeight : 0);
-        }
-        private double CanvasWidth
-        {
-            get
-            {
-                var right = Definition.Devices.Select(d => d.Layout?.X ?? 0).DefaultIfEmpty(0).Max() + CardWidth + 60;
-                var decoderRight = (Definition.Decoder?.Layout?.X ?? 0) + CardWidth + 60;
-                return Math.Max(MinCanvasWidth, Math.Max(right, decoderRight));
-            }
-        }
-        private double CanvasHeight
-        {
-            get
-            {
-                var devicesBottom = Definition.Devices.Select(d => (d.Layout?.Y ?? 0) + CardHeight(d)).DefaultIfEmpty(0).Max();
-                var decoderBottom = (Definition.Decoder?.Layout?.Y ?? 0) + DecoderHeight;
-                var busBottom = Definition.Buses.Select(b => b.Layout?.Y ?? 0).DefaultIfEmpty(0).Max();
-                return Math.Max(MinCanvasHeight, Math.Max(Math.Max(devicesBottom, decoderBottom), busBottom) + 100);
-            }
-        }
+        private DeviceTypeInfo Info(DeviceDefinition device) => Layout.Info(device);
 
+        // The drawing's geometry, the same as the run view uses.
+        private SchematicLayout Layout
+        {
+            get
+            {
+                if (!ReferenceEquals(layoutFor, Definition) || !ReferenceEquals(layoutRegistry, Registry))
+                {
+                    layoutFor = Definition;
+                    layoutRegistry = Registry;
+                    layout = new SchematicLayout(Definition, Registry);
+                }
+                return layout;
+            }
+        }
+        private SchematicLayout layout;
+        private MachineDefinition layoutFor;
+        private DeviceRegistry layoutRegistry;
         // ---- The decoder, drawn as a card: its sockets name the devices it works with ----
 
-        private static readonly (string Name, string Label, string Description)[] DecoderSockets =
-        {
-            ("status", "status", "Status register: its flags pick which steps of an instruction run"),
-            ("instructionRegister", "steps", "Instruction register: the micro step counter that addresses the decoder ROM"),
-            ("interrupts", "interrupts", "Interrupt controller for the I condition, optional"),
-        };
-        private static double DecoderHeight { get { return CardBaseHeight + 12 + DecoderSockets.Length * ConnectionRowHeight; } }
-        private string DecoderTarget(string socket)
-        {
-            var decoder = Definition.Decoder;
-            return socket switch
-            {
-                "status" => decoder?.Status,
-                "instructionRegister" => decoder?.InstructionRegister,
-                _ => decoder?.Interrupts,
-            };
-        }
         private Task SetDecoderTarget(string socket, string deviceId)
         {
             return SetDecoder(d =>
@@ -158,20 +124,6 @@ namespace Exuarch.Web.Components
                 else if (socket == "instructionRegister") d.InstructionRegister = deviceId;
                 else d.Interrupts = deviceId;
             });
-        }
-        // To a device on its right the wire curves across like any connection. To one on its left it runs like a trace:
-        // out of the socket, up above both cards, across, and down onto the target's top edge. Each socket gets its own
-        // lane so the wires do not lie on top of each other.
-        private string DecoderPath(int index, DeviceDefinition to)
-        {
-            var layout = Definition.Decoder.Layout;
-            var sx = layout.X + CardWidth;
-            var sy = layout.Y + ConnectionRowY(index);
-            if (to.Layout.X >= sx) return CurveTo(sx, sy, to.Layout.X, to.Layout.Y + CardHeight(to) / 2);
-            var out_ = sx + 12 + index * 8;
-            var above = Math.Max(6, Math.Min(layout.Y, to.Layout.Y) - 14 - index * 8);
-            var tx = to.Layout.X + CardWidth / 2 + (index - 1) * 12;
-            return FormattableString.Invariant($"M {sx:0.#} {sy:0.#} H {out_:0.#} V {above:0.#} H {tx:0.#} V {to.Layout.Y:0.#}");
         }
         // Problems with the decoder name it: "decoder" or "decoder.status" and so on.
         private bool DecoderHasProblem
@@ -205,41 +157,6 @@ namespace Exuarch.Web.Components
         {
             return Palette.Category(info);
         }
-        private double BusY(string busId)
-        {
-            return Definition.FindBus(busId)?.Layout?.Y ?? 0;
-        }
-
-        // Port anchors sit on the card edge that faces the port's bus.
-        private (double X, double Y, bool Bottom) PortAnchor(DeviceDefinition device, string port)
-        {
-            var ports = Info(device).Ports;
-            var index = Math.Max(0, ports.IndexOf(port));
-            var x = device.Layout.X + CardWidth * (index + 1) / (ports.Count + 1);
-            var busId = device.GetPortBus(port);
-            var height = CardHeight(device);
-            bool bottom = busId == null || BusY(busId) >= device.Layout.Y + height / 2;
-            return (x, bottom ? device.Layout.Y + height : device.Layout.Y, bottom);
-        }
-        private double ConnectionRowY(int index)
-        {
-            return CardBaseHeight + 4 + index * ConnectionRowHeight + ConnectionRowHeight / 2;
-        }
-        private string ConnectionPath(DeviceDefinition from, int index, DeviceDefinition to)
-        {
-            var sx = from.Layout.X + CardWidth;
-            var sy = from.Layout.Y + ConnectionRowY(index);
-            var targetRight = to.Layout.X + CardWidth / 2 < sx;
-            var tx = targetRight ? to.Layout.X + CardWidth : to.Layout.X;
-            var ty = to.Layout.Y + CardHeight(to) / 2;
-            return CurveTo(sx, sy, tx, ty, targetRight);
-        }
-        private static string CurveTo(double sx, double sy, double tx, double ty, bool targetRight = false)
-        {
-            var bend = Math.Max(50, Math.Abs(tx - sx) / 2);
-            var c2 = targetRight ? tx + bend : tx - bend;
-            return FormattableString.Invariant($"M {sx:0.#} {sy:0.#} C {sx + bend:0.#} {sy:0.#}, {c2:0.#} {ty:0.#}, {tx:0.#} {ty:0.#}");
-        }
         private static string Px(double value) => FormattableString.Invariant($"{value:0.#}px");
         private static string N(double value) => FormattableString.Invariant($"{value:0.#}");
         private static double Snap(double value) => Math.Round(value / Grid) * Grid;
@@ -247,8 +164,8 @@ namespace Exuarch.Web.Components
         private DeviceDefinition DeviceAt(double x, double y)
         {
             return Definition.Devices.LastOrDefault(d => d.Layout != null
-                && x >= d.Layout.X && x <= d.Layout.X + CardWidth
-                && y >= d.Layout.Y && y <= d.Layout.Y + CardHeight(d));
+                && x >= d.Layout.X && x <= d.Layout.X + SchematicLayout.CardWidth
+                && y >= d.Layout.Y && y <= d.Layout.Y + Layout.CardHeight(d));
         }
         private BusDefinition BusNear(double y)
         {
@@ -317,20 +234,20 @@ namespace Exuarch.Web.Components
             var id = Definition.NextFreeId(IdPrefix(type));
             var position = x.HasValue ? new Position { X = Snap(x.Value), Y = Snap(y.Value) } : FreeSpot();
             var device = new DeviceDefinition { Id = id, Type = type, Layout = position };
-            var bus = NearestBus(position.Y + CardBaseHeight / 2);
+            var bus = NearestBus(position.Y + SchematicLayout.CardMinHeight / 2);
             if (bus != null && info.Ports.Count > 0) device.SetPortBus(info.Ports[0], bus.Id);
             await Mutate(() => Definition.Devices.Add(device));
             Select(id);
         }
         private Position FreeSpot()
         {
-            var y = Definition.Devices.Select(d => d.Layout.Y + CardHeight(d)).DefaultIfEmpty(0).Max() + 40;
+            var y = Definition.Devices.Select(d => d.Layout.Y + Layout.CardHeight(d)).DefaultIfEmpty(0).Max() + 40;
             return new Position { X = 30, Y = Snap(y) };
         }
         private async Task AddBus()
         {
             var id = Definition.NextFreeId("bus");
-            var y = Definition.Buses.Select(b => b.Layout?.Y ?? 0).DefaultIfEmpty(FirstBusY - BusSpacing).Max() + BusSpacing;
+            var y = Definition.Buses.Select(b => b.Layout?.Y ?? 0).DefaultIfEmpty(SchematicLayout.FirstBusY - SchematicLayout.BusSpacing).Max() + SchematicLayout.BusSpacing;
             await Mutate(() => Definition.Buses.Add(new BusDefinition { Id = id, Layout = new Position { Y = Snap(y) } }));
             SelectBus(id);
         }
@@ -604,7 +521,7 @@ namespace Exuarch.Web.Components
             drag = null;
             if (d == null || !d.HasRect) return;
             UpdatePointer(d, e);
-            bool onCanvas = d.X >= 0 && d.Y >= 0 && d.X <= CanvasWidth && d.Y <= CanvasHeight;
+            bool onCanvas = d.X >= 0 && d.Y >= 0 && d.X <= Layout.CanvasWidth && d.Y <= Layout.CanvasHeight;
             switch (d.Kind)
             {
                 case DragKind.MoveDevice:
@@ -617,7 +534,7 @@ namespace Exuarch.Web.Components
                     }
                     break;
                 case DragKind.NewDevice:
-                    if (d.Moved && onCanvas) await AddDevice(d.NewType, d.X - CardWidth / 2, d.Y - 20);
+                    if (d.Moved && onCanvas) await AddDevice(d.NewType, d.X - SchematicLayout.CardWidth / 2, d.Y - 20);
                     else if (!d.Moved) await AddDevice(d.NewType);
                     break;
                 case DragKind.WirePort:
@@ -632,7 +549,7 @@ namespace Exuarch.Web.Components
                     break;
                 case DragKind.WireDecoder:
                     var decoderTarget = DeviceAt(d.X, d.Y);
-                    if (decoderTarget != null && DecoderTarget(d.Connection) != decoderTarget.Id) await SetDecoderTarget(d.Connection, decoderTarget.Id);
+                    if (decoderTarget != null && Layout.DecoderTarget(d.Connection) != decoderTarget.Id) await SetDecoderTarget(d.Connection, decoderTarget.Id);
                     break;
             }
         }

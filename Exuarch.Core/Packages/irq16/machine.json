@@ -7,7 +7,7 @@
     },
     {
       "id": "video",
-      "layout": { "x": 0, "y": 470 }
+      "layout": { "x": 0, "y": 500 }
     }
   ],
   "devices": [
@@ -133,7 +133,7 @@
       "type": "framebuffer",
       "name": "SCREEN",
       "bus": "video",
-      "layout": { "x": 402, "y": 530 }
+      "layout": { "x": 402, "y": 560 }
     }
   ],
   "decoder": {

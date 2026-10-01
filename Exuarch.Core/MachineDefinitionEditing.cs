@@ -144,9 +144,9 @@ namespace Exuarch.Core
             }
         }
 
-        public const double LayoutCardWidth = 150;
-        public const double LayoutFirstBusY = 190;
-        public const double LayoutBusSpacing = 320;
+        public const double LayoutCardWidth = SchematicLayout.CardWidth;
+        public const double LayoutFirstBusY = SchematicLayout.FirstBusY;
+        public const double LayoutBusSpacing = SchematicLayout.BusSpacing;
 
         // Gives buses and devices without a position one: buses stacked, devices in rows around their first bus,
         // one row above it and the rest below. With force, everything is laid out again.
@@ -170,7 +170,7 @@ namespace Exuarch.Core
                     int row = index / perRow;
                     int column = index % perRow;
                     double y = row == 0 ? busY - 140 : busY + 60 + (row - 1) * 130;
-                    device.Layout = new Position { X = 30 + column * (LayoutCardWidth + 36), Y = y };
+                    device.Layout = new Position { X = 30 + column * SchematicLayout.ColumnSpacing, Y = y };
                     index++;
                 }
             }
@@ -180,7 +180,7 @@ namespace Exuarch.Core
                 var placed = definition.Devices.Where(d => d.Layout != null).ToList();
                 var top = placed.Count == 0 ? LayoutFirstBusY - 140 : placed.Min(d => d.Layout.Y);
                 var right = placed.Where(d => d.Layout.Y < top + 100).Select(d => d.Layout.X + LayoutCardWidth).DefaultIfEmpty(0).Max();
-                definition.Decoder.Layout = new Position { X = right + 36, Y = top };
+                definition.Decoder.Layout = new Position { X = right + SchematicLayout.ColumnSpacing - LayoutCardWidth, Y = top };
             }
         }
 

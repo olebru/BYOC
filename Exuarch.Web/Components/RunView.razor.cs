@@ -12,8 +12,6 @@ namespace Exuarch.Web.Components
 {
     public partial class RunView : IDisposable
     {
-        private const double CardWidth = 160;
-        private const double CardHeight = 96;
         private const int TraceRows = 120;
 
         [Inject] private IJSRuntime JS { get; set; }
@@ -133,7 +131,7 @@ namespace Exuarch.Web.Components
         {
             var rect = await JS.InvokeAsync<ElementRect>("exuarchEditor.rect", schematicElement);
             if (rect.Width <= 0) return;
-            zoom = Math.Clamp(Math.Floor((rect.Width - 24) / CanvasWidth * 100) / 100, 0.4, 1.2);
+            zoom = Math.Clamp(Math.Floor((rect.Width - 24) / Layout.CanvasWidth * 100) / 100, 0.4, 1.2);
             StateHasChanged();
         }
         private void Zoom(double factor)
@@ -433,19 +431,6 @@ namespace Exuarch.Web.Components
         {
             return Registry.Info(device.Type) ?? new DeviceTypeInfo { Type = device.Type, Ports = device.Ports().Select(p => p.Key).ToList() };
         }
-        private Position LayoutOf(DeviceDefinition device, int index)
-        {
-            return device.Layout ?? new Position { X = 30 + (index % 6) * 190, Y = 40 + (index / 6) * 130 };
-        }
-        private double BusY(BusDefinition bus, int index)
-        {
-            return bus.Layout?.Y ?? 190 + index * 320;
-        }
-        private double BusY(string busId)
-        {
-            var index = Machine.Definition.Buses.FindIndex(b => b.Id == busId);
-            return index < 0 ? 0 : BusY(Machine.Definition.Buses[index], index);
-        }
         private string BusColor(string busId)
         {
             var index = Machine.Definition.Buses.FindIndex(b => b.Id == busId);
@@ -455,32 +440,17 @@ namespace Exuarch.Web.Components
         {
             return Palette.Category(info);
         }
-        private (double X, double Y) PortAnchor(DeviceDefinition device, Position position, string port)
-        {
-            var ports = Info(device).Ports;
-            var index = Math.Max(0, ports.IndexOf(port));
-            var x = position.X + CardWidth * (index + 1) / (ports.Count + 1);
-            var busId = device.GetPortBus(port);
-            bool bottom = busId == null || BusY(busId) >= position.Y + CardHeight / 2;
-            return (x, bottom ? position.Y + CardHeight : position.Y);
-        }
-        private double CanvasWidth
+        // The drawing's geometry, the same as the hardware design canvas uses.
+        private SchematicLayout Layout
         {
             get
             {
-                var right = Machine.Definition.Devices.Select((d, i) => LayoutOf(d, i).X).DefaultIfEmpty(0).Max() + CardWidth + 60;
-                return Math.Max(1100, right);
+                if (!ReferenceEquals(layoutFor, Machine.Definition)) { layoutFor = Machine.Definition; layout = new SchematicLayout(Machine.Definition, Registry); }
+                return layout;
             }
         }
-        private double CanvasHeight
-        {
-            get
-            {
-                var bottom = Machine.Definition.Devices.Select((d, i) => LayoutOf(d, i).Y).DefaultIfEmpty(0).Max() + CardHeight;
-                var buses = Machine.Definition.Buses.Select((b, i) => BusY(b, i)).DefaultIfEmpty(0).Max();
-                return Math.Max(bottom, buses) + 60;
-            }
-        }
+        private SchematicLayout layout;
+        private MachineDefinition layoutFor;
         private static string N(double value) => FormattableString.Invariant($"{value:0.#}");
         private static string Px(double value) => FormattableString.Invariant($"{value:0.#}px");
 

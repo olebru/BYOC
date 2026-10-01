@@ -256,6 +256,17 @@
     letter-spacing: 0.06em;
 }
 
+.bus-slash {
+    stroke: var(--ink-2);
+    stroke-width: 1.25;
+}
+
+.bus-width {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    fill: var(--ink-3);
+}
+
 .port-wire {
     stroke-width: 2;
     stroke-linecap: square;
@@ -331,10 +342,6 @@
         pointer-events: none;
     }
 
-.editor.dragging .card-device.selected {
-    box-shadow: 0 0 0 1px var(--ink), var(--shadow-lift);
-}
-
 .card-id {
     font-family: var(--font-mono);
     font-weight: 600;
@@ -353,95 +360,6 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-}
-
-.card-value {
-    position: absolute;
-    right: 8px;
-    top: 6px;
-    font-family: var(--font-mono);
-    font-size: 0.72rem;
-    font-weight: 600;
-    background: var(--sunken);
-    border: 1px solid var(--line);
-    border-radius: var(--radius-sm);
-    padding: 0 5px;
-    color: var(--ink);
-}
-
-.socket-row {
-    position: absolute;
-    left: 10px;
-    right: 0;
-    height: 18px;
-    display: flex;
-    align-items: center;
-    font-family: var(--font-mono);
-    font-size: 0.68rem;
-    gap: 6px;
-}
-
-.socket-name {
-    font-weight: 600;
-    color: var(--ink-2);
-    min-width: 38px;
-}
-
-.socket-target {
-    flex: 1;
-    color: var(--ink-3);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-    .socket-target.missing {
-        color: var(--bad);
-        font-style: italic;
-    }
-
-.socket {
-    width: 10px;
-    height: 10px;
-    border-radius: 1px;
-    border: 1px solid var(--ink-2);
-    background: var(--surface);
-    margin-right: -6px;
-    cursor: crosshair;
-    flex-shrink: 0;
-}
-
-    .socket:hover {
-        border-color: var(--signal);
-        background: var(--signal-soft);
-    }
-
-.port {
-    position: absolute;
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    border: 2px solid var(--surface);
-    box-shadow: 0 0 0 1px var(--ink-2);
-    cursor: crosshair;
-}
-
-    .port.unconnected {
-        box-shadow: 0 0 0 1px var(--bad);
-    }
-
-    .port:hover {
-        box-shadow: 0 0 0 2px var(--signal);
-    }
-
-/* Beside its port, just outside the card, so it does not cover the card's name. */
-.port-label {
-    position: absolute;
-    white-space: nowrap;
-    font-family: var(--font-mono);
-    font-size: 0.6rem;
-    color: var(--ink-3);
-    pointer-events: none;
 }
 
 /* Inspector */
@@ -725,14 +643,6 @@ kbd {
 /* The decoder: a card like the devices, but not on a bus. Drawn as a chip with pins along both sides. */
 .decoder-dot {
     background: var(--cat-control);
-}
-
-.card-decoder {
-    border-top-color: var(--cat-control);
-    background:
-        linear-gradient(90deg, var(--line-2) 0 3px, transparent 3px) left 6px top 30px / 3px 8px repeat-y,
-        linear-gradient(90deg, var(--line-2) 0 3px, transparent 3px) right 3px top 30px / 3px 8px repeat-y,
-        var(--surface-2);
 }
 
 .decoder-wire {
