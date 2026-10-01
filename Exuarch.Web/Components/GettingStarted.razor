@@ -164,7 +164,7 @@
                 <span class="silk">@Package.Name</span>
                 <span class="machine-views">
                     <button class="machine-view @(machineView == "Note" ? "on" : "")" @onclick="@(() => ShowMachine("Note"))">Note</button>
-                    <button class="machine-view @(machineView == "JSON" ? "on" : "")" title="The whole machine as one file, microcode included, kept in step with the editors" @onclick="@(() => ShowMachine("JSON"))">JSON @if ((JsonErrors?.Count ?? 0) > 0) { <span class="badge badge-danger ml-1">@JsonErrors.Count</span> }</button>
+                    <button class="machine-view @(machineView == "JSON" ? "on" : "")" title="The whole machine as one file, microcode included, kept in step with the editors" @onclick="@(() => ShowMachine("JSON"))">JSON @if ((JsonErrors?.Count ?? 0) > 0) { <span class="badge badge-danger ms-1">@JsonErrors.Count</span> }</button>
                 </span>
                 <span class="grow"></span>
                 @if (machineView == "Note")

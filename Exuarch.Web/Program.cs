@@ -13,6 +13,7 @@ namespace Exuarch.Web
             builder.RootComponents.Add<App>("#app");
 
             builder.Services.AddScoped<HelpService>();
+            builder.Services.AddScoped<Analytics>();
 
             await builder.Build().RunAsync();
         }

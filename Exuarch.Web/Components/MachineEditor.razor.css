@@ -385,7 +385,7 @@
         font-family: var(--font-sans);
     }
 
-    .inspector .form-control {
+    .inspector .form-control, .inspector .form-select {
         font-family: var(--font-mono);
         font-size: 0.8rem;
     }

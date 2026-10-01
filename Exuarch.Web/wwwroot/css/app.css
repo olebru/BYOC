@@ -145,6 +145,15 @@ a, .btn-link {
     color: var(--read);
 }
 
+/* Bootstrap 5 underlines every link; the app underlines on hover, as it did with Bootstrap 4. */
+a {
+    text-decoration: none;
+}
+
+    a:hover {
+        text-decoration: underline;
+    }
+
 .content {
     padding-top: 0.9rem;
 }
@@ -198,14 +207,14 @@ a, .btn-link {
         border-color: var(--ink-3) !important;
     }
 
-.form-control {
+.form-control, .form-select {
     border-radius: var(--radius);
     border-color: var(--line-2);
     color: var(--ink);
     background-color: var(--surface);
 }
 
-    .form-control:focus {
+    .form-control:focus, .form-select:focus {
         border-color: var(--ink-2);
         color: var(--ink);
         background-color: var(--surface);
@@ -229,20 +238,26 @@ a, .btn-link {
     color: var(--bad-ink);
 }
 
-.close {
-    color: var(--ink);
-    text-shadow: none;
+.btn-close {
+    font-size: 0.7rem;
+    box-shadow: none !important;
 }
 
-    .close:hover {
-        color: var(--ink);
-    }
+/* Bootstrap's light arrow for dropdowns on the dark theme, the one it uses for its own dark mode. */
+:root[data-theme="dark"] .form-select {
+    --bs-form-select-bg-img: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23dee2e6' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+}
+
+/* The cross is a dark image; turn it light on the dark theme. */
+:root[data-theme="dark"] .btn-close {
+    filter: invert(1) grayscale(100%) brightness(200%);
+}
 
 .form-control::placeholder {
     color: var(--ink-4);
 }
 
-.form-control:disabled, .form-control[readonly] {
+.form-control:disabled, .form-control[readonly], .form-select:disabled {
     background-color: var(--sunken);
 }
 
