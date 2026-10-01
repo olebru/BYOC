@@ -3,15 +3,15 @@
   "buses": [
     {
       "id": "main",
-      "layout": { "x": 0, "y": 190 }
+      "layout": { "x": 0, "y": 222 }
     },
     {
       "id": "list",
-      "layout": { "x": 0, "y": 470 }
+      "layout": { "x": 0, "y": 626 }
     },
     {
       "id": "video",
-      "layout": { "x": 0, "y": 720 }
+      "layout": { "x": 0, "y": 869 }
     }
   ],
   "devices": [
@@ -20,14 +20,14 @@
       "type": "register",
       "name": "PC",
       "bus": "main",
-      "layout": { "x": 30, "y": 50 }
+      "layout": { "x": 30, "y": 40 }
     },
     {
       "id": "ir",
       "type": "instructionRegister",
       "name": "IR",
       "bus": "main",
-      "layout": { "x": 216, "y": 50 }
+      "layout": { "x": 1290, "y": 40 }
     },
     {
       "id": "mem",
@@ -35,48 +35,48 @@
       "name": "MEMORY",
       "bus": "main",
       "parameters": { "size": 4096 },
-      "layout": { "x": 402, "y": 50 }
+      "layout": { "x": 240, "y": 40 }
     },
     {
       "id": "flags",
       "type": "statusRegister",
       "name": "FLAGS",
       "bus": "main",
-      "layout": { "x": 588, "y": 50 }
+      "layout": { "x": 870, "y": 278 }
     },
     {
       "id": "sp",
       "type": "register",
       "name": "SP",
       "bus": "main",
-      "layout": { "x": 774, "y": 50 }
+      "layout": { "x": 450, "y": 40 }
     },
     {
       "id": "a",
       "type": "register",
       "name": "A",
       "bus": "main",
-      "layout": { "x": 960, "y": 50 }
+      "layout": { "x": 450, "y": 278 }
     },
     {
       "id": "clk",
       "type": "clock",
       "name": "CLOCK",
-      "layout": { "x": 1146, "y": 50 }
+      "layout": { "x": 1500, "y": 40 }
     },
     {
       "id": "b",
       "type": "register",
       "name": "B",
       "bus": "main",
-      "layout": { "x": 30, "y": 250 }
+      "layout": { "x": 240, "y": 278 }
     },
     {
       "id": "t",
       "type": "register",
       "name": "ALU OPERAND",
       "bus": "main",
-      "layout": { "x": 216, "y": 250 }
+      "layout": { "x": 660, "y": 40 }
     },
     {
       "id": "alu",
@@ -84,14 +84,14 @@
       "name": "ALU",
       "bus": "main",
       "connections": { "a": "a", "b": "t", "status": "flags" },
-      "layout": { "x": 402, "y": 250 }
+      "layout": { "x": 660, "y": 278 }
     },
     {
       "id": "mac",
       "type": "mac",
       "name": "MULTIPLY-ACCUMULATE",
       "bus": "main",
-      "layout": { "x": 588, "y": 250 }
+      "layout": { "x": 870, "y": 40 }
     },
     {
       "id": "xp",
@@ -99,28 +99,28 @@
       "name": "CROSS PRODUCT",
       "bus": "main",
       "parameters": { "shift": 0 },
-      "layout": { "x": 774, "y": 250 }
+      "layout": { "x": 1290, "y": 278 }
     },
     {
       "id": "bridge",
       "type": "dualPortRegister",
       "name": "TO THE LIST BUS",
       "buses": { "a": "main", "b": "list" },
-      "layout": { "x": 960, "y": 250 }
+      "layout": { "x": 1080, "y": 278 }
     },
     {
       "id": "lp",
       "type": "register",
       "name": "LIST POINTER",
       "bus": "main",
-      "layout": { "x": 1146, "y": 250 }
+      "layout": { "x": 1080, "y": 40 }
     },
     {
       "id": "mp",
       "type": "register",
       "name": "MEMORY POINTER",
       "bus": "main",
-      "layout": { "x": 1332, "y": 250 }
+      "layout": { "x": 1500, "y": 278 }
     },
     {
       "id": "lmem",
@@ -128,7 +128,7 @@
       "name": "TRIANGLE LIST",
       "bus": "list",
       "parameters": { "size": 8192 },
-      "layout": { "x": 960, "y": 540 }
+      "layout": { "x": 240, "y": 474 }
     },
     {
       "id": "rast",
@@ -136,14 +136,14 @@
       "name": "RASTERIZER",
       "buses": { "host": "main", "list": "list", "video": "video" },
       "connections": { "screen": "fb", "memory": "lmem" },
-      "layout": { "x": 402, "y": 540 }
+      "layout": { "x": 30, "y": 278 }
     },
     {
       "id": "fb",
       "type": "doubleFramebuffer",
       "name": "SCREEN",
       "bus": "video",
-      "layout": { "x": 216, "y": 780 }
+      "layout": { "x": 240, "y": 717 }
     }
   ],
   "decoder": {
@@ -1126,7 +1126,7 @@
         }
       ]
     },
-    "layout": { "x": 1332, "y": 50 }
+    "layout": { "x": 1710, "y": 40 }
   },
   "halt": "clk",
   "programMemory": "mem"

@@ -148,39 +148,35 @@ namespace Exuarch.Core
         public const double LayoutFirstBusY = SchematicLayout.FirstBusY;
         public const double LayoutBusSpacing = SchematicLayout.BusSpacing;
 
-        // Gives buses and devices without a position one: buses stacked, devices in rows around their first bus,
-        // one row above it and the rest below. With force, everything is laid out again.
+        // Gives buses and devices without a position one. A machine with nothing placed yet, or any machine with force,
+        // is laid out as a whole (see SchematicPlacement). Otherwise only what is missing is placed: a bus below the
+        // last one, a device in a free spot next to its bus, and the decoder at the end of the top row.
         public static void EnsureLayout(this MachineDefinition definition, bool force = false)
         {
-            for (int i = 0; i < definition.Buses.Count; i++)
+            bool nothingPlaced = definition.Devices.All(d => d.Layout == null) && definition.Decoder?.Layout == null;
+            if (force || nothingPlaced)
             {
-                if (force || definition.Buses[i].Layout == null)
-                {
-                    definition.Buses[i].Layout = new Position { X = 0, Y = LayoutFirstBusY + i * LayoutBusSpacing };
-                }
+                SchematicPlacement.LayOut(definition);
+                return;
             }
-            const int perRow = 6;
-            var unplaced = definition.Devices.Where(d => force || d.Layout == null).ToList();
-            foreach (var band in unplaced.GroupBy(d => Math.Max(0, definition.Buses.FindIndex(b => b.Id == d.Ports().Select(p => p.Value).FirstOrDefault()))))
+            foreach (var bus in definition.Buses.Where(b => b.Layout == null))
             {
-                var busY = definition.Buses.Count == 0 ? LayoutFirstBusY : definition.Buses[Math.Min(band.Key, definition.Buses.Count - 1)].Layout.Y;
-                int index = 0;
-                foreach (var device in band)
-                {
-                    int row = index / perRow;
-                    int column = index % perRow;
-                    double y = row == 0 ? busY - 140 : busY + 60 + (row - 1) * 130;
-                    device.Layout = new Position { X = 30 + column * SchematicLayout.ColumnSpacing, Y = y };
-                    index++;
-                }
+                var lowest = definition.Buses.Where(b => b.Layout != null).Select(b => b.Layout.Y)
+                    .Concat(definition.Devices.Where(d => d.Layout != null).Select(d => d.Layout.Y + SchematicLayout.CardMinHeight))
+                    .DefaultIfEmpty(LayoutFirstBusY - LayoutBusSpacing).Max();
+                bus.Layout = new Position { X = 0, Y = lowest + SchematicPlacement.ToBus + SchematicLayout.CardMinHeight + SchematicPlacement.ToBus };
+            }
+            foreach (var device in definition.Devices.Where(d => d.Layout == null).ToList())
+            {
+                device.Layout = SchematicPlacement.FreeSpot(definition, device);
             }
             // The decoder is drawn as a card too, to the right of the devices in the top row.
-            if (definition.Decoder != null && (force || definition.Decoder.Layout == null))
+            if (definition.Decoder != null && definition.Decoder.Layout == null)
             {
                 var placed = definition.Devices.Where(d => d.Layout != null).ToList();
-                var top = placed.Count == 0 ? LayoutFirstBusY - 140 : placed.Min(d => d.Layout.Y);
+                var top = placed.Count == 0 ? SchematicPlacement.Top : placed.Min(d => d.Layout.Y);
                 var right = placed.Where(d => d.Layout.Y < top + 100).Select(d => d.Layout.X + LayoutCardWidth).DefaultIfEmpty(0).Max();
-                definition.Decoder.Layout = new Position { X = right + SchematicLayout.ColumnSpacing - LayoutCardWidth, Y = top };
+                definition.Decoder.Layout = new Position { X = right + SchematicPlacement.ColumnSpacing - LayoutCardWidth, Y = top };
             }
         }
 
