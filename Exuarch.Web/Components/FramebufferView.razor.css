@@ -6,8 +6,10 @@
     padding: 7px 8px 8px;
 }
 
+/* One line that never wraps, so the cursor position changing every frame can not change the panel's height. */
 .screen-head {
     display: flex;
+    white-space: nowrap;
     align-items: baseline;
     gap: 8px;
     font-family: var(--font-mono);
@@ -25,8 +27,18 @@
 
 .screen-info {
     margin-left: auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
     letter-spacing: 0.04em;
     text-transform: none;
+}
+
+/* Room for the widest coordinate, 639, so the text before it stays put. */
+.screen-num {
+    display: inline-block;
+    min-width: 3ch;
+    text-align: right;
 }
 
 .screen-hint {
@@ -60,13 +72,14 @@
     outline: none;
 }
 
+    /* A fixed width, so the frame does not follow the length of its heading. */
     .screen.large .screen-frame {
+        width: min(640px, 90vw);
         box-shadow: var(--shadow-lift);
     }
 
     .screen.large .screen-canvas {
-        width: 640px;
-        max-width: 90vw;
+        width: 100%;
         image-rendering: pixelated;
         cursor: zoom-out;
     }
