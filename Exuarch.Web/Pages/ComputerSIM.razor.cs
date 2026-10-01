@@ -96,6 +96,7 @@ namespace Exuarch.Web.Pages
         private void ApplyDefinition(MachineDefinition definition)
         {
             Definition = definition;
+            lastStructure = Structure(definition);
             Definition.EnsureLayout();
             DefinitionJson = Definition.ToJson();
             ParseErrors = new List<string>();
@@ -223,6 +224,7 @@ namespace Exuarch.Web.Pages
         public void Dispose()
         {
             Help.Requested -= OnHelp;
+            disposed = true;
         }
 
         private void ToggleDrawer(string section)
@@ -276,20 +278,51 @@ namespace Exuarch.Web.Pages
             await TrackChanges(firstRender);
         }
 
-        // What changed since the last render, for the usage statistics: the tab, the machine, the drawer and the
-        // handbook page. Comparing after rendering catches every way of getting there, a click, a link or a key.
-        private string trackedTab, trackedMachine, trackedSection;
-        private (string Kind, string Target)? trackedPage;
+        // What the page shows, for the usage statistics (see Analytics). It is told after every render, and every few
+        // seconds by a heartbeat, so a page read or an error left standing counts while nothing on this page renders.
+        private bool disposed;
         private async Task TrackChanges(bool firstRender)
         {
-            if (firstRender) await Analytics.Loaded();
-            if (ActiveTab != trackedTab) { trackedTab = ActiveTab; await Analytics.Tab(ActiveTab); }
-            if (PackageName != trackedMachine) { trackedMachine = PackageName; await Analytics.Machine(PackageName); }
-            var section = drawerOpen ? drawerSection : null;
-            if (section != trackedSection) { trackedSection = section; if (section != null) await Analytics.Drawer(section); }
-            var page = drawerOpen && drawerSection == "Handbook" ? drawerPage : null;
-            if (page != trackedPage) { trackedPage = page; if (page is { } shown) await Analytics.Page(shown); }
+            if (firstRender) _ = Heartbeat();
+            await ObserveView();
         }
+        // Task.Delay, started from a render, carries on in the component's own context; a timer thread would need
+        // InvokeAsync, and System.Threading.Timer does not fire in the browser build.
+        private async Task Heartbeat()
+        {
+            while (!disposed)
+            {
+                await Task.Delay(5000);
+                if (!disposed) await ObserveView();
+            }
+        }
+        private async Task ObserveView()
+        {
+            bool active = await Analytics.IdleSeconds() < 60;
+            string errors = ParseErrors.Count > 0 || DefinitionErrors.Count > 0 ? "hardware"
+                : MicrocodeErrorCount > 0 ? "microcode"
+                : ProgramErrors.Count > 0 ? "program" : null;
+            await Analytics.Observe(new Analytics.View
+            {
+                Tab = ActiveTab,
+                Machine = PackageName,
+                MachineIsBuiltIn = IsBuiltIn,
+                ProgramShips = IsBuiltIn && currentProgram != null && !IsYours(currentProgram) && currentProgram.Source == Program,
+                Page = drawerOpen && drawerSection == "Handbook" ? drawerPage : null,
+                Errors = errors,
+                Active = active,
+            });
+        }
+        // A change to what is built, not to where it is drawn: moving a card does not count as editing the hardware.
+        private static string Structure(MachineDefinition definition)
+        {
+            var copy = definition.Clone();
+            foreach (var bus in copy.Buses) bus.Layout = null;
+            foreach (var device in copy.Devices) device.Layout = null;
+            if (copy.Decoder != null) { copy.Decoder.Layout = null; copy.Decoder.Microcode = null; }
+            return copy.ToJson();
+        }
+
         private void NewDialogKey(Microsoft.AspNetCore.Components.Web.KeyboardEventArgs e)
         {
             if (e.Key == "Escape") newDialog = false;
@@ -321,7 +354,6 @@ namespace Exuarch.Web.Pages
             Ask($"Reset {name} to the way it ships? Your changes to it will be lost; Export first to keep them.", "Reset", async () =>
             {
                 workspace.Forget(name);
-                await Analytics.Reset(name);
                 if (name == PackageName)
                 {
                     LoadPackage(BuiltInPackages.Get(name));
@@ -418,8 +450,14 @@ namespace Exuarch.Web.Pages
             await JS.InvokeVoidAsync("exuarchEditor.download", $"{name}.json", saved.Package.ToJson());
         }
 
+        // What the hardware was last time it changed: the editor changes the definition in place, so the one it hands
+        // over can not be compared with the one before.
+        private string lastStructure;
         private void OnDesignChanged(MachineDefinition definition)
         {
+            var structure = Structure(definition);
+            if (lastStructure != null && structure != lastStructure) _ = Analytics.EditedHardware();
+            lastStructure = structure;
             Definition = definition;
             DefinitionJson = definition.ToJson();
             Rebuild();
@@ -427,6 +465,7 @@ namespace Exuarch.Web.Pages
 
         private void OnMicrocodeChanged(MicrocodeDefinition microcode)
         {
+            _ = Analytics.EditedMicrocode();
             Definition.Decoder ??= new DecoderDefinition();
             Definition.Decoder.Microcode = microcode;
             DefinitionJson = Definition.ToJson();
