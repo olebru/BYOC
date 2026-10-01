@@ -1,53 +1,120 @@
 {
   "name": "BYOC-16",
   "buses": [
-    { "id": "main" }
+    {
+      "id": "main",
+      "layout": { "x": 0, "y": 222 }
+    }
   ],
   "devices": [
-    { "id": "regi", "type": "instructionRegister", "name": "REGINSTR", "bus": "main" },
-    { "id": "pc", "type": "register", "name": "PCOUNT", "bus": "main" },
+    {
+      "id": "regi",
+      "type": "instructionRegister",
+      "name": "REGINSTR",
+      "bus": "main",
+      "layout": { "x": 1290, "y": 40 }
+    },
+    {
+      "id": "pc",
+      "type": "register",
+      "name": "PCOUNT",
+      "bus": "main",
+      "layout": { "x": 30, "y": 278 }
+    },
     {
       "id": "regsp",
       "type": "register",
       "name": "REGSP",
-      "bus": "main"
+      "bus": "main",
+      "layout": { "x": 30, "y": 40 }
     },
-    { "id": "rega", "type": "register", "name": "REGA", "bus": "main" },
-    { "id": "regb", "type": "register", "name": "REGB", "bus": "main" },
-    { "id": "regc", "type": "register", "name": "REGC", "bus": "main" },
-    { "id": "regs", "type": "register", "name": "REGSWAP", "bus": "main" },
+    {
+      "id": "rega",
+      "type": "register",
+      "name": "REGA",
+      "bus": "main",
+      "layout": { "x": 240, "y": 278 }
+    },
+    {
+      "id": "regb",
+      "type": "register",
+      "name": "REGB",
+      "bus": "main",
+      "layout": { "x": 240, "y": 40 }
+    },
+    {
+      "id": "regc",
+      "type": "register",
+      "name": "REGC",
+      "bus": "main",
+      "layout": { "x": 450, "y": 278 }
+    },
+    {
+      "id": "regs",
+      "type": "register",
+      "name": "REGSWAP",
+      "bus": "main",
+      "layout": { "x": 450, "y": 40 }
+    },
     {
       "id": "alu",
       "type": "alu",
       "name": "ALU",
       "bus": "main",
-      "connections": { "a": "rega", "b": "regb", "status": "regsta" }
+      "connections": { "a": "rega", "b": "regb", "status": "regsta" },
+      "layout": { "x": 660, "y": 278 }
     },
-    { "id": "regsta", "type": "statusRegister", "name": "STATUS", "bus": "main" },
+    {
+      "id": "regsta",
+      "type": "statusRegister",
+      "name": "STATUS",
+      "bus": "main",
+      "layout": { "x": 870, "y": 40 }
+    },
     {
       "id": "mem",
       "type": "ram",
       "name": "BASEMEM",
       "bus": "main",
-      "parameters": { "size": 4096 }
+      "parameters": { "size": 4096 },
+      "layout": { "x": 870, "y": 278 }
     },
     {
       "id": "mmu",
       "type": "mmu",
       "name": "MMU",
       "bus": "main",
-      "parameters": { "banks": 16, "bankSize": 4096 }
+      "parameters": { "banks": 16, "bankSize": 4096 },
+      "layout": { "x": 660, "y": 40 }
     },
-    { "id": "clk", "type": "clock", "name": "Clock" },
+    {
+      "id": "clk",
+      "type": "clock",
+      "name": "Clock",
+      "layout": { "x": 1500, "y": 40 }
+    },
     {
       "id": "lcd",
       "type": "display",
       "name": "LCD",
       "bus": "main",
-      "parameters": { "columns": 32, "rows": 4 }
+      "parameters": { "columns": 32, "rows": 4 },
+      "layout": { "x": 1080, "y": 278 }
     },
-    { "id": "fb", "type": "framebuffer", "name": "SCREEN", "bus": "main" },
-    { "id": "keys", "type": "keypad", "name": "KEYPAD", "bus": "main" }
+    {
+      "id": "fb",
+      "type": "framebuffer",
+      "name": "SCREEN",
+      "bus": "main",
+      "layout": { "x": 1290, "y": 278 }
+    },
+    {
+      "id": "keys",
+      "type": "keypad",
+      "name": "KEYPAD",
+      "bus": "main",
+      "layout": { "x": 1080, "y": 40 }
+    }
   ],
   "decoder": {
     "status": "regsta",
@@ -56,7 +123,7 @@
       "name": "BYOC-16 microcode",
       "fetch": {
         "mnemonic": "FTC",
-        "description": "Fetch: load the opcode at PC in base memory into the instruction register, which starts that instruction's micro steps; PC is not stepped here, each instruction steps it itself",
+        "description": "Fetch: load the opcode at PC in base memory into the instruction register, which starts that instruction\u0027s micro steps; PC is not stepped here, each instruction steps it itself",
         "steps": [
           {
             "signals": ["pc.output", "mem.loadmar"]
@@ -99,7 +166,7 @@
         },
         {
           "mnemonic": "SUB",
-          "description": "A = A - B. Sets Z, N, C (borrow: A < B unsigned) and V (signed overflow)",
+          "description": "A = A - B. Sets Z, N, C (borrow: A \u003C B unsigned) and V (signed overflow)",
           "operands": 0,
           "steps": [
             {
@@ -356,7 +423,7 @@
         },
         {
           "mnemonic": "CMP",
-          "description": "Sets the flags for A - B without changing A: Z if equal, C if A < B unsigned, N and V as for SUB",
+          "description": "Sets the flags for A - B without changing A: Z if equal, C if A \u003C B unsigned, N and V as for SUB",
           "operands": 0,
           "steps": [
             {
@@ -439,7 +506,7 @@
         },
         {
           "mnemonic": "JC",
-          "description": "Jump to the address after the opcode if C is set (A < B unsigned after CMP, or a carry after ADD); otherwise go on with the next instruction. Flags unchanged",
+          "description": "Jump to the address after the opcode if C is set (A \u003C B unsigned after CMP, or a carry after ADD); otherwise go on with the next instruction. Flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -790,7 +857,8 @@
           ]
         }
       ]
-    }
+    },
+    "layout": { "x": 1710, "y": 40 }
   },
   "halt": "clk",
   "programMemory": "mem"

@@ -3,7 +3,7 @@
   "buses": [
     {
       "id": "move",
-      "layout": { "x": 0, "y": 190 }
+      "layout": { "x": 0, "y": 222 }
     }
   ],
   "devices": [
@@ -12,14 +12,14 @@
       "type": "register",
       "name": "PC",
       "bus": "move",
-      "layout": { "x": 30, "y": 50 }
+      "layout": { "x": 30, "y": 40 }
     },
     {
       "id": "ir",
       "type": "instructionRegister",
       "name": "IR",
       "bus": "move",
-      "layout": { "x": 216, "y": 50 }
+      "layout": { "x": 1500, "y": 278 }
     },
     {
       "id": "mem",
@@ -27,76 +27,76 @@
       "name": "MEMORY",
       "bus": "move",
       "parameters": { "size": 4096 },
-      "layout": { "x": 402, "y": 50 }
+      "layout": { "x": 240, "y": 40 }
     },
     {
       "id": "mar",
       "type": "register",
       "name": "MAR PORT",
       "bus": "move",
-      "layout": { "x": 588, "y": 50 }
+      "layout": { "x": 30, "y": 278 }
     },
     {
       "id": "t",
       "type": "register",
       "name": "TEMP",
       "bus": "move",
-      "layout": { "x": 774, "y": 50 }
+      "layout": { "x": 450, "y": 40 }
     },
     {
       "id": "flags",
       "type": "statusRegister",
       "name": "FLAGS",
       "bus": "move",
-      "layout": { "x": 960, "y": 50 }
+      "layout": { "x": 1080, "y": 278 }
     },
     {
       "id": "clk",
       "type": "clock",
       "name": "HALT PORT",
-      "layout": { "x": 1146, "y": 50 }
+      "layout": { "x": 1710, "y": 40 }
     },
     {
       "id": "r0",
       "type": "register",
       "name": "R0",
       "bus": "move",
-      "layout": { "x": 30, "y": 250 }
+      "layout": { "x": 240, "y": 278 }
     },
     {
       "id": "r1",
       "type": "register",
       "name": "R1",
       "bus": "move",
-      "layout": { "x": 216, "y": 250 }
+      "layout": { "x": 660, "y": 40 }
     },
     {
       "id": "r2",
       "type": "register",
       "name": "R2",
       "bus": "move",
-      "layout": { "x": 402, "y": 250 }
+      "layout": { "x": 450, "y": 278 }
     },
     {
       "id": "r3",
       "type": "register",
       "name": "R3 LINK",
       "bus": "move",
-      "layout": { "x": 588, "y": 250 }
+      "layout": { "x": 870, "y": 40 }
     },
     {
       "id": "opa",
       "type": "register",
       "name": "A PORT",
       "bus": "move",
-      "layout": { "x": 774, "y": 250 }
+      "layout": { "x": 660, "y": 278 }
     },
     {
       "id": "opb",
       "type": "register",
       "name": "TRIGGER LATCH",
       "bus": "move",
-      "layout": { "x": 960, "y": 250 }
+      "layout": { "x": 1080, "y": 40 }
     },
     {
       "id": "alu",
@@ -104,14 +104,14 @@
       "name": "FUNCTION UNIT",
       "bus": "move",
       "connections": { "a": "opa", "b": "opb", "status": "flags" },
-      "layout": { "x": 1146, "y": 230 }
+      "layout": { "x": 870, "y": 278 }
     },
     {
       "id": "res",
       "type": "register",
       "name": "RES PORT",
       "bus": "move",
-      "layout": { "x": 1332, "y": 250 }
+      "layout": { "x": 1290, "y": 40 }
     },
     {
       "id": "lcd",
@@ -119,21 +119,21 @@
       "name": "LCD PORT",
       "bus": "move",
       "parameters": { "columns": 32, "rows": 4 },
-      "layout": { "x": 30, "y": 400 }
+      "layout": { "x": 1290, "y": 278 }
     },
     {
       "id": "fb",
       "type": "framebuffer",
       "name": "SCREEN PORTS",
       "bus": "move",
-      "layout": { "x": 216, "y": 400 }
+      "layout": { "x": 1500, "y": 40 }
     },
     {
       "id": "keys",
       "type": "keypad",
       "name": "KEYS PORT",
       "bus": "move",
-      "layout": { "x": 402, "y": 400 }
+      "layout": { "x": 1710, "y": 278 }
     }
   ],
   "decoder": {
@@ -330,7 +330,7 @@
         },
         {
           "mnemonic": "IMM_TO_ADD",
-          "description": "RES = A + the value after the opcode; sets Z, N, C (carry out) and V (signed overflow)",
+          "description": "RES = A \u002B the value after the opcode; sets Z, N, C (carry out) and V (signed overflow)",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -712,7 +712,7 @@
         },
         {
           "mnemonic": "R0_TO_ADD",
-          "description": "RES = A + R0; sets Z, N, C (carry out) and V (signed overflow)",
+          "description": "RES = A \u002B R0; sets Z, N, C (carry out) and V (signed overflow)",
           "operands": 0,
           "steps": [
             {
@@ -1038,7 +1038,7 @@
         },
         {
           "mnemonic": "R1_TO_ADD",
-          "description": "RES = A + R1; sets Z, N, C (carry out) and V (signed overflow)",
+          "description": "RES = A \u002B R1; sets Z, N, C (carry out) and V (signed overflow)",
           "operands": 0,
           "steps": [
             {
@@ -1364,7 +1364,7 @@
         },
         {
           "mnemonic": "R2_TO_ADD",
-          "description": "RES = A + R2; sets Z, N, C (carry out) and V (signed overflow)",
+          "description": "RES = A \u002B R2; sets Z, N, C (carry out) and V (signed overflow)",
           "operands": 0,
           "steps": [
             {
@@ -1690,7 +1690,7 @@
         },
         {
           "mnemonic": "R3_TO_ADD",
-          "description": "RES = A + R3; sets Z, N, C (carry out) and V (signed overflow)",
+          "description": "RES = A \u002B R3; sets Z, N, C (carry out) and V (signed overflow)",
           "operands": 0,
           "steps": [
             {
@@ -2010,7 +2010,7 @@
         },
         {
           "mnemonic": "RES_TO_ADD",
-          "description": "RES = A + RES (the last ALU result); sets Z, N, C (carry out) and V (signed overflow)",
+          "description": "RES = A \u002B RES (the last ALU result); sets Z, N, C (carry out) and V (signed overflow)",
           "operands": 0,
           "steps": [
             {
@@ -2363,7 +2363,7 @@
         },
         {
           "mnemonic": "MEM_TO_ADD",
-          "description": "RES = A + the memory cell at the address in MAR; sets Z, N, C (carry out) and V (signed overflow)",
+          "description": "RES = A \u002B the memory cell at the address in MAR; sets Z, N, C (carry out) and V (signed overflow)",
           "operands": 0,
           "steps": [
             {
@@ -2742,7 +2742,7 @@
         },
         {
           "mnemonic": "KEYS_TO_ADD",
-          "description": "RES = A + the keypad state (1 up, 2 down, 4 left, 8 right, 16 space); sets Z, N, C (carry out) and V (signed overflow)",
+          "description": "RES = A \u002B the keypad state (1 up, 2 down, 4 left, 8 right, 16 space); sets Z, N, C (carry out) and V (signed overflow)",
           "operands": 0,
           "steps": [
             {
@@ -2951,7 +2951,8 @@
           ]
         }
       ]
-    }
+    },
+    "layout": { "x": 1920, "y": 40 }
   },
   "halt": "clk",
   "programMemory": "mem"

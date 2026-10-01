@@ -3,15 +3,15 @@
   "buses": [
     {
       "id": "ibus",
-      "layout": { "x": 0, "y": 150 }
+      "layout": { "x": 0, "y": 222 }
     },
     {
       "id": "dbus",
-      "layout": { "x": 0, "y": 400 }
+      "layout": { "x": 0, "y": 626 }
     },
     {
       "id": "iobus",
-      "layout": { "x": 0, "y": 620 }
+      "layout": { "x": 0, "y": 1000 }
     }
   ],
   "devices": [
@@ -20,14 +20,14 @@
       "type": "register",
       "name": "PC",
       "bus": "ibus",
-      "layout": { "x": 30, "y": 20 }
+      "layout": { "x": 30, "y": 40 }
     },
     {
       "id": "ir",
       "type": "instructionRegister",
       "name": "IR",
       "bus": "ibus",
-      "layout": { "x": 216, "y": 20 }
+      "layout": { "x": 240, "y": 40 }
     },
     {
       "id": "pmem",
@@ -35,41 +35,41 @@
       "name": "PROGRAM MEMORY",
       "bus": "ibus",
       "parameters": { "size": 4096 },
-      "layout": { "x": 402, "y": 20 }
+      "layout": { "x": 30, "y": 278 }
     },
     {
       "id": "clk",
       "type": "clock",
       "name": "CLOCK",
-      "layout": { "x": 960, "y": 20 }
+      "layout": { "x": 450, "y": 40 }
     },
     {
       "id": "opr",
       "type": "dualPortRegister",
       "name": "IBUS \u21C4 DBUS",
       "buses": { "a": "ibus", "b": "dbus" },
-      "layout": { "x": 30, "y": 250 }
+      "layout": { "x": 240, "y": 278 }
     },
     {
       "id": "a",
       "type": "register",
       "name": "A",
       "bus": "dbus",
-      "layout": { "x": 216, "y": 250 }
+      "layout": { "x": 30, "y": 444 }
     },
     {
       "id": "b",
       "type": "register",
       "name": "B",
       "bus": "dbus",
-      "layout": { "x": 402, "y": 250 }
+      "layout": { "x": 660, "y": 444 }
     },
     {
       "id": "t",
       "type": "register",
       "name": "ALU OPERAND",
       "bus": "dbus",
-      "layout": { "x": 588, "y": 250 }
+      "layout": { "x": 30, "y": 682 }
     },
     {
       "id": "alu",
@@ -77,21 +77,21 @@
       "name": "ALU",
       "bus": "dbus",
       "connections": { "a": "a", "b": "t", "status": "flags" },
-      "layout": { "x": 774, "y": 230 }
+      "layout": { "x": 450, "y": 444 }
     },
     {
       "id": "flags",
       "type": "statusRegister",
       "name": "FLAGS",
       "bus": "dbus",
-      "layout": { "x": 960, "y": 250 }
+      "layout": { "x": 240, "y": 682 }
     },
     {
       "id": "io",
       "type": "dualPortRegister",
       "name": "DBUS \u21C4 IOBUS",
       "buses": { "a": "dbus", "b": "iobus" },
-      "layout": { "x": 30, "y": 450 }
+      "layout": { "x": 450, "y": 682 }
     },
     {
       "id": "dmem",
@@ -99,14 +99,14 @@
       "name": "DATA MEMORY",
       "bus": "dbus",
       "parameters": { "size": 4096 },
-      "layout": { "x": 216, "y": 450 }
+      "layout": { "x": 870, "y": 444 }
     },
     {
       "id": "sp",
       "type": "register",
       "name": "SP",
       "bus": "dbus",
-      "layout": { "x": 402, "y": 450 }
+      "layout": { "x": 660, "y": 682 }
     },
     {
       "id": "lcd",
@@ -114,21 +114,21 @@
       "name": "LCD",
       "bus": "iobus",
       "parameters": { "columns": 32, "rows": 4 },
-      "layout": { "x": 216, "y": 660 }
+      "layout": { "x": 30, "y": 848 }
     },
     {
       "id": "fb",
       "type": "framebuffer",
       "name": "SCREEN",
       "bus": "iobus",
-      "layout": { "x": 402, "y": 660 }
+      "layout": { "x": 30, "y": 1056 }
     },
     {
       "id": "keys",
       "type": "keypad",
       "name": "KEYPAD",
       "bus": "iobus",
-      "layout": { "x": 588, "y": 660 }
+      "layout": { "x": 240, "y": 848 }
     }
   ],
   "decoder": {
@@ -910,7 +910,8 @@
           ]
         }
       ]
-    }
+    },
+    "layout": { "x": 660, "y": 40 }
   },
   "halt": "clk",
   "programMemory": "pmem"

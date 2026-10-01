@@ -67,8 +67,18 @@ namespace Exuarch.Core
             return (x, bottom ? device.Layout.Y + height : device.Layout.Y, bottom);
         }
 
-        // A connection curves from its socket on the right edge to the side of the target that faces it.
+        // While a card is being dragged the wires are drawn as quick curves, and routed around the cards again once it
+        // is dropped.
+        public bool Draft { get; set; }
+
+        // A connection runs from its socket on the right edge, around the cards in its way, into the target.
         public string ConnectionPath(DeviceDefinition from, int index, DeviceDefinition to)
+        {
+            if (!Draft && Routes().TryGetValue(("device", from.Id, index), out var routed)) return routed;
+            return ConnectionCurve(from, index, to);
+        }
+
+        private string ConnectionCurve(DeviceDefinition from, int index, DeviceDefinition to)
         {
             var sx = from.Layout.X + CardWidth;
             var sy = from.Layout.Y + SocketRowY(index);
@@ -82,6 +92,12 @@ namespace Exuarch.Core
         // out of the socket, up above both cards, across, and down onto the target's top edge. Each socket gets its own
         // lane so the wires do not lie on top of each other.
         public string DecoderPath(int index, DeviceDefinition to)
+        {
+            if (!Draft && Routes().TryGetValue(("decoder", "decoder", index), out var routed)) return routed;
+            return DecoderTrace(index, to);
+        }
+
+        private string DecoderTrace(int index, DeviceDefinition to)
         {
             var layout = definition.Decoder.Layout;
             var sx = layout.X + CardWidth;
@@ -98,6 +114,95 @@ namespace Exuarch.Core
             var bend = Math.Max(50, Math.Abs(tx - sx) / 2);
             var c2 = targetRight ? tx + bend : tx - bend;
             return FormattableString.Invariant($"M {sx:0.#} {sy:0.#} C {sx + bend:0.#} {sy:0.#}, {c2:0.#} {ty:0.#}, {tx:0.#} {ty:0.#}");
+        }
+
+        // Every wire, routed once for each arrangement of the cards and kept until something moves.
+        private string routedFor;
+        private Dictionary<(string Kind, string Id, int Index), string> routes = new Dictionary<(string, string, int), string>();
+        private Dictionary<(string Kind, string Id, int Index), IReadOnlyList<(double X, double Y)>> routePoints = new Dictionary<(string, string, int), IReadOnlyList<(double, double)>>();
+
+        // The corners of a routed wire: kind "device" with the device's id and its connection's index, or "decoder"
+        // with the socket's index. Null when the wire could not be routed and is drawn as a curve.
+        public IReadOnlyList<(double X, double Y)> RoutePoints(string kind, string id, int index)
+        {
+            Routes();
+            return routePoints.TryGetValue((kind, kind == "decoder" ? "decoder" : id, index), out var points) ? points : null;
+        }
+
+        private Dictionary<(string Kind, string Id, int Index), string> Routes()
+        {
+            var key = GeometryKey();
+            if (key == routedFor) return routes;
+            routedFor = key;
+            routes = new Dictionary<(string, string, int), string>();
+            routePoints = new Dictionary<(string, string, int), IReadOnlyList<(double, double)>>();
+            var cards = Cards().ToList();
+            var rects = cards.Select(c => new WireRouter.Rect(c.X, c.Y, c.Width, c.Height)).ToList();
+            var indexOf = cards.Select((c, i) => (c.Id, i)).ToDictionary(c => c.Id, c => c.i);
+            var wires = new List<((string, string, int) Key, WireRouter.Wire Wire)>();
+            foreach (var device in definition.Devices.Where(d => d.Layout != null))
+            {
+                var connections = Info(device).Connections;
+                for (int i = 0; i < connections.Count; i++)
+                {
+                    if (!device.Connections.TryGetValue(connections[i].Name, out var targetId) || !indexOf.TryGetValue(targetId, out var target)) continue;
+                    wires.Add((("device", device.Id, i), new WireRouter.Wire { StartX = device.Layout.X + CardWidth, StartY = device.Layout.Y + SocketRowY(i), Target = target }));
+                }
+            }
+            if (definition.Decoder?.Layout != null)
+            {
+                for (int i = 0; i < DecoderSockets.Length; i++)
+                {
+                    var targetId = DecoderTarget(DecoderSockets[i].Name);
+                    if (targetId == null || !indexOf.TryGetValue(targetId, out var target)) continue;
+                    var layout = definition.Decoder.Layout;
+                    wires.Add((("decoder", "decoder", i), new WireRouter.Wire { StartX = layout.X + CardWidth, StartY = layout.Y + SocketRowY(i), Target = target }));
+                }
+            }
+            // Wires into the same card arrive side by side, in the order of where they come from.
+            foreach (var group in wires.GroupBy(w => w.Wire.Target))
+            {
+                var ordered = group.OrderBy(w => w.Wire.StartY).ThenBy(w => w.Wire.StartX).ToList();
+                for (int k = 0; k < ordered.Count; k++) ordered[k].Wire.Spread = (k - (ordered.Count - 1) / 2.0) * 14;
+            }
+            var buses = definition.Buses.Where(b => b.Layout != null).Select(b => b.Layout.Y);
+            var taps = new List<(double X, double Top, double Bottom)>();
+            foreach (var device in definition.Devices.Where(d => d.Layout != null))
+            {
+                foreach (var port in device.Ports())
+                {
+                    if (definition.FindBus(port.Value)?.Layout == null) continue;
+                    var anchor = PortAnchor(device, port.Key);
+                    var busY = BusY(port.Value);
+                    taps.Add((anchor.X, Math.Min(anchor.Y, busY), Math.Max(anchor.Y, busY)));
+                }
+            }
+            new WireRouter(rects, buses, taps).Route(wires.Select(w => w.Wire).ToList());
+            foreach (var (wireKey, wire) in wires)
+            {
+                if (wire.Points == null) continue;
+                routes[wireKey] = WireRouter.Path(wire.Points);
+                routePoints[wireKey] = wire.Points;
+            }
+            return routes;
+        }
+
+        // Everything a route depends on: where the cards are, how tall they are, and what is wired to what.
+        private string GeometryKey()
+        {
+            var key = new System.Text.StringBuilder();
+            foreach (var device in definition.Devices)
+            {
+                if (device.Layout == null) continue;
+                key.Append(device.Id).Append(':').Append(device.Layout.X).Append(',').Append(device.Layout.Y).Append(',').Append(CardHeight(device));
+                foreach (var connection in device.Connections) key.Append(';').Append(connection.Key).Append('=').Append(connection.Value);
+                key.Append('|');
+            }
+            var decoder = definition.Decoder;
+            foreach (var bus in definition.Buses) key.Append(bus.Id).Append('@').Append(bus.Layout?.Y).Append('|');
+            foreach (var device in definition.Devices) foreach (var port in device.Ports()) key.Append(device.Id).Append('.').Append(port.Key).Append('>').Append(port.Value).Append('|');
+            if (decoder?.Layout != null) key.Append("decoder:").Append(decoder.Layout.X).Append(',').Append(decoder.Layout.Y).Append(';').Append(decoder.Status).Append(';').Append(decoder.InstructionRegister).Append(';').Append(decoder.Interrupts);
+            return key.ToString();
         }
 
         // The device a socket of the decoder names.

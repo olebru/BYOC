@@ -3,11 +3,11 @@
   "buses": [
     {
       "id": "main",
-      "layout": { "x": 0, "y": 190 }
+      "layout": { "x": 0, "y": 240 }
     },
     {
       "id": "video",
-      "layout": { "x": 0, "y": 500 }
+      "layout": { "x": 0, "y": 644 }
     }
   ],
   "devices": [
@@ -16,14 +16,14 @@
       "type": "register",
       "name": "PC",
       "bus": "main",
-      "layout": { "x": 30, "y": 50 }
+      "layout": { "x": 30, "y": 40 }
     },
     {
       "id": "ir",
       "type": "instructionRegister",
       "name": "IR",
       "bus": "main",
-      "layout": { "x": 216, "y": 50 }
+      "layout": { "x": 1290, "y": 40 }
     },
     {
       "id": "mem",
@@ -31,55 +31,55 @@
       "name": "MEMORY",
       "bus": "main",
       "parameters": { "size": 4096 },
-      "layout": { "x": 402, "y": 50 }
+      "layout": { "x": 30, "y": 296 }
     },
     {
       "id": "flags",
       "type": "statusRegister",
       "name": "FLAGS",
       "bus": "main",
-      "layout": { "x": 588, "y": 50 }
+      "layout": { "x": 870, "y": 40 }
     },
     {
       "id": "sp",
       "type": "register",
       "name": "SP",
       "bus": "main",
-      "layout": { "x": 774, "y": 50 }
+      "layout": { "x": 240, "y": 296 }
     },
     {
       "id": "vec",
       "type": "register",
       "name": "VECTOR",
       "bus": "main",
-      "layout": { "x": 960, "y": 50 }
+      "layout": { "x": 240, "y": 40 }
     },
     {
       "id": "clk",
       "type": "clock",
       "name": "CLOCK",
-      "layout": { "x": 1146, "y": 50 }
+      "layout": { "x": 1500, "y": 40 }
     },
     {
       "id": "a",
       "type": "register",
       "name": "A",
       "bus": "main",
-      "layout": { "x": 30, "y": 250 }
+      "layout": { "x": 1080, "y": 296 }
     },
     {
       "id": "b",
       "type": "register",
       "name": "B",
       "bus": "main",
-      "layout": { "x": 216, "y": 250 }
+      "layout": { "x": 450, "y": 296 }
     },
     {
       "id": "t",
       "type": "register",
       "name": "ALU OPERAND",
       "bus": "main",
-      "layout": { "x": 402, "y": 250 }
+      "layout": { "x": 450, "y": 40 }
     },
     {
       "id": "alu",
@@ -87,7 +87,7 @@
       "name": "ALU",
       "bus": "main",
       "connections": { "a": "a", "b": "t", "status": "flags" },
-      "layout": { "x": 588, "y": 230 }
+      "layout": { "x": 870, "y": 296 }
     },
     {
       "id": "pic",
@@ -95,7 +95,7 @@
       "name": "INTERRUPTS",
       "bus": "main",
       "connections": { "irq0": "tick", "irq1": "keys", "irq2": "blit" },
-      "layout": { "x": 774, "y": 250 }
+      "layout": { "x": 1080, "y": 40 }
     },
     {
       "id": "tick",
@@ -103,14 +103,14 @@
       "name": "TIMER",
       "bus": "main",
       "parameters": { "period": 20000 },
-      "layout": { "x": 960, "y": 250 }
+      "layout": { "x": 1290, "y": 296 }
     },
     {
       "id": "keys",
       "type": "keypad",
       "name": "KEYPAD",
       "bus": "main",
-      "layout": { "x": 1146, "y": 250 }
+      "layout": { "x": 660, "y": 40 }
     },
     {
       "id": "lcd",
@@ -118,7 +118,7 @@
       "name": "LCD",
       "bus": "main",
       "parameters": { "columns": 32, "rows": 4 },
-      "layout": { "x": 30, "y": 380 }
+      "layout": { "x": 1500, "y": 296 }
     },
     {
       "id": "blit",
@@ -126,14 +126,14 @@
       "name": "BLITTER",
       "buses": { "host": "main", "video": "video" },
       "connections": { "screen": "fb" },
-      "layout": { "x": 402, "y": 380 }
+      "layout": { "x": 660, "y": 296 }
     },
     {
       "id": "fb",
       "type": "framebuffer",
       "name": "SCREEN",
       "bus": "video",
-      "layout": { "x": 402, "y": 560 }
+      "layout": { "x": 30, "y": 492 }
     }
   ],
   "decoder": {
@@ -368,7 +368,7 @@
         },
         {
           "mnemonic": "SUB",
-          "description": "A = A - B; sets Z, N, C if A < B unsigned (a borrow) and V on signed overflow; ALU OPERAND is overwritten with B",
+          "description": "A = A - B; sets Z, N, C if A \u003C B unsigned (a borrow) and V on signed overflow; ALU OPERAND is overwritten with B",
           "operands": 0,
           "steps": [
             {
@@ -411,7 +411,7 @@
         },
         {
           "mnemonic": "SUBI",
-          "description": "A = A - the value after the opcode; sets Z, N, C if A < value unsigned (a borrow) and V on signed overflow; ALU OPERAND is overwritten",
+          "description": "A = A - the value after the opcode; sets Z, N, C if A \u003C value unsigned (a borrow) and V on signed overflow; ALU OPERAND is overwritten",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -479,7 +479,7 @@
         },
         {
           "mnemonic": "CMPI",
-          "description": "Sets the flags for A - the value after the opcode without changing A: Z if equal, C if A < value unsigned, N and V as for SUBI; ALU OPERAND is overwritten",
+          "description": "Sets the flags for A - the value after the opcode without changing A: Z if equal, C if A \u003C value unsigned, N and V as for SUBI; ALU OPERAND is overwritten",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -550,7 +550,7 @@
         },
         {
           "mnemonic": "JCS",
-          "description": "Jumps to the address after the opcode if C is set (A < value unsigned after CMPI, or a carry out of ADD); otherwise continues with the next instruction",
+          "description": "Jumps to the address after the opcode if C is set (A \u003C value unsigned after CMPI, or a carry out of ADD); otherwise continues with the next instruction",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -570,7 +570,7 @@
         },
         {
           "mnemonic": "JCC",
-          "description": "Jumps to the address after the opcode if C is clear (A >= value unsigned after CMPI); otherwise continues with the next instruction",
+          "description": "Jumps to the address after the opcode if C is clear (A \u003E= value unsigned after CMPI); otherwise continues with the next instruction",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -974,7 +974,8 @@
           ]
         }
       ]
-    }
+    },
+    "layout": { "x": 1710, "y": 40 }
   },
   "halt": "clk",
   "programMemory": "mem"

@@ -3,7 +3,7 @@
   "buses": [
     {
       "id": "main",
-      "layout": { "x": 0, "y": 190 }
+      "layout": { "x": 0, "y": 222 }
     }
   ],
   "devices": [
@@ -12,14 +12,14 @@
       "type": "instructionRegister",
       "name": "IR",
       "bus": "main",
-      "layout": { "x": 30, "y": 50 }
+      "layout": { "x": 1080, "y": 40 }
     },
     {
       "id": "pc",
       "type": "register",
       "name": "PC",
       "bus": "main",
-      "layout": { "x": 216, "y": 50 }
+      "layout": { "x": 30, "y": 278 }
     },
     {
       "id": "rf",
@@ -27,21 +27,21 @@
       "name": "R0-R7",
       "bus": "main",
       "parameters": { "count": 8 },
-      "layout": { "x": 402, "y": 50 }
+      "layout": { "x": 30, "y": 40 }
     },
     {
       "id": "d",
       "type": "register",
       "name": "DESTINATION",
       "bus": "main",
-      "layout": { "x": 588, "y": 50 }
+      "layout": { "x": 240, "y": 278 }
     },
     {
       "id": "sp",
       "type": "register",
       "name": "SP",
       "bus": "main",
-      "layout": { "x": 774, "y": 50 }
+      "layout": { "x": 240, "y": 40 }
     },
     {
       "id": "mem",
@@ -49,21 +49,21 @@
       "name": "MEMORY",
       "bus": "main",
       "parameters": { "size": 4096 },
-      "layout": { "x": 960, "y": 50 }
+      "layout": { "x": 450, "y": 278 }
     },
     {
       "id": "x",
       "type": "register",
       "name": "ALU A",
       "bus": "main",
-      "layout": { "x": 30, "y": 250 }
+      "layout": { "x": 450, "y": 40 }
     },
     {
       "id": "y",
       "type": "register",
       "name": "ALU B",
       "bus": "main",
-      "layout": { "x": 216, "y": 250 }
+      "layout": { "x": 660, "y": 278 }
     },
     {
       "id": "alu",
@@ -71,14 +71,14 @@
       "name": "ALU",
       "bus": "main",
       "connections": { "a": "x", "b": "y", "status": "flags" },
-      "layout": { "x": 402, "y": 250 }
+      "layout": { "x": 660, "y": 40 }
     },
     {
       "id": "flags",
       "type": "statusRegister",
       "name": "FLAGS",
       "bus": "main",
-      "layout": { "x": 588, "y": 250 }
+      "layout": { "x": 870, "y": 278 }
     },
     {
       "id": "lcd",
@@ -86,13 +86,13 @@
       "name": "LCD",
       "bus": "main",
       "parameters": { "columns": 32, "rows": 4 },
-      "layout": { "x": 774, "y": 250 }
+      "layout": { "x": 870, "y": 40 }
     },
     {
       "id": "clk",
       "type": "clock",
       "name": "CLOCK",
-      "layout": { "x": 960, "y": 250 }
+      "layout": { "x": 1290, "y": 40 }
     }
   ],
   "decoder": {
@@ -829,7 +829,7 @@
         }
       ]
     },
-    "layout": { "x": 1146, "y": 50 }
+    "layout": { "x": 1500, "y": 40 }
   },
   "halt": "clk",
   "programMemory": "mem"

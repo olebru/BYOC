@@ -108,6 +108,8 @@ namespace Exuarch.Web.Components
                     layoutRegistry = Registry;
                     layout = new SchematicLayout(Definition, Registry);
                 }
+                // While something is being dragged, quick curves; the wires are routed again once it is dropped.
+                layout.Draft = drag != null && drag.Moved && (drag.Kind == DragKind.MoveDevice || drag.Kind == DragKind.MoveBus || drag.Kind == DragKind.MoveDecoder);
                 return layout;
             }
         }
@@ -232,17 +234,22 @@ namespace Exuarch.Web.Components
         {
             var info = Registry.Info(type);
             var id = Definition.NextFreeId(IdPrefix(type));
-            var position = x.HasValue ? new Position { X = Snap(x.Value), Y = Snap(y.Value) } : FreeSpot();
-            var device = new DeviceDefinition { Id = id, Type = type, Layout = position };
-            var bus = NearestBus(position.Y + SchematicLayout.CardMinHeight / 2);
-            if (bus != null && info.Ports.Count > 0) device.SetPortBus(info.Ports[0], bus.Id);
+            var device = new DeviceDefinition { Id = id, Type = type };
+            if (x.HasValue)
+            {
+                device.Layout = new Position { X = Snap(x.Value), Y = Snap(y.Value) };
+                var bus = NearestBus(device.Layout.Y + SchematicLayout.CardMinHeight / 2);
+                if (bus != null && info.Ports.Count > 0) device.SetPortBus(info.Ports[0], bus.Id);
+            }
+            else
+            {
+                // Clicked in the palette: on the first bus, in the first free spot beside it.
+                var bus = Definition.Buses.FirstOrDefault(b => b.Layout != null);
+                if (bus != null && info.Ports.Count > 0) device.SetPortBus(info.Ports[0], bus.Id);
+                device.Layout = SchematicPlacement.FreeSpot(Definition, device);
+            }
             await Mutate(() => Definition.Devices.Add(device));
             Select(id);
-        }
-        private Position FreeSpot()
-        {
-            var y = Definition.Devices.Select(d => d.Layout.Y + Layout.CardHeight(d)).DefaultIfEmpty(0).Max() + 40;
-            return new Position { X = 30, Y = Snap(y) };
         }
         private async Task AddBus()
         {

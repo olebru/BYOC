@@ -106,21 +106,46 @@ public class MachineDefinitionEditingTests
     [Fact]
     public void EnsureLayoutPlacesUnpositionedElementsAroundTheirBus()
     {
+        // Nothing placed: the whole machine is laid out, every bus below the last and every card clear of the rest.
         var d = Default();
         d.Buses.Add(new BusDefinition { Id = "io" });
         d.Devices.Add(new DeviceDefinition { Id = "out", Type = "register", Bus = "io" });
-        d.FindDevice("rega").Layout = new Position { X = 999, Y = 999 };
+        foreach (var device in d.Devices) device.Layout = null;
+        foreach (var bus in d.Buses) bus.Layout = null;
+        d.Decoder.Layout = null;
         d.EnsureLayout();
+        Assert.True(d.FindBus("io").Layout.Y > d.FindBus("main").Layout.Y);
+        var output = d.FindDevice("out").Layout;
+        Assert.True(output.Y > d.FindBus("main").Layout.Y);
+        Assert.NotNull(d.Decoder.Layout);
+        AssertNoOverlaps(d);
 
-        Assert.Equal(190, d.FindBus("main").Layout.Y);
-        Assert.Equal(510, d.FindBus("io").Layout.Y);
+        // Something placed: only what is missing gets a place, next to its bus and clear of the cards already there.
+        d.FindDevice("rega").Layout = new Position { X = 999, Y = 999 };
+        d.Devices.Add(new DeviceDefinition { Id = "late", Type = "register", Bus = "io" });
+        d.EnsureLayout();
         Assert.Equal(999, d.FindDevice("rega").Layout.X);
-        Assert.All(d.Devices.Where(x => x.Id != "rega"), x => Assert.NotNull(x.Layout));
-        Assert.Equal(370, d.FindDevice("out").Layout.Y);
-        // No card overlaps its bus: above-bus cards end before it, below-bus cards start after it.
-        Assert.All(d.Devices.Where(x => x.Bus == "main" && x.Id != "rega"), x => Assert.True(x.Layout.Y + 90 < 190 || x.Layout.Y > 190));
+        Assert.Equal(output.Y, d.FindDevice("out").Layout.Y);
+        var late = d.FindDevice("late").Layout;
+        Assert.True(System.Math.Abs(late.Y + SchematicLayout.CardMinHeight / 2 - d.FindBus("io").Layout.Y) < 200);
+        AssertNoOverlaps(d);
 
         d.EnsureLayout(force: true);
         Assert.NotEqual(999, d.FindDevice("rega").Layout.X);
+        AssertNoOverlaps(d);
+    }
+
+    private static void AssertNoOverlaps(MachineDefinition d)
+    {
+        var cards = new SchematicLayout(d, DeviceRegistry.CreateDefault()).Cards().ToList();
+        for (int i = 0; i < cards.Count; i++)
+        {
+            for (int j = i + 1; j < cards.Count; j++)
+            {
+                var (a, b) = (cards[i], cards[j]);
+                Assert.False(a.X < b.X + b.Width && b.X < a.X + a.Width && a.Y < b.Y + b.Height && b.Y < a.Y + a.Height, $"{a.Id} and {b.Id} overlap");
+            }
+            foreach (var bus in d.Buses) Assert.False(bus.Layout.Y > cards[i].Y && bus.Layout.Y < cards[i].Y + cards[i].Height, $"{cards[i].Id} lies across {bus.Id}");
+        }
     }
 }

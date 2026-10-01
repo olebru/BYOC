@@ -3,11 +3,11 @@
   "buses": [
     {
       "id": "main",
-      "layout": { "x": 0, "y": 190 }
+      "layout": { "x": 0, "y": 222 }
     },
     {
       "id": "video",
-      "layout": { "x": 0, "y": 470 }
+      "layout": { "x": 0, "y": 596 }
     }
   ],
   "devices": [
@@ -16,14 +16,14 @@
       "type": "register",
       "name": "PC",
       "bus": "main",
-      "layout": { "x": 30, "y": 50 }
+      "layout": { "x": 30, "y": 40 }
     },
     {
       "id": "ir",
       "type": "instructionRegister",
       "name": "IR",
       "bus": "main",
-      "layout": { "x": 216, "y": 50 }
+      "layout": { "x": 870, "y": 40 }
     },
     {
       "id": "mem",
@@ -31,20 +31,20 @@
       "name": "MEMORY",
       "bus": "main",
       "parameters": { "size": 4096 },
-      "layout": { "x": 402, "y": 50 }
+      "layout": { "x": 240, "y": 278 }
     },
     {
       "id": "flags",
       "type": "statusRegister",
       "name": "FLAGS",
       "bus": "main",
-      "layout": { "x": 588, "y": 50 }
+      "layout": { "x": 450, "y": 40 }
     },
     {
       "id": "clk",
       "type": "clock",
       "name": "CLOCK",
-      "layout": { "x": 960, "y": 50 }
+      "layout": { "x": 1080, "y": 40 }
     },
     {
       "id": "lcd",
@@ -52,28 +52,28 @@
       "name": "LCD",
       "bus": "main",
       "parameters": { "columns": 32, "rows": 4 },
-      "layout": { "x": 774, "y": 50 }
+      "layout": { "x": 450, "y": 278 }
     },
     {
       "id": "a",
       "type": "register",
       "name": "A",
       "bus": "main",
-      "layout": { "x": 30, "y": 250 }
+      "layout": { "x": 660, "y": 278 }
     },
     {
       "id": "b",
       "type": "register",
       "name": "B",
       "bus": "main",
-      "layout": { "x": 216, "y": 250 }
+      "layout": { "x": 660, "y": 40 }
     },
     {
       "id": "t",
       "type": "register",
       "name": "ALU OPERAND",
       "bus": "main",
-      "layout": { "x": 402, "y": 250 }
+      "layout": { "x": 870, "y": 278 }
     },
     {
       "id": "alu",
@@ -81,7 +81,7 @@
       "name": "ALU",
       "bus": "main",
       "connections": { "a": "a", "b": "t", "status": "flags" },
-      "layout": { "x": 588, "y": 230 }
+      "layout": { "x": 240, "y": 40 }
     },
     {
       "id": "blit",
@@ -89,14 +89,14 @@
       "name": "BLITTER",
       "buses": { "host": "main", "video": "video" },
       "connections": { "screen": "fb" },
-      "layout": { "x": 960, "y": 300 }
+      "layout": { "x": 30, "y": 278 }
     },
     {
       "id": "fb",
       "type": "framebuffer",
       "name": "SCREEN",
       "bus": "video",
-      "layout": { "x": 960, "y": 510 }
+      "layout": { "x": 240, "y": 444 }
     }
   ],
   "decoder": {
@@ -248,7 +248,7 @@
         },
         {
           "mnemonic": "INA",
-          "description": "A = A + 1, wrapping from 0xFFFF to 0; flags unchanged",
+          "description": "A = A \u002B 1, wrapping from 0xFFFF to 0; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -258,7 +258,7 @@
         },
         {
           "mnemonic": "INB",
-          "description": "B = B + 1, wrapping from 0xFFFF to 0; flags unchanged",
+          "description": "B = B \u002B 1, wrapping from 0xFFFF to 0; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -268,7 +268,7 @@
         },
         {
           "mnemonic": "ADD",
-          "description": "A = A + B, with B copied through ALU OPERAND; sets Z, N, C (carry out) and V (signed overflow)",
+          "description": "A = A \u002B B, with B copied through ALU OPERAND; sets Z, N, C (carry out) and V (signed overflow)",
           "operands": 0,
           "steps": [
             {
@@ -281,7 +281,7 @@
         },
         {
           "mnemonic": "SUB",
-          "description": "A = A - B, with B copied through ALU OPERAND; sets Z, N, C (borrow: A < B unsigned) and V (signed overflow)",
+          "description": "A = A - B, with B copied through ALU OPERAND; sets Z, N, C (borrow: A \u003C B unsigned) and V (signed overflow)",
           "operands": 0,
           "steps": [
             {
@@ -320,7 +320,7 @@
         },
         {
           "mnemonic": "CMP",
-          "description": "Set the flags for A - B without changing A: Z if equal, C if A < B unsigned, N and V as for SUB",
+          "description": "Set the flags for A - B without changing A: Z if equal, C if A \u003C B unsigned, N and V as for SUB",
           "operands": 0,
           "steps": [
             {
@@ -333,7 +333,7 @@
         },
         {
           "mnemonic": "ADDI",
-          "description": "A = A + the value after the opcode; sets Z, N, C (carry out) and V (signed overflow)",
+          "description": "A = A \u002B the value after the opcode; sets Z, N, C (carry out) and V (signed overflow)",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -350,7 +350,7 @@
         },
         {
           "mnemonic": "SUBI",
-          "description": "A = A - the value after the opcode; sets Z, N, C (borrow: A < value unsigned) and V (signed overflow)",
+          "description": "A = A - the value after the opcode; sets Z, N, C (borrow: A \u003C value unsigned) and V (signed overflow)",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -401,7 +401,7 @@
         },
         {
           "mnemonic": "CMPI",
-          "description": "Set the flags for A - the value after the opcode without changing A: Z if equal, C if A < value unsigned, N and V as for SUB",
+          "description": "Set the flags for A - the value after the opcode without changing A: Z if equal, C if A \u003C value unsigned, N and V as for SUB",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -472,7 +472,7 @@
         },
         {
           "mnemonic": "JCS",
-          "description": "Jump to the address after the opcode if C is set (carry out after ADD, A < B unsigned after CMP); otherwise go on with the next instruction",
+          "description": "Jump to the address after the opcode if C is set (carry out after ADD, A \u003C B unsigned after CMP); otherwise go on with the next instruction",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -492,7 +492,7 @@
         },
         {
           "mnemonic": "JCC",
-          "description": "Jump to the address after the opcode if C is clear (no carry after ADD, A >= B unsigned after CMP); otherwise go on with the next instruction",
+          "description": "Jump to the address after the opcode if C is clear (no carry after ADD, A \u003E= B unsigned after CMP); otherwise go on with the next instruction",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -532,7 +532,7 @@
         },
         {
           "mnemonic": "BX",
-          "description": "Set the blitter's left column to A, taking effect at once even mid-fill; flags unchanged",
+          "description": "Set the blitter\u0027s left column to A, taking effect at once even mid-fill; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -542,7 +542,7 @@
         },
         {
           "mnemonic": "BXI",
-          "description": "Set the blitter's left column to the value after the opcode, taking effect at once even mid-fill; flags unchanged",
+          "description": "Set the blitter\u0027s left column to the value after the opcode, taking effect at once even mid-fill; flags unchanged",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -556,7 +556,7 @@
         },
         {
           "mnemonic": "BY",
-          "description": "Set the blitter's top row to A, taking effect at once even mid-fill; flags unchanged",
+          "description": "Set the blitter\u0027s top row to A, taking effect at once even mid-fill; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -566,7 +566,7 @@
         },
         {
           "mnemonic": "BYI",
-          "description": "Set the blitter's top row to the value after the opcode, taking effect at once even mid-fill; flags unchanged",
+          "description": "Set the blitter\u0027s top row to the value after the opcode, taking effect at once even mid-fill; flags unchanged",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -580,7 +580,7 @@
         },
         {
           "mnemonic": "BW",
-          "description": "Set the blitter's rectangle width to A, taking effect at once even mid-fill; flags unchanged",
+          "description": "Set the blitter\u0027s rectangle width to A, taking effect at once even mid-fill; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -590,7 +590,7 @@
         },
         {
           "mnemonic": "BWI",
-          "description": "Set the blitter's rectangle width to the value after the opcode, taking effect at once even mid-fill; flags unchanged",
+          "description": "Set the blitter\u0027s rectangle width to the value after the opcode, taking effect at once even mid-fill; flags unchanged",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -604,7 +604,7 @@
         },
         {
           "mnemonic": "BH",
-          "description": "Set the blitter's rectangle height to A, taking effect at once even mid-fill; flags unchanged",
+          "description": "Set the blitter\u0027s rectangle height to A, taking effect at once even mid-fill; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -614,7 +614,7 @@
         },
         {
           "mnemonic": "BHI",
-          "description": "Set the blitter's rectangle height to the value after the opcode, taking effect at once even mid-fill; flags unchanged",
+          "description": "Set the blitter\u0027s rectangle height to the value after the opcode, taking effect at once even mid-fill; flags unchanged",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -628,7 +628,7 @@
         },
         {
           "mnemonic": "BC",
-          "description": "Set the blitter's fill colour (RGB565) to A, taking effect at once even mid-fill; flags unchanged",
+          "description": "Set the blitter\u0027s fill colour (RGB565) to A, taking effect at once even mid-fill; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -638,7 +638,7 @@
         },
         {
           "mnemonic": "BCI",
-          "description": "Set the blitter's fill colour (RGB565) to the value after the opcode, taking effect at once even mid-fill; flags unchanged",
+          "description": "Set the blitter\u0027s fill colour (RGB565) to the value after the opcode, taking effect at once even mid-fill; flags unchanged",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -662,7 +662,7 @@
         },
         {
           "mnemonic": "BST",
-          "description": "A = the blitter's status: 1 while it is filling, 0 when idle; flags unchanged",
+          "description": "A = the blitter\u0027s status: 1 while it is filling, 0 when idle; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -672,7 +672,7 @@
         },
         {
           "mnemonic": "CLS",
-          "description": "Clear every screen pixel to 0 (black) and move the framebuffer's cursor to 0, 0; flags unchanged",
+          "description": "Clear every screen pixel to 0 (black) and move the framebuffer\u0027s cursor to 0, 0; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -681,7 +681,8 @@
           ]
         }
       ]
-    }
+    },
+    "layout": { "x": 1290, "y": 40 }
   },
   "halt": "clk",
   "programMemory": "mem"

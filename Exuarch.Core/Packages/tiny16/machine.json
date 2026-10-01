@@ -3,7 +3,7 @@
   "buses": [
     {
       "id": "main",
-      "layout": { "x": 0, "y": 190 }
+      "layout": { "x": 0, "y": 222 }
     }
   ],
   "devices": [
@@ -12,7 +12,7 @@
       "type": "register",
       "name": "PC",
       "bus": "main",
-      "layout": { "x": 30, "y": 50 }
+      "layout": { "x": 30, "y": 40 }
     },
     {
       "id": "mem",
@@ -20,34 +20,34 @@
       "name": "MEMORY",
       "bus": "main",
       "parameters": { "size": 256 },
-      "layout": { "x": 216, "y": 50 }
+      "layout": { "x": 30, "y": 278 }
     },
     {
       "id": "ir",
       "type": "instructionRegister",
       "name": "IR",
       "bus": "main",
-      "layout": { "x": 402, "y": 50 }
+      "layout": { "x": 660, "y": 40 }
     },
     {
       "id": "clk",
       "type": "clock",
       "name": "CLOCK",
-      "layout": { "x": 774, "y": 50 }
+      "layout": { "x": 870, "y": 40 }
     },
     {
       "id": "a",
       "type": "register",
       "name": "A",
       "bus": "main",
-      "layout": { "x": 30, "y": 250 }
+      "layout": { "x": 240, "y": 278 }
     },
     {
       "id": "b",
       "type": "register",
       "name": "OPERAND",
       "bus": "main",
-      "layout": { "x": 216, "y": 250 }
+      "layout": { "x": 450, "y": 278 }
     },
     {
       "id": "alu",
@@ -55,14 +55,14 @@
       "name": "ALU",
       "bus": "main",
       "connections": { "a": "a", "b": "b", "status": "flags" },
-      "layout": { "x": 402, "y": 230 }
+      "layout": { "x": 240, "y": 40 }
     },
     {
       "id": "flags",
       "type": "statusRegister",
       "name": "FLAGS",
       "bus": "main",
-      "layout": { "x": 588, "y": 250 }
+      "layout": { "x": 660, "y": 278 }
     },
     {
       "id": "lcd",
@@ -70,7 +70,7 @@
       "name": "LCD",
       "bus": "main",
       "parameters": { "columns": 16, "rows": 2 },
-      "layout": { "x": 774, "y": 250 }
+      "layout": { "x": 450, "y": 40 }
     }
   ],
   "decoder": {
@@ -107,7 +107,7 @@
         },
         {
           "mnemonic": "ADD",
-          "description": "A = A + the number written after ADD, through OPERAND; sets Z if the answer is 0, and N, C and V",
+          "description": "A = A \u002B the number written after ADD, through OPERAND; sets Z if the answer is 0, and N, C and V",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -195,7 +195,7 @@
         }
       ]
     },
-    "layout": { "x": 588, "y": 50 }
+    "layout": { "x": 1080, "y": 40 }
   },
   "halt": "clk",
   "programMemory": "mem"
