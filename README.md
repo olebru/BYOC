@@ -7,6 +7,7 @@ Explore microarchitectures: a computer architecture playground in the browser. D
 ExµArch runs at **[www.exuarch.com](https://www.exuarch.com)**. There is nothing to install and no account: open the page and start with the getting started drawer, which leads to the tutorials, the handbook and the example machines.
 
 - It runs entirely in your browser. Machines, microcode and programs never leave it; they are saved in the browser's own storage, so they are there next time on the same browser and device.
+- Visits are counted anonymously with [Umami](https://umami.is): no cookies, nothing stored in your browser and no personal data, so there is no consent banner. It records the visitor's country, which tabs, built in machines and handbook pages are used, when a program is run or stepped, and how fast the app loads and simulates. A machine of your own is only counted as "own", never by name. Browsers that send Do Not Track are not counted.
 - To move a machine to another browser or share it, use **Export** to save it as a file and **Import** to open it.
 - After the first visit the site works offline, and it can be installed as an app from the browser's menu.
 - The site is built from `main`, so it always runs the latest merged version.

@@ -19,6 +19,7 @@ namespace Exuarch.Web.Pages
 
         [Microsoft.AspNetCore.Components.Inject] private IJSRuntime JS { get; set; }
         [Microsoft.AspNetCore.Components.Inject] private HelpService Help { get; set; }
+        [Microsoft.AspNetCore.Components.Inject] private Analytics Analytics { get; set; }
 
         private string ActiveTab = "Hardware design";
         // The getting started drawer: guides, the example packages and the note of the machine that is open.
@@ -272,6 +273,22 @@ namespace Exuarch.Web.Pages
                 focusNewProgram = false;
                 await newProgramInput.FocusAsync();
             }
+            await TrackChanges(firstRender);
+        }
+
+        // What changed since the last render, for the usage statistics: the tab, the machine, the drawer and the
+        // handbook page. Comparing after rendering catches every way of getting there, a click, a link or a key.
+        private string trackedTab, trackedMachine, trackedSection;
+        private (string Kind, string Target)? trackedPage;
+        private async Task TrackChanges(bool firstRender)
+        {
+            if (firstRender) await Analytics.Loaded();
+            if (ActiveTab != trackedTab) { trackedTab = ActiveTab; await Analytics.Tab(ActiveTab); }
+            if (PackageName != trackedMachine) { trackedMachine = PackageName; await Analytics.Machine(PackageName); }
+            var section = drawerOpen ? drawerSection : null;
+            if (section != trackedSection) { trackedSection = section; if (section != null) await Analytics.Drawer(section); }
+            var page = drawerOpen && drawerSection == "Handbook" ? drawerPage : null;
+            if (page != trackedPage) { trackedPage = page; if (page is { } shown) await Analytics.Page(shown); }
         }
         private void NewDialogKey(Microsoft.AspNetCore.Components.Web.KeyboardEventArgs e)
         {
@@ -291,6 +308,7 @@ namespace Exuarch.Web.Pages
                 _ => MachineTemplates.Minimal(unique),
             };
             LoadPackage(package);
+            _ = Analytics.NewMachine(newStart);
             if (newStart == "minimal") AddProgram("Starter program", MachineTemplates.StarterProgram);
             newDialog = false;
             ActiveTab = "Hardware design";
@@ -303,6 +321,7 @@ namespace Exuarch.Web.Pages
             Ask($"Reset {name} to the way it ships? Your changes to it will be lost; Export first to keep them.", "Reset", async () =>
             {
                 workspace.Forget(name);
+                await Analytics.Reset(name);
                 if (name == PackageName)
                 {
                     LoadPackage(BuiltInPackages.Get(name));
@@ -352,6 +371,7 @@ namespace Exuarch.Web.Pages
                 Remember();
                 LoadPackage(package);
                 MarkChanged();
+                _ = Analytics.Import();
                 return Task.CompletedTask;
             }
             if (workspace.Find(package.Name) != null || package.Name == PackageName)
@@ -387,6 +407,7 @@ namespace Exuarch.Web.Pages
             if (!string.IsNullOrWhiteSpace(Program) && !package.Programs.Any(p => p.Source == Program))
                 package.Programs.Add(new PackageProgram { Name = UniqueProgramName(package, "My program"), Source = Program });
             await JS.InvokeVoidAsync("exuarchEditor.download", $"{package.Name}.json", package.ToJson());
+            await Analytics.Export(package.Name);
         }
 
         // Any package here, as a file, without opening it.

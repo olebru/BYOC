@@ -15,6 +15,7 @@ namespace Exuarch.Web.Components
         private const int TraceRows = 120;
 
         [Inject] private IJSRuntime JS { get; set; }
+        [Inject] private Analytics Analytics { get; set; }
 
         [Parameter] public Machine Machine { get; set; }
         [Parameter] public DeviceRegistry Registry { get; set; } = DeviceRegistry.CreateDefault();
@@ -169,11 +170,13 @@ namespace Exuarch.Web.Components
         private void TickOnce()
         {
             if (running || Machine.IsHalted || runtimeError != null) return;
+            _ = Analytics.Step(MachineName, "tick");
             Tick();
         }
         private void StepInstruction()
         {
             if (running || Machine.IsHalted || runtimeError != null) return;
+            _ = Analytics.Step(MachineName, "instruction");
             for (int i = 0; i < 10000; i++)
             {
                 if (!Tick() || Machine.LastTick.FetchedFromAddress != null) break;
@@ -182,6 +185,7 @@ namespace Exuarch.Web.Components
         private void RunToHalt()
         {
             if (running || Machine.IsHalted || runtimeError != null) return;
+            _ = Analytics.Step(MachineName, "run to halt");
             Machine.RecordHistory = false;
             try
             {
@@ -203,6 +207,9 @@ namespace Exuarch.Web.Components
             stopRequested = false;
             var machine = Machine;
             var clock = Stopwatch.StartNew();
+            long startCycles = Machine.Cycles;
+            bool startedAtMax = maxSpeed;
+            _ = Analytics.Run(MachineName, maxSpeed);
             var frame = new Stopwatch();
             double owed = 0, lastFrameAt = 0, sampleAt = 0;
             int sampleCycles = Machine.Cycles;
@@ -254,6 +261,9 @@ namespace Exuarch.Web.Components
                 running = false;
                 double elapsed = clock.Elapsed.TotalSeconds - sampleAt;
                 if (elapsed > 0.05) AddSpeedSample((Machine.Cycles - sampleCycles) / elapsed, elapsed);
+                // How fast the simulator runs flat out, for runs at max speed long enough to say.
+                double total = clock.Elapsed.TotalSeconds;
+                if (total >= 3 && startedAtMax && maxSpeed) _ = Analytics.Speed(MachineName, (Machine.Cycles - startCycles) / total);
             }
             StateHasChanged();
         }
