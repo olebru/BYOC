@@ -17,7 +17,7 @@ ExµArch runs at **[www.exuarch.com](https://www.exuarch.com)**. There is nothin
 - **Microcode:** write each instruction as steps of control lines (`device.line`), with steps that run only for certain flags.
 - **Programs:** write assembly for the instruction set you made, with completion, hover help and formatting.
 - **Run:** step tick by tick or run at full speed, with the buses, every device, memory, the decoder ROM and a trace on screen.
-- **Ten example machines**, from TINY-16 with one register and a classic accumulator CPU (BYOC-16) to a load/store machine, one with a register file, a Harvard machine, a transport triggered one, a CPU with a coprocessor, one with interrupts and a small 3D GPU, with and without a double buffered screen.
+- **Eleven example machines**, from TINY-16 with one register and a classic accumulator CPU (BYOC-16) to a load/store machine, one with a register file, a Harvard machine, a transport triggered one, a CPU with a coprocessor, one with interrupts and a small 3D GPU, with and without a double buffered screen, and one rebuilt to draw its spinning cube as fast as it can.
 - **A handbook** in the app: tutorials that build a machine step by step, concept pages and a reference page for every device type.
 - **Your work is kept in the browser.** Export saves a machine as a file and Import opens one.
 
