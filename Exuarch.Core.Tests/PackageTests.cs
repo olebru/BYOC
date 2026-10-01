@@ -24,7 +24,7 @@ public class PackageTests
     [Fact]
     public void BuiltInPackagesLoadWithTheDefaultFirst()
     {
-        Assert.Equal(new[] { "TINY-16", "BYOC-16", "COPRO-16", "FLIP-16", "GPU-16", "HARVARD-16", "IRQ-16", "MOVE-16", "RF-16", "RISC-16" }, BuiltInPackages.All.Select(p => p.Name));
+        Assert.Equal(new[] { "TINY-16", "BYOC-16", "COPRO-16", "FLIP-16", "GPU-16", "HARVARD-16", "IRQ-16", "MOVE-16", "RF-16", "RISC-16", "TURBO-16" }, BuiltInPackages.All.Select(p => p.Name));
         Assert.Same(BuiltInPackages.All[0], BuiltInPackages.Default);
         Assert.Equal("TINY-16", BuiltInPackages.Default.Name);
         foreach (var package in BuiltInPackages.All)

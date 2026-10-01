@@ -49,4 +49,5 @@ The built in machines each take a different direction. Load one from **Machines*
 - [COPRO-16](exuarch:package/COPRO-16): a CPU that hands work to a blitter on its own bus.
 - [GPU-16](exuarch:package/GPU-16): a small 3D pipeline, with shaded triangles, a depth buffer and a spinning cube.
 - [FLIP-16](exuarch:package/FLIP-16): GPU-16 with a double buffered screen, so each frame appears whole.
+- [TURBO-16](exuarch:package/TURBO-16): FLIP-16 rebuilt for speed, the same cube in under a fifth of the ticks.
 - [IRQ-16](exuarch:package/IRQ-16): interrupts from a timer, the keypad and the blitter.
