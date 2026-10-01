@@ -74,8 +74,12 @@ window.exuarchAsm = {
             monaco.languages.registerCompletionItemProvider(id, {
                 triggerCharacters: ['.', ' ', ','],
                 provideCompletionItems: async function (model, position) {
-                    const word = model.getWordUntilPosition(position);
-                    const range = { startLineNumber: position.lineNumber, endLineNumber: position.lineNumber, startColumn: word.startColumn, endColumn: word.endColumn };
+                    // The typed part of the token replaced by a suggestion. A lone '.' is not a word to Monaco (the
+                    // word pattern needs a letter after it), so it is matched here; otherwise picking .DATA after
+                    // typing '.' would give '..DATA'.
+                    const before = model.getLineContent(position.lineNumber).substring(0, position.column - 1);
+                    const typed = /\.?[A-Za-z0-9_]*$/.exec(before)[0];
+                    const range = { startLineNumber: position.lineNumber, endLineNumber: position.lineNumber, startColumn: position.column - typed.length, endColumn: position.column };
                     const items = JSON.parse(await self.service.invokeMethodAsync('Complete', model.getValue(), position.lineNumber, position.column));
                     const kinds = { 0: monaco.languages.CompletionItemKind.Function, 1: monaco.languages.CompletionItemKind.Keyword, 2: monaco.languages.CompletionItemKind.Reference };
                     return {
