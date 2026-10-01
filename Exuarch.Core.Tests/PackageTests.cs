@@ -18,13 +18,13 @@ public class PackageTests
     {
         return Run(BuiltInPackages.Get("RISC-16"), source, limit);
     }
-    private static int[] Registers(Machine c) { return Enumerable.Range(0, 4).Select(n => c.Device<Register>($"r{n}").Data).ToArray(); }
-    private static int Flags(Machine c) { return c.Device<StatusRegister>("cpsr").Data; }
+    private static int[] Registers(Machine c) { return c.Device<RegisterFile>("rf").Values.ToArray(); }
+    private static int Flags(Machine c) { return c.Device<StatusRegister>("flags").Data; }
 
     [Fact]
     public void BuiltInPackagesLoadWithTheDefaultFirst()
     {
-        Assert.Equal(new[] { "TINY-16", "BYOC-16", "COPRO-16", "FLIP-16", "GPU-16", "HARVARD-16", "IRQ-16", "MOVE-16", "RF-16", "RISC-16", "TURBO-16" }, BuiltInPackages.All.Select(p => p.Name));
+        Assert.Equal(new[] { "TINY-16", "BYOC-16", "COPRO-16", "FLIP-16", "GPU-16", "HARVARD-16", "IRQ-16", "MOVE-16", "RISC-16", "STACK-16", "TURBO-16" }, BuiltInPackages.All.Select(p => p.Name));
         Assert.Same(BuiltInPackages.All[0], BuiltInPackages.Default);
         Assert.Equal("TINY-16", BuiltInPackages.Default.Name);
         foreach (var package in BuiltInPackages.All)
@@ -40,8 +40,8 @@ public class PackageTests
     {
         var byLevel = BuiltInPackages.Levels.ToDictionary(l => l, l => BuiltInPackages.All.Where(p => BuiltInPackages.Level(p.Name) == l).Select(p => p.Name).ToList());
         Assert.Equal(BuiltInPackages.All.Count, byLevel.Values.Sum(names => names.Count));
-        Assert.Equal(new[] { "TINY-16", "BYOC-16", "RISC-16" }, byLevel["simple"]);
-        Assert.Equal(new[] { "COPRO-16", "HARVARD-16", "IRQ-16", "MOVE-16", "RF-16" }, byLevel["advanced"]);
+        Assert.Equal(new[] { "TINY-16", "BYOC-16", "STACK-16" }, byLevel["simple"]);
+        Assert.Equal(new[] { "COPRO-16", "HARVARD-16", "IRQ-16", "MOVE-16", "RISC-16" }, byLevel["advanced"]);
         Assert.Equal(new[] { "FLIP-16", "GPU-16", "TURBO-16" }, byLevel["ludicrous"]);
         Assert.Null(BuiltInPackages.Level("My machine"));
         Assert.Null(BuiltInPackages.Level(null));
@@ -143,83 +143,18 @@ public class PackageTests
         Assert.Equal(BuiltInPackages.Get("BYOC-16").Programs.Select(p => p.Name), ExampleData.Programs.Select(p => p.Name));
     }
 
-    private static Machine Rf(string source, int limit = 100000)
-    {
-        return Run(BuiltInPackages.Get("RF-16"), source, limit);
-    }
-
     [Fact]
-    public void RfPrintsWhatRiscPrints()
-    {
-        foreach (var name in new[] { "Hello, world on the LCD", "Fibonacci on the LCD" })
-        {
-            var rf = Rf(BuiltInPackages.Get("RF-16").Program(name).Source, 1_000_000);
-            var risc = Risc(BuiltInPackages.Get("RISC-16").Program(name).Source, 1_000_000);
-            Assert.Equal(risc.Device<CharacterDisplay>("lcd").Text.Replace("RISC-16", "RF-16").Trim(), rf.Device<CharacterDisplay>("lcd").Text.Trim());
-        }
-    }
-
-    [Fact]
-    public void RfInstructionsTakeAnyRegister()
-    {
-        var c = Rf(@"
-            MOVI  R7, 40
-            MOVI  R3, 2
-            ADD   R7, R3
-            MOV   R0, R7
-            ADR   R5, data
-            STR   R0, R5
-            INC   R5
-            LDR   R6, R5
-            SUBI  R6, 1
-            PUSH  R6
-            POP   R1
-            HLT
-    data:   .DATA 0, 10");
-        var data = c.Assembler.labelLUT["data"];
-        Assert.Equal(new[] { 42, 9, 0, 2, 0, data + 1, 9, 42 }, c.Device<RegisterFile>("rf").Values);
-        Assert.Equal(42, c.Device<RamModule>("mem").ValueAt(data));
-    }
-
-    [Theory]
-    [InlineData("BEQ", 5, 5, true)]
-    [InlineData("BNE", 5, 5, false)]
-    [InlineData("BCS", 3, 5, true)]
-    [InlineData("BCC", 3, 5, false)]
-    [InlineData("BMI", 3, 5, true)]
-    [InlineData("BPL", 5, 3, true)]
-    public void RfComparesAnyTwoRegisters(string branch, int a, int b, bool taken)
-    {
-        var c = Rf($@"
-            MOVI  R4, {a}
-            MOVI  R6, {b}
-            CMP   R4, R6
-            {branch} yes
-            MOVI  R2, 1
-            HLT
-    yes:    MOVI  R2, 2
-            HLT");
-        Assert.Equal(taken ? 2 : 1, c.Device<RegisterFile>("rf")[2]);
-        Assert.Equal(new[] { a, b }, new[] { c.Device<RegisterFile>("rf")[4], c.Device<RegisterFile>("rf")[6] });
-    }
-
-    [Fact]
-    public void RfAddTakesTenTicksWithFetch()
-    {
-        var c = new Machine(BuiltInPackages.Get("RF-16").Machine, "ADD R0, R2\nHLT") { RecordHistory = false };
-        int ticks = 0;
-        while (c.Device<Register>("pc").Data < 3 || c.Device<InstructionRegister>("ir").Data != 0) { c.SingleStep(); ticks++; }
-        Assert.Equal(10, ticks);
-    }
-
-    [Fact]
-    public void RiscRegistersAreExplicitRegisterDevices()
+    public void RiscRegistersAreOperandsOfARegisterFile()
     {
         var machine = BuiltInPackages.Get("RISC-16").Machine;
-        Assert.Equal(new[] { "r0", "r1", "r2", "r3" }, machine.Devices.Where(d => d.Id.StartsWith("r") && d.Id.Length == 2).Select(d => d.Id));
-        Assert.All(machine.Devices.Where(d => d.Id.StartsWith("r") && d.Id.Length == 2), d => Assert.Equal("register", d.Type));
-        Assert.Equal("r0", machine.FindDevice("alu").Connections["a"]);
-        Assert.DoesNotContain(machine.Decoder.Microcode.Instructions, i => i.OperandTypes?.Count > 1);
+        Assert.Equal("registerFile", machine.FindDevice("rf").Type);
+        Assert.Equal(8, RegisterFile.CountIn(machine));
+        // Three register operations: the destination and two sources.
+        var add = machine.Decoder.Microcode.FindInstruction("ADD");
+        Assert.Equal(new[] { OperandType.Register, OperandType.Register, OperandType.Register }, add.OperandTypes);
+        // Only loads and stores reach memory: no other instruction puts a register on the bus as an address.
+        var addressing = machine.Decoder.Microcode.Instructions.Where(i => i.Steps.Any(s => s.Signals.Contains("rf.output") && s.Signals.Contains("mem.loadmar"))).Select(i => i.Mnemonic);
+        Assert.Equal(new[] { "LDR", "STR" }, addressing);
     }
 
     [Fact]
@@ -254,174 +189,48 @@ public class PackageTests
     }
 
     [Fact]
-    public void MovesCopyBetweenRegisters()
+    public void RiscInstructionsTakeAnyRegisters()
     {
         var c = Risc(@"
-            MOVI_R1 11
-            MOV_R2_R1
-            MOV_R3_R2
-            MOV_R0_R3
-            MOVI_R1 22
-            HLT");
-        Assert.Equal(new[] { 11, 22, 11, 11 }, Registers(c));
-    }
-
-    [Fact]
-    public void AluOpsWorkOnTheAccumulator()
-    {
-        var c = Risc(@"
-            MOVI_R1 0x00F0
-            MOVI_R2 0x0F3C
-            MOV_R0_R1
-            ADD_R2
-            MOV_R3_R0
-            HLT");
-        Assert.Equal(0x102C, Registers(c)[3]);
-        Assert.Equal(0x102C, Registers(c)[0]);
-
-        foreach (var (op, expected) in new[] { ("SUB_R1", 0xE4C), ("AND_R1", 0x30), ("ORR_R1", 0xFFC), ("EOR_R1", 0xFCC) })
-        {
-            c = Risc($@"
-                MOVI_R1 0x00F0
-                MOVI_R0 0x0F3C
-                {op}
-                HLT");
-            Assert.True(expected == Registers(c)[0], $"{op}: 0x{Registers(c)[0]:X}");
-            Assert.Equal(0xF0, Registers(c)[1]);
-        }
-    }
-
-    [Fact]
-    public void ImmediatesAndShifts()
-    {
-        var c = Risc(@"
-            MOVI_R0 40
-            ADDI 3
-            SUBI 1
-            ANDI 0x2E
-            HLT");
-        Assert.Equal(42, Registers(c)[0]);
-
-        c = Risc(@"
-            MOVI_R0 0x8001
-            MOVI_R1 1
-            LSL_R1
-            HLT");
-        Assert.Equal(0x0002, Registers(c)[0]);
-        Assert.NotEqual(0, Flags(c) & StatusRegister.CarryFlag);
-
-        c = Risc(@"
-            MOVI_R0 0x8001
-            MOVI_R2 17
-            LSR_R2
-            HLT");
-        Assert.Equal(0x4000, Registers(c)[0]);
-        Assert.NotEqual(0, Flags(c) & StatusRegister.CarryFlag);
-
-        c = Risc(@"
-            MOVI_R0 0x00FF
-            MOVI_R3 8
-            LSL_R3
-            HLT");
-        Assert.Equal(0xFF00, Registers(c)[0]);
-        Assert.Equal(StatusRegister.NegativeFlag, Flags(c));
-    }
-
-    [Fact]
-    public void LogicOpsSetZeroAndNegative()
-    {
-        var c = Risc(@"
-            MOVI_R0 0x0F0F
-            MOVI_R1 0xF0F0
-            AND_R1
-            HLT");
-        Assert.Equal(StatusRegister.ZeroFlag, Flags(c));
-        c = Risc(@"
-            MOVI_R0 0x0F0F
-            MOVI_R1 0xF0F0
-            EOR_R1
-            HLT");
-        Assert.Equal(0xFFFF, Registers(c)[0]);
-        Assert.Equal(StatusRegister.NegativeFlag, Flags(c));
-    }
-
-    [Fact]
-    public void CompareSetsFlagsWithoutChangingRegisters()
-    {
-        var c = Risc(@"
-            MOVI_R0 5
-            CMPI 5
-            HLT");
-        Assert.Equal(StatusRegister.ZeroFlag, Flags(c));
-        Assert.Equal(5, Registers(c)[0]);
-        c = Risc(@"
-            MOVI_R0 3
-            MOVI_R2 5
-            CMP_R2
-            HLT");
-        Assert.Equal(StatusRegister.NegativeFlag | StatusRegister.CarryFlag, Flags(c) & (StatusRegister.NegativeFlag | StatusRegister.CarryFlag));
-        Assert.Equal(new[] { 3, 0, 5 }, Registers(c).Take(3));
-    }
-
-    [Fact]
-    public void IncAndDecLeaveTheFlagsAlone()
-    {
-        var c = Risc(@"
-            MOVI_R0 1
-            CMPI 1
-            MOVI_R2 0
-            DEC_R2
-            INC_R3
-            INC_R3
-            HLT");
-        Assert.Equal(new[] { 1, 0, 0xFFFF, 2 }, Registers(c));
-        Assert.Equal(StatusRegister.ZeroFlag, Flags(c));
-    }
-
-    [Fact]
-    public void LoadAndStoreGoThroughAnAddressRegister()
-    {
-        var c = Risc(@"
-            ADR_R1 data
-            LDR_R1
-            ADDI 1
-            INC_R1
-            STR_R1
+            MOVI  R7, 40
+            MOVI  R3, 2
+            ADD   R5, R7, R3
+            MOV   R0, R5
+            ADR   R4, data
+            STR   R0, R4
+            ADDI  R4, R4, 1
+            LDR   R6, R4
+            SUBI  R6, R6, 1
             HLT
-    data:   .DATA 41, 0");
-        Assert.Equal(42, Registers(c)[0]);
+    data:   .DATA 0, 10");
         var data = c.Assembler.labelLUT["data"];
-        Assert.Equal(42, c.Device<RamModule>("mem").ValueAt(data + 1));
+        Assert.Equal(new[] { 42, 0, 0, 2, data + 1, 42, 9, 40 }, Registers(c));
+        Assert.Equal(42, c.Device<RamModule>("mem").ValueAt(data));
     }
 
     [Fact]
-    public void PushAndPopUseAFullDescendingStack()
+    public void RiscThreeRegisterOperationsLeaveTheirSourcesAlone()
     {
-        var c = Risc(@"
-            MOVI_R1 11
-            MOVI_R2 22
-            PUSH_R1
-            PUSH_R2
-            POP_R3
-            POP_R0
+        foreach (var (op, expected) in new[] { ("ADD", 0x102C), ("SUB", 0xE4C), ("AND", 0x30), ("ORR", 0xFFC), ("EOR", 0xFCC) })
+        {
+            var c = Risc($@"
+                MOVI R1, 0x0F3C
+                MOVI R2, 0x00F0
+                {op} R3, R1, R2
+                HLT");
+            Assert.True(expected == Registers(c)[3], $"{op}: 0x{Registers(c)[3]:X}");
+            Assert.Equal((0x0F3C, 0xF0), (Registers(c)[1], Registers(c)[2]));
+        }
+        var shifts = Risc(@"
+            MOVI R1, 0x8001
+            MOVI R2, 1
+            LSL  R3, R1, R2
+            LSRI R4, R1, 1
+            LSLI R5, R1, 4
             HLT");
-        Assert.Equal(new[] { 11, 11, 22, 22 }, Registers(c));
-        Assert.Equal(0, c.Device<Register>("sp").Data);
-        Assert.Equal(11, c.Device<RamModule>("mem").ValueAt(4095));
-        Assert.Equal(22, c.Device<RamModule>("mem").ValueAt(4094));
-    }
-
-    [Fact]
-    public void BranchWithLinkReturnsToTheNextInstruction()
-    {
-        var c = Risc(@"
-            BL      sub
-            MOVI_R2 2
-            HLT
-    sub:    MOVI_R1 1
-            RET");
-        Assert.Equal(new[] { 0, 1, 2 }, Registers(c).Take(3));
-        Assert.Equal(2, c.Device<Register>("lr").Data);
+        Assert.Equal((0x0002, 0x4000, 0x0010), (Registers(shifts)[3], Registers(shifts)[4], Registers(shifts)[5]));
+        Assert.Equal(0, Flags(shifts) & StatusRegister.CarryFlag);
+        Assert.NotEqual(0, Flags(Risc("MOVI R1, 0x8001\nLSLI R0, R1, 1\nHLT")) & StatusRegister.CarryFlag);
     }
 
     [Theory]
@@ -437,17 +246,63 @@ public class PackageTests
     [InlineData("BMI", 5, 5, false)]
     [InlineData("BPL", 5, 5, true)]
     [InlineData("BPL", 3, 5, false)]
-    public void ConditionalBranchesFollowTheFlags(string branch, int a, int b, bool taken)
+    public void RiscBranchesFollowTheFlags(string branch, int a, int b, bool taken)
     {
-        var c = Risc($@"
-            MOVI_R0 {a}
-            CMPI {b}
-            {branch} yes
-            MOVI_R3 1
+        foreach (var compare in new[] { $"CMP R4, R5", $"CMPI R4, {b}" })
+        {
+            var c = Risc($@"
+                MOVI  R4, {a}
+                MOVI  R5, {b}
+                {compare}
+                {branch} yes
+                MOVI  R2, 1
+                HLT
+        yes:    MOVI  R2, 2
+                HLT");
+            Assert.Equal(taken ? 2 : 1, Registers(c)[2]);
+            Assert.Equal((a, b), (Registers(c)[4], Registers(c)[5]));
+        }
+    }
+
+    // The tick counts the README gives, fetch included.
+    [Theory]
+    [InlineData("ADD R0, R1, R2", 12, "12 ticks with fetch")]
+    [InlineData("ADDI R0, R1, 5", 11, "`ADDI Rd, Rs, value` takes 11")]
+    [InlineData("MOV R0, R1", 9, "`MOV` and `LDR` take 9")]
+    [InlineData("LDR R0, R1", 9, "`MOV` and `LDR` take 9")]
+    [InlineData("MOVI R0, 3", 6, "`MOVI` takes 6")]
+    [InlineData("BL R7, next\nnext: NOP", 8, "A call costs 8 ticks")]
+    public void RiscInstructionsTakeTheTicksTheReadmeSays(string source, int expected, string readme)
+    {
+        var c = new Machine(BuiltInPackages.Get("RISC-16").Machine, source + "\nHLT") { RecordHistory = false };
+        int ticks = 0;
+        do { c.SingleStep(); ticks++; } while (c.MicroStepRegister != 0);
+        Assert.Equal(expected, ticks);
+        Assert.Contains(readme, BuiltInPackages.Get("RISC-16").Readme);
+    }
+
+    [Fact]
+    public void RiscCallsKeepTheReturnAddressInARegister()
+    {
+        // BL R7 links and BX R7 returns; a routine that calls another saves R7 on the stack R6 points at, as the README shows.
+        var c = Risc(@"
+            BL    R7, outer
+            MOVI  R2, 2
             HLT
-    yes:    MOVI_R3 2
-            HLT");
-        Assert.Equal(taken ? 2 : 1, Registers(c)[3]);
+    outer:  SUBI  R6, R6, 1
+            STR   R7, R6
+            BL    R7, inner
+            LDR   R7, R6
+            ADDI  R6, R6, 1
+            BX    R7
+    inner:  MOVI  R1, 1
+            BX    R7");
+        Assert.Equal((1, 2, 0), (Registers(c)[1], Registers(c)[2], Registers(c)[6]));
+        // The saved link is the address after BL R7, outer, which is three cells long. It went to the top of memory:
+        // 0 - 1 wraps to 65535, and the address to 4095.
+        Assert.Equal(3, c.Device<RamModule>("mem").ValueAt(4095));
+        var readme = BuiltInPackages.Get("RISC-16").Readme;
+        Assert.Contains("        SUBI   R6, R6, 1     ; make room\n        STR    R7, R6        ; save the link\n        BL     R7, inner\n        LDR    R7, R6        ; get it back\n        ADDI   R6, R6, 1\n        BX     R7", readme);
     }
 
     private static Machine Tiny(string source)

@@ -1,7 +1,7 @@
 .run {
     display: flex;
     flex-direction: column;
-    height: calc(100vh - 150px);
+    height: calc(100vh - 150px - var(--footer-height));
     min-height: 640px;
     border: 1px solid var(--line);
     border-radius: var(--radius);
@@ -669,7 +669,7 @@
 
 .lst {
     display: grid;
-    grid-template-columns: 16px calc(var(--d, 2) * 1ch + 8px) calc(var(--cw, 6) * 1ch + 6px) 64px 1fr;
+    grid-template-columns: 16px calc(var(--d, 2) * 1ch + 8px) calc(var(--lw, 6) * 1ch + 4px) minmax(0, 1fr);
     align-items: center;
     gap: 4px;
     padding: 1px 4px;
@@ -686,8 +686,14 @@
         color: var(--ink-3);
     }
 
-    .lst .addr, .lst .bytes {
+    .lst .addr {
         color: var(--ink-3);
+    }
+
+    .lst .src {
+        white-space: pre;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .lst .label {

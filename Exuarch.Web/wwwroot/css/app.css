@@ -3,6 +3,8 @@
    The light theme is below; the dark one, the default, follows it. index.html sets data-theme before the page
    paints, and the switch in the top bar changes it. */
 :root {
+    /* The footer along the bottom of the page; the full height views leave room for it. */
+    --footer-height: 22px;
     --paper: #f3f2ee;
     --paper-2: #ebe9e3;
     --surface: #ffffff;

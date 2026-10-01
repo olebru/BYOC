@@ -22,6 +22,17 @@
             @Body
         </div>
     </main>
+
+    <footer class="footbar">
+        <span class="name">ExµArch</span>
+        <span class="version" title="@(BuildInfo.IsLocal ? "Built on this machine, not by the deploy workflow" : "The build of the app you are running")">@BuildInfo.Label</span>
+        @if (BuildInfo.Commit.Length > 0)
+        {
+            <span class="commit" title="The commit it was built from">@BuildInfo.Commit</span>
+        }
+        <span class="spacer"></span>
+        <a href="https://www.exuarch.com">www.exuarch.com</a>
+    </footer>
 </div>
 
 @code

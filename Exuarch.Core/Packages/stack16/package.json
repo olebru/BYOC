@@ -1,0 +1,24 @@
+{
+  "name": "STACK-16",
+  "description": "A stack machine: no registers for the program to name. Every instruction takes its operands from the top of a data stack and leaves its result there, so ADD has no operands at all, and CALL and RET use a return stack of their own.",
+  "level": "simple",
+  "readme": "README.md",
+  "machine": "machine.json",
+  "programs": [
+    {
+      "name": "Work out an expression",
+      "description": "(9 - 4) + (1 + 2) as 9 4 - 1 2 + +, printed as one digit",
+      "file": "expression.asm"
+    },
+    {
+      "name": "Count down from 9",
+      "description": "A loop whose counter lives on the stack, copied with DUP",
+      "file": "countdown.asm"
+    },
+    {
+      "name": "The sum of 1 to 100",
+      "description": "Adds up 1 to 100 and prints 5050 with a print routine that calls itself",
+      "file": "sum.asm"
+    }
+  ]
+}

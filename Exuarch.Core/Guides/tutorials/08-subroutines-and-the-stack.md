@@ -66,5 +66,6 @@ Things to try:
 ## Next
 
 - [Reading the keypad](exuarch:guide/reading-the-keypad): let the program react to keys.
+- [A stack machine](exuarch:guide/stack-machine): a machine where every value lives on a stack, not only the return addresses.
 - [Memory and banks](exuarch:guide/memory-and-banks) covers memory addressing and the MMU's stack bank.
 - [Microcode](exuarch:guide/microcode) covers how steps share the bus.

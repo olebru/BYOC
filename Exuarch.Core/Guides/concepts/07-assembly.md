@@ -1,6 +1,6 @@
 # Assembly
 
-A program in ExµArch is written in assembly, but the language has no instructions of its own. The mnemonics are whatever the machine's microcode defines, so the same editor assembles BYOC-16's `LAI`, RISC-16's `MOV_R1_R0` and your own `OUT`. What stays the same from machine to machine is the syntax around them: labels, operands, literals, data and comments.
+A program in ExµArch is written in assembly, but the language has no instructions of its own. The mnemonics are whatever the machine's microcode defines, so the same editor assembles BYOC-16's `LAI`, RISC-16's `ADD R0, R1, R2` and your own `OUT`. What stays the same from machine to machine is the syntax around them: labels, operands, literals, data and comments.
 
 ## A line
 

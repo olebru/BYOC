@@ -1,0 +1,517 @@
+{
+  "name": "STACK-16",
+  "buses": [
+    {
+      "id": "main",
+      "layout": { "x": 0, "y": 222 }
+    }
+  ],
+  "devices": [
+    {
+      "id": "pc",
+      "type": "register",
+      "name": "PC",
+      "bus": "main",
+      "layout": { "x": 30, "y": 40 }
+    },
+    {
+      "id": "ir",
+      "type": "instructionRegister",
+      "name": "IR",
+      "bus": "main",
+      "layout": { "x": 870, "y": 278 }
+    },
+    {
+      "id": "mem",
+      "type": "ram",
+      "name": "MEMORY AND DATA STACK",
+      "bus": "main",
+      "parameters": { "size": 4096 },
+      "layout": { "x": 240, "y": 40 }
+    },
+    {
+      "id": "sp",
+      "type": "register",
+      "name": "DATA STACK POINTER",
+      "bus": "main",
+      "layout": { "x": 30, "y": 278 }
+    },
+    {
+      "id": "x",
+      "type": "register",
+      "name": "ALU A",
+      "bus": "main",
+      "layout": { "x": 660, "y": 40 }
+    },
+    {
+      "id": "y",
+      "type": "register",
+      "name": "ALU B",
+      "bus": "main",
+      "layout": { "x": 240, "y": 278 }
+    },
+    {
+      "id": "alu",
+      "type": "alu",
+      "name": "ALU",
+      "bus": "main",
+      "connections": { "a": "x", "b": "y", "status": "flags" },
+      "layout": { "x": 450, "y": 40 }
+    },
+    {
+      "id": "flags",
+      "type": "statusRegister",
+      "name": "FLAGS",
+      "bus": "main",
+      "layout": { "x": 660, "y": 278 }
+    },
+    {
+      "id": "rp",
+      "type": "register",
+      "name": "RETURN STACK POINTER",
+      "bus": "main",
+      "layout": { "x": 870, "y": 40 }
+    },
+    {
+      "id": "rmem",
+      "type": "ram",
+      "name": "RETURN STACK",
+      "bus": "main",
+      "parameters": { "size": 64 },
+      "layout": { "x": 450, "y": 278 }
+    },
+    {
+      "id": "lcd",
+      "type": "display",
+      "name": "LCD",
+      "bus": "main",
+      "parameters": { "columns": 16, "rows": 2 },
+      "layout": { "x": 1080, "y": 40 }
+    },
+    {
+      "id": "clk",
+      "type": "clock",
+      "name": "CLOCK",
+      "layout": { "x": 1290, "y": 40 }
+    }
+  ],
+  "decoder": {
+    "status": "flags",
+    "instructionRegister": "ir",
+    "microcode": {
+      "name": "STACK-16 microcode",
+      "fetch": {
+        "mnemonic": "FETCH",
+        "description": "Load the opcode at the program counter into the instruction register and step past it",
+        "steps": [
+          {
+            "signals": ["pc.output", "mem.loadmar"]
+          },
+          {
+            "signals": ["mem.output", "ir.load", "pc.inc"]
+          }
+        ]
+      },
+      "instructions": [
+        {
+          "mnemonic": "NOP",
+          "description": "Do nothing",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": ["ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "HLT",
+          "description": "Halt the machine",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": ["clk.disable"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "PUSH",
+          "description": "Push the value onto the data stack",
+          "operands": 1,
+          "operandTypes": ["value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar", "sp.dec"]
+            },
+            {
+              "signals": ["mem.output", "x.load", "pc.inc"]
+            },
+            {
+              "signals": ["sp.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["x.output", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "PUSHA",
+          "description": "Push the address onto the data stack, to LOAD from or STORE to",
+          "operands": 1,
+          "operandTypes": ["address"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar", "sp.dec"]
+            },
+            {
+              "signals": ["mem.output", "x.load", "pc.inc"]
+            },
+            {
+              "signals": ["sp.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["x.output", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "POP",
+          "description": "Drop the top of the data stack",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": ["sp.inc", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "DUP",
+          "description": "Push a copy of the top of the data stack",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": ["sp.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load", "sp.dec"]
+            },
+            {
+              "signals": ["sp.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["x.output", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "SWAP",
+          "description": "Swap the top two values on the data stack",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": ["sp.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load", "sp.inc"]
+            },
+            {
+              "signals": ["sp.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["x.output", "mem.load", "sp.dec"]
+            },
+            {
+              "signals": ["sp.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["y.output", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "OVER",
+          "description": "Push a copy of the second value on the data stack",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": ["sp.inc"]
+            },
+            {
+              "signals": ["sp.output", "mem.loadmar", "sp.dec"]
+            },
+            {
+              "signals": ["mem.output", "x.load", "sp.dec"]
+            },
+            {
+              "signals": ["sp.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["x.output", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "ADD",
+          "description": "Pop two values and push their sum",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": ["sp.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load", "sp.inc"]
+            },
+            {
+              "signals": ["sp.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["alu.add", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "SUB",
+          "description": "Pop the top value and the one below it, and push the one below minus the top",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": ["sp.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load", "sp.inc"]
+            },
+            {
+              "signals": ["sp.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["alu.sub", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "AND",
+          "description": "Pop two values and push their bitwise AND",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": ["sp.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load", "sp.inc"]
+            },
+            {
+              "signals": ["sp.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["alu.and", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "OR",
+          "description": "Pop two values and push their bitwise OR",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": ["sp.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load", "sp.inc"]
+            },
+            {
+              "signals": ["sp.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["alu.orr", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "LOAD",
+          "description": "Pop an address and push the value stored there",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": ["sp.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["sp.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["x.output", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "STORE",
+          "description": "Pop an address, then a value, and store the value at the address",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": ["sp.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load", "sp.inc"]
+            },
+            {
+              "signals": ["sp.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load", "sp.inc"]
+            },
+            {
+              "signals": ["y.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["x.output", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "OUT",
+          "description": "Pop a value and print it on the LCD as a character",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": ["sp.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "lcd.load", "sp.inc", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "JMP",
+          "description": "Jump to the address",
+          "operands": 1,
+          "operandTypes": ["address"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "JZ",
+          "description": "Pop a value and jump to the address if it is 0",
+          "operands": 1,
+          "operandTypes": ["address"],
+          "steps": [
+            {
+              "signals": ["sp.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load", "y.reset", "sp.inc"]
+            },
+            {
+              "signals": ["alu.cmp"]
+            },
+            {
+              "when": { "Z": true },
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "when": { "Z": true },
+              "signals": ["mem.output", "pc.load", "ir.reset"]
+            },
+            {
+              "when": { "Z": false },
+              "signals": ["pc.inc", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "JN",
+          "description": "Pop a value and jump to the address if it is negative",
+          "operands": 1,
+          "operandTypes": ["address"],
+          "steps": [
+            {
+              "signals": ["sp.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load", "y.reset", "sp.inc"]
+            },
+            {
+              "signals": ["alu.cmp"]
+            },
+            {
+              "when": { "N": true },
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "when": { "N": true },
+              "signals": ["mem.output", "pc.load", "ir.reset"]
+            },
+            {
+              "when": { "N": false },
+              "signals": ["pc.inc", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "CALL",
+          "description": "Push the return address onto the return stack and jump to the address",
+          "operands": 1,
+          "operandTypes": ["address"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar", "rp.dec"]
+            },
+            {
+              "signals": ["mem.output", "x.load", "pc.inc"]
+            },
+            {
+              "signals": ["rp.output", "rmem.loadmar"]
+            },
+            {
+              "signals": ["pc.output", "rmem.load"]
+            },
+            {
+              "signals": ["x.output", "pc.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "RET",
+          "description": "Pop the return address off the return stack and jump back there",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": ["rp.output", "rmem.loadmar"]
+            },
+            {
+              "signals": ["rmem.output", "pc.load", "rp.inc", "ir.reset"]
+            }
+          ]
+        }
+      ]
+    },
+    "layout": { "x": 1500, "y": 40 }
+  },
+  "halt": "clk",
+  "programMemory": "mem"
+}
