@@ -195,7 +195,7 @@
                     @foreach (var port in info.Ports)
                     {
                         <label>@port</label>
-                        <select class="form-control form-control-sm" value="@(selected.GetPortBus(port) ?? "")" @onchange="e => SetPort(selected, port, (string)e.Value)">
+                        <select class="form-select form-select-sm" value="@(selected.GetPortBus(port) ?? "")" @onchange="e => SetPort(selected, port, (string)e.Value)">
                             <option value="">— not connected —</option>
                             @foreach (var bus in Definition.Buses) { <option value="@bus.Id">@bus.Id</option> }
                         </select>
@@ -207,7 +207,7 @@
                     @foreach (var connection in info.Connections)
                     {
                         <label title="@connection.Description">@connection.Name <span class="muted">@connection.Description</span></label>
-                        <select class="form-control form-control-sm" value="@(selected.Connections.GetValueOrDefault(connection.Name) ?? "")" @onchange="e => SetConnection(selected, connection.Name, (string)e.Value)">
+                        <select class="form-select form-select-sm" value="@(selected.Connections.GetValueOrDefault(connection.Name) ?? "")" @onchange="e => SetConnection(selected, connection.Name, (string)e.Value)">
                             <option value="">— not connected —</option>
                             @foreach (var other in Definition.Devices.Where(d => d != selected)) { <option value="@other.Id">@other.Id (@other.Type)</option> }
                         </select>
@@ -261,17 +261,17 @@
                 <div class="inspector-description">Runs the microcode. Every tick it looks up the next step in its ROM, from the instruction register's step and the status flags, and turns on that step's control lines. It is not on a bus: its control lines reach every device directly.</div>
 
                 <label>Status register <span class="muted">its flags pick the variant of a step</span><HelpLink Target="flags-and-conditions" Title="Flags and conditions" /></label>
-                <select class="form-control form-control-sm" value="@(decoder.Status ?? "")" @onchange="e => SetDecoder(d => d.Status = Blank((string)e.Value))">
+                <select class="form-select form-select-sm" value="@(decoder.Status ?? "")" @onchange="e => SetDecoder(d => d.Status = Blank((string)e.Value))">
                     <option value="">— none —</option>
                     @foreach (var device in Definition.Devices) { <option value="@device.Id">@device.Id (@device.Type)</option> }
                 </select>
                 <label>Instruction register <span class="muted">micro step counter for the ROM</span></label>
-                <select class="form-control form-control-sm" value="@(decoder.InstructionRegister ?? "")" @onchange="e => SetDecoder(d => d.InstructionRegister = Blank((string)e.Value))">
+                <select class="form-select form-select-sm" value="@(decoder.InstructionRegister ?? "")" @onchange="e => SetDecoder(d => d.InstructionRegister = Blank((string)e.Value))">
                     <option value="">— none —</option>
                     @foreach (var device in Definition.Devices.Where(d => d.Type == "instructionRegister" || d.Id == decoder.InstructionRegister)) { <option value="@device.Id">@device.Id (@device.Type)</option> }
                 </select>
                 <label>Interrupts <span class="muted">controller for the I condition, optional</span><HelpLink Target="interrupts" Title="Interrupts" /></label>
-                <select class="form-control form-control-sm" value="@(decoder.Interrupts ?? "")" @onchange="e => SetDecoder(d => d.Interrupts = Blank((string)e.Value))">
+                <select class="form-select form-select-sm" value="@(decoder.Interrupts ?? "")" @onchange="e => SetDecoder(d => d.Interrupts = Blank((string)e.Value))">
                     <option value="">— none —</option>
                     @foreach (var device in Definition.Devices.Where(d => d.Type == "interruptController" || d.Id == decoder.Interrupts)) { <option value="@device.Id">@device.Id (@device.Type)</option> }
                 </select>
@@ -326,12 +326,12 @@
 
                 <div class="section">Program</div>
                 <label>Program memory<HelpLink Target="memory-and-banks" Title="Memory and banks" /></label>
-                <select class="form-control form-control-sm" value="@(Definition.ProgramMemory ?? "")" @onchange="e => Mutate(() => Definition.ProgramMemory = Blank((string)e.Value))">
+                <select class="form-select form-select-sm" value="@(Definition.ProgramMemory ?? "")" @onchange="e => Mutate(() => Definition.ProgramMemory = Blank((string)e.Value))">
                     <option value="">— none —</option>
                     @foreach (var device in Definition.Devices.Where(d => d.Type == "ram")) { <option value="@device.Id">@device.Id</option> }
                 </select>
                 <label>Halt clock</label>
-                <select class="form-control form-control-sm" value="@(Definition.Halt ?? "")" @onchange="e => Mutate(() => Definition.Halt = Blank((string)e.Value))">
+                <select class="form-select form-select-sm" value="@(Definition.Halt ?? "")" @onchange="e => Mutate(() => Definition.Halt = Blank((string)e.Value))">
                     <option value="">— none —</option>
                     @foreach (var device in Definition.Devices.Where(d => d.Type == "clock")) { <option value="@device.Id">@device.Id</option> }
                 </select>

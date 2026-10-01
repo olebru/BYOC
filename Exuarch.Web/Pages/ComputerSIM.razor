@@ -3,11 +3,11 @@
 <div class="workspace @(drawerOpen ? "drawer-open" : "")">
 @if (PackageError != null)
 {
-    <div class="alert alert-danger alert-dismissible">@PackageError <button type="button" class="close" @onclick="() => PackageError = null">&times;</button></div>
+    <div class="alert alert-danger alert-dismissible">@PackageError <button type="button" class="btn-close" aria-label="Close" @onclick="() => PackageError = null"></button></div>
 }
 @if (StorageWarning != null)
 {
-    <div class="alert alert-warning alert-dismissible">@StorageWarning <button type="button" class="close" @onclick="() => StorageWarning = null">&times;</button></div>
+    <div class="alert alert-warning alert-dismissible">@StorageWarning <button type="button" class="btn-close" aria-label="Close" @onclick="() => StorageWarning = null"></button></div>
 }
 @if (pendingConfirm is { } question)
 {
@@ -25,10 +25,10 @@
             <li class="nav-item">
                 <a class="nav-link @(ActiveTab == tab ? "active" : "")" href="" @onclick="() => ActiveTab = tab" @onclick:preventDefault>
                     <span class="tab-index">@((index + 1).ToString("00"))</span>@tab
-                    @if (tab == "Hardware design" && DefinitionErrors.Count > 0) { <span class="badge badge-danger ml-1">@DefinitionErrors.Count</span> }
-                    @if (tab == "Microcode" && MicrocodeErrorCount > 0) { <span class="badge badge-danger ml-1">@MicrocodeErrorCount</span> }
-                    @if (tab == "Microcode" && MicrocodeErrorCount == 0 && MicrocodeWarningCount > 0) { <span class="badge badge-warning ml-1">@MicrocodeWarningCount</span> }
-                    @if (tab == "Program" && ProgramErrors.Count > 0) { <span class="badge badge-danger ml-1">@ProgramErrors.Count</span> }
+                    @if (tab == "Hardware design" && DefinitionErrors.Count > 0) { <span class="badge badge-danger ms-1">@DefinitionErrors.Count</span> }
+                    @if (tab == "Microcode" && MicrocodeErrorCount > 0) { <span class="badge badge-danger ms-1">@MicrocodeErrorCount</span> }
+                    @if (tab == "Microcode" && MicrocodeErrorCount == 0 && MicrocodeWarningCount > 0) { <span class="badge badge-warning ms-1">@MicrocodeWarningCount</span> }
+                    @if (tab == "Program" && ProgramErrors.Count > 0) { <span class="badge badge-danger ms-1">@ProgramErrors.Count</span> }
                 </a>
             </li>
         }
@@ -36,7 +36,7 @@
     <div class="workspace-actions">
         <button class="btn btn-sm getting-started @(drawerOpen ? "on" : "")" @onclick="@(() => ToggleDrawer("Handbook"))" title="The handbook, the example machines and this machine's note">Getting started</button>
         <span class="package-label silk">Package</span>
-        <button class="package-name" title="@Package.Description" @onclick="@(() => ToggleDrawer("Machines"))">@PackageName@(IsBuiltIn ? (IsEdited ? " · edited" : "") : " · yours")@if (ParseErrors.Count > 0) { <span class="badge badge-danger ml-1" title="The machine's JSON has errors: open This machine, JSON">@ParseErrors.Count</span> }</button>
+        <button class="package-name" title="@Package.Description" @onclick="@(() => ToggleDrawer("Machines"))">@PackageName@(IsBuiltIn ? (IsEdited ? " · edited" : "") : " · yours")@if (ParseErrors.Count > 0) { <span class="badge badge-danger ms-1" title="The machine's JSON has errors: open This machine, JSON">@ParseErrors.Count</span> }</button>
         <button class="btn btn-sm btn-outline-secondary" @onclick="OpenNewDialog" title="Start a new machine of your own">New…</button>
         @if (IsBuiltIn)
         {
@@ -85,7 +85,7 @@ else if (ActiveTab == "Microcode")
     {
         <div class="alert alert-warning">
             This machine has no microcode yet.
-            <button class="btn btn-sm btn-primary ml-2" @onclick="StartMicrocode">Start with an empty fetch routine</button>
+            <button class="btn btn-sm btn-primary ms-2" @onclick="StartMicrocode">Start with an empty fetch routine</button>
         </div>
     }
     else

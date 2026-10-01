@@ -34,7 +34,7 @@
 
     @if (importError != null)
     {
-        <div class="problems"><div class="problem">Import failed: @importError <button type="button" class="close" title="Dismiss" @onclick="() => importError = null">&times;</button></div></div>
+        <div class="problems"><div class="problem">Import failed: @importError <button type="button" class="btn-close" aria-label="Dismiss" title="Dismiss" @onclick="() => importError = null"></button></div></div>
     }
     @if (showProblems && Diagnostics.Count > 0)
     {
@@ -109,7 +109,7 @@
                                 {
                                     var index = t;
                                     var type = instruction.OperandTypeAt(index);
-                                    <select class="form-control form-control-sm" title="Operand @(index + 1): a value used as it is, an address to read, write or jump to, or a register of the register file"
+                                    <select class="form-select form-select-sm" title="Operand @(index + 1): a value used as it is, an address to read, write or jump to, or a register of the register file"
                                             value="@(type?.ToString() ?? "")" @onchange="e => SetOperandType(index, (string)e.Value)">
                                         <option value="">?</option>
                                         <option value="Value">value</option>
