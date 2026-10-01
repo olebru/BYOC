@@ -56,7 +56,7 @@
       "name": "BYOC-16 microcode",
       "fetch": {
         "mnemonic": "FTC",
-        "description": "Fetch: load the opcode at the program counter into the micro step register",
+        "description": "Fetch: load the opcode at PC in base memory into the instruction register, which starts that instruction's micro steps; PC is not stepped here, each instruction steps it itself",
         "steps": [
           {
             "signals": ["pc.output", "mem.loadmar"]
@@ -69,7 +69,7 @@
       "instructions": [
         {
           "mnemonic": "TAB",
-          "description": "Copy A to B",
+          "description": "B = A; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -79,7 +79,7 @@
         },
         {
           "mnemonic": "TBA",
-          "description": "Copy B to A",
+          "description": "A = B; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -89,7 +89,7 @@
         },
         {
           "mnemonic": "ADD",
-          "description": "A = A \u002B B, sets Z N C V",
+          "description": "A = A \u002B B. Sets Z, N, C (carry out) and V (signed overflow)",
           "operands": 0,
           "steps": [
             {
@@ -99,7 +99,7 @@
         },
         {
           "mnemonic": "SUB",
-          "description": "A = A - B, sets Z N C V",
+          "description": "A = A - B. Sets Z, N, C (borrow: A < B unsigned) and V (signed overflow)",
           "operands": 0,
           "steps": [
             {
@@ -109,7 +109,7 @@
         },
         {
           "mnemonic": "STA",
-          "description": "Store A in the selected memory bank at the operand address",
+          "description": "Store A in the selected MMU bank (not base memory) at the address after the opcode; flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -129,7 +129,7 @@
         },
         {
           "mnemonic": "STB",
-          "description": "Store B in the selected memory bank at the operand address",
+          "description": "Store B in the selected MMU bank (not base memory) at the address after the opcode; flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -149,7 +149,7 @@
         },
         {
           "mnemonic": "LRA",
-          "description": "Load A from base memory at the operand address",
+          "description": "Load A from the base memory cell at the address after the opcode; flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -169,7 +169,7 @@
         },
         {
           "mnemonic": "LRB",
-          "description": "Load B from base memory at the operand address",
+          "description": "Load B from the base memory cell at the address after the opcode; flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -189,7 +189,7 @@
         },
         {
           "mnemonic": "LDA",
-          "description": "Load A from the selected memory bank at the operand address",
+          "description": "Load A from the cell in the selected MMU bank at the address after the opcode; flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -209,7 +209,7 @@
         },
         {
           "mnemonic": "LDB",
-          "description": "Load B from the selected memory bank at the operand address",
+          "description": "Load B from the cell in the selected MMU bank at the address after the opcode; flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -229,7 +229,7 @@
         },
         {
           "mnemonic": "PSA",
-          "description": "Push A on the stack in bank 0",
+          "description": "Push A: SP is decremented, then A is stored at SP in MMU bank 0 (full descending stack); the selected bank is kept; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -254,7 +254,7 @@
         },
         {
           "mnemonic": "POA",
-          "description": "Pop A from the stack in bank 0",
+          "description": "Pop A: A is loaded from SP in MMU bank 0, then SP is incremented; the selected bank is kept; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -276,7 +276,7 @@
         },
         {
           "mnemonic": "PSB",
-          "description": "Push B on the stack in bank 0",
+          "description": "Push B: SP is decremented, then B is stored at SP in MMU bank 0 (full descending stack); the selected bank is kept; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -301,7 +301,7 @@
         },
         {
           "mnemonic": "POB",
-          "description": "Pop B from the stack in bank 0",
+          "description": "Pop B: B is loaded from SP in MMU bank 0, then SP is incremented; the selected bank is kept; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -323,7 +323,7 @@
         },
         {
           "mnemonic": "NOP",
-          "description": "Do nothing",
+          "description": "Do nothing and go on with the next instruction; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -333,7 +333,7 @@
         },
         {
           "mnemonic": "LNA",
-          "description": "Load A from base memory at the operand address \u002B B; the flags follow that address sum",
+          "description": "Load A from the base memory cell at the address after the opcode \u002B B. Sets Z, N, C and V from that address sum, not from the loaded value",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -356,7 +356,7 @@
         },
         {
           "mnemonic": "CMP",
-          "description": "Compare A with B, sets Z N C V",
+          "description": "Sets the flags for A - B without changing A: Z if equal, C if A < B unsigned, N and V as for SUB",
           "operands": 0,
           "steps": [
             {
@@ -366,7 +366,7 @@
         },
         {
           "mnemonic": "JMP",
-          "description": "Jump to the operand address",
+          "description": "Jump to the address after the opcode; flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -383,7 +383,7 @@
         },
         {
           "mnemonic": "JEQ",
-          "description": "Jump to the operand address if Z is set",
+          "description": "Jump to the address after the opcode if Z is set (equal after CMP); otherwise go on with the next instruction. Flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -406,7 +406,7 @@
         },
         {
           "mnemonic": "JNE",
-          "description": "Jump to the operand address if Z is clear",
+          "description": "Jump to the address after the opcode if Z is clear (not equal after CMP); otherwise go on with the next instruction. Flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -429,7 +429,7 @@
         },
         {
           "mnemonic": "RST",
-          "description": "Clear the status flags",
+          "description": "Clear all the status flags (Z, N, C and V)",
           "operands": 0,
           "steps": [
             {
@@ -439,7 +439,7 @@
         },
         {
           "mnemonic": "JC",
-          "description": "Jump to the operand address if C is set",
+          "description": "Jump to the address after the opcode if C is set (A < B unsigned after CMP, or a carry after ADD); otherwise go on with the next instruction. Flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -462,7 +462,7 @@
         },
         {
           "mnemonic": "LPA",
-          "description": "Load A from base memory at the address stored at the operand address",
+          "description": "Load A through a pointer: read the base memory cell at the address after the opcode, then load A from the base memory cell that value points at; flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -473,10 +473,10 @@
               "signals": ["pc.output", "mem.loadmar"]
             },
             {
-              "signals": ["mem.output", "regs.load"]
+              "signals": ["mem.output", "mem.loadmar"]
             },
             {
-              "signals": ["regs.output", "mem.loadmar"]
+              "signals": ["mem.output", "mem.loadmar"]
             },
             {
               "signals": ["rega.load", "mem.output", "regi.reset", "pc.inc"]
@@ -485,7 +485,7 @@
         },
         {
           "mnemonic": "LPB",
-          "description": "Load B from base memory at the address stored at the operand address",
+          "description": "Load B through a pointer: read the base memory cell at the address after the opcode, then load B from the base memory cell that value points at; flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -496,10 +496,10 @@
               "signals": ["pc.output", "mem.loadmar"]
             },
             {
-              "signals": ["mem.output", "regs.load"]
+              "signals": ["mem.output", "mem.loadmar"]
             },
             {
-              "signals": ["regs.output", "mem.loadmar"]
+              "signals": ["mem.output", "mem.loadmar"]
             },
             {
               "signals": ["regb.load", "mem.output", "regi.reset", "pc.inc"]
@@ -508,7 +508,7 @@
         },
         {
           "mnemonic": "HLT",
-          "description": "Halt the machine",
+          "description": "Stop the clock, halting the machine; PC stays on the HLT. Flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -518,7 +518,7 @@
         },
         {
           "mnemonic": "LAI",
-          "description": "Load A with the operand",
+          "description": "Load A with the value after the opcode; flags unchanged",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -535,7 +535,7 @@
         },
         {
           "mnemonic": "LBI",
-          "description": "Load B with the operand",
+          "description": "Load B with the value after the opcode; flags unchanged",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -552,7 +552,7 @@
         },
         {
           "mnemonic": "PEA",
-          "description": "Peek: load A from the top of the stack in bank 0 without popping",
+          "description": "Peek: load A from SP in MMU bank 0 (the top of the stack) without moving SP; the selected bank is kept; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -574,7 +574,7 @@
         },
         {
           "mnemonic": "PEB",
-          "description": "Peek: load B from the top of the stack in bank 0 without popping",
+          "description": "Peek: load B from SP in MMU bank 0 (the top of the stack) without moving SP; the selected bank is kept; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -596,7 +596,7 @@
         },
         {
           "mnemonic": "SWB",
-          "description": "Select the memory bank given by the operand",
+          "description": "Select the MMU bank given by the value after the opcode (taken modulo 16) for LDA, LDB, STA and STB; flags unchanged",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -613,7 +613,7 @@
         },
         {
           "mnemonic": "INA",
-          "description": "A = A \u002B 1, flags unchanged",
+          "description": "A = A \u002B 1, wrapping from FFFF to 0; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -623,7 +623,7 @@
         },
         {
           "mnemonic": "INB",
-          "description": "B = B \u002B 1, flags unchanged",
+          "description": "B = B \u002B 1, wrapping from FFFF to 0; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -633,7 +633,7 @@
         },
         {
           "mnemonic": "DCL",
-          "description": "Clear the display",
+          "description": "Blank the LCD and move its cursor to the first cell; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -643,7 +643,7 @@
         },
         {
           "mnemonic": "DWA",
-          "description": "Print A on the display",
+          "description": "Print the low 8 bits of A as a Latin-1 character at the LCD cursor and move the cursor on (0A new line, 0D start of row); flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -653,7 +653,7 @@
         },
         {
           "mnemonic": "DWB",
-          "description": "Print B on the display",
+          "description": "Print the low 8 bits of B as a Latin-1 character at the LCD cursor and move the cursor on (0A new line, 0D start of row); flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -663,7 +663,7 @@
         },
         {
           "mnemonic": "DWI",
-          "description": "Print the operand character on the display",
+          "description": "Print the low 8 bits of the value after the opcode as a Latin-1 character at the LCD cursor and move the cursor on; flags unchanged",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -680,7 +680,7 @@
         },
         {
           "mnemonic": "GCL",
-          "description": "Clear the screen and move its cursor to 0, 0",
+          "description": "Clear the screen to black and move its cursor to 0, 0; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -690,7 +690,7 @@
         },
         {
           "mnemonic": "GXI",
-          "description": "Move the screen cursor to column x (0-639)",
+          "description": "Move the screen cursor to the column given by the value after the opcode (modulo 640); flags unchanged",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -707,7 +707,7 @@
         },
         {
           "mnemonic": "GYI",
-          "description": "Move the screen cursor to row y (0-479)",
+          "description": "Move the screen cursor to the row given by the value after the opcode (modulo 480); flags unchanged",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -724,7 +724,7 @@
         },
         {
           "mnemonic": "GXA",
-          "description": "Move the screen cursor to the column in A",
+          "description": "Move the screen cursor to the column in A (modulo 640); flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -734,7 +734,7 @@
         },
         {
           "mnemonic": "GYA",
-          "description": "Move the screen cursor to the row in A",
+          "description": "Move the screen cursor to the row in A (modulo 480); flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -744,7 +744,7 @@
         },
         {
           "mnemonic": "GPI",
-          "description": "Plot the RGB565 colour at the cursor and move right",
+          "description": "Plot the RGB565 colour after the opcode at the screen cursor and move the cursor right, wrapping to the next row; flags unchanged",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -761,7 +761,7 @@
         },
         {
           "mnemonic": "GPA",
-          "description": "Plot the RGB565 colour in A at the cursor and move right",
+          "description": "Plot the RGB565 colour in A at the screen cursor and move the cursor right, wrapping to the next row; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -771,7 +771,7 @@
         },
         {
           "mnemonic": "GPB",
-          "description": "Plot the RGB565 colour in B at the cursor and move right",
+          "description": "Plot the RGB565 colour in B at the screen cursor and move the cursor right, wrapping to the next row; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -781,7 +781,7 @@
         },
         {
           "mnemonic": "LKA",
-          "description": "Load A with the keys: 1 up, 2 down, 4 left, 8 right, 16 space",
+          "description": "Load A with the keys held or pressed since the last read (1 up, 2 down, 4 left, 8 right, 16 space) and forget those presses; flags unchanged",
           "operands": 0,
           "steps": [
             {

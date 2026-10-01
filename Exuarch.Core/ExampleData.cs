@@ -5,13 +5,16 @@ namespace Exuarch.Core
 {
     public class ExampleData
     {
-        // The default package's machine definition (with its microcode) as JSON.
-        public static string MACHINE { get { return BuiltInPackages.Default.Machine.ToJson(); } }
-        // The default machine's microcode (its decoder.microcode) on its own. ROMDATA below is the older part of it
-        // in the legacy tab separated format: the first instructions, before the ones added since.
-        public static string MICROCODE { get { return BuiltInPackages.Default.Machine.Decoder.Microcode.ToJson(); } }
+        // BYOC-16, the example machine the tests build on.
+        private static MachinePackage Byoc { get { return BuiltInPackages.All.First(p => p.Name == "BYOC-16"); } }
 
-        // A small program for the default machine: pushes values and adds two values stored after the code, for ever.
+        // BYOC-16's machine definition (with its microcode) as JSON.
+        public static string MACHINE { get { return Byoc.Machine.ToJson(); } }
+        // BYOC-16's microcode (its decoder.microcode) on its own. ROMDATA below is the older part of it
+        // in the legacy tab separated format: the first instructions, before the ones added since.
+        public static string MICROCODE { get { return Byoc.Machine.Decoder.Microcode.ToJson(); } }
+
+        // A small program for BYOC-16: pushes values and adds two values stored after the code, for ever.
         public const string SRC = @"        LAI    15
         PSA
         PSA
@@ -24,14 +27,14 @@ loop:   ADD
 letter: .DATA  65
 one:    .DATA  1";
 
-        // The default package's example programs.
-        public static string HELLO { get { return BuiltInPackages.Default.Program("Hello, world on the LCD").Source; } }
-        public static string FIBONACCI { get { return BuiltInPackages.Default.Program("Fibonacci on the LCD").Source; } }
-        public static string BANDS { get { return BuiltInPackages.Default.Program("Colour bands on the screen").Source; } }
-        public static string GRADIENT { get { return BuiltInPackages.Default.Program("Colour gradient on the screen").Source; } }
+        // BYOC-16's example programs.
+        public static string HELLO { get { return Byoc.Program("Hello, world on the LCD").Source; } }
+        public static string FIBONACCI { get { return Byoc.Program("Fibonacci on the LCD").Source; } }
+        public static string BANDS { get { return Byoc.Program("Colour bands on the screen").Source; } }
+        public static string GRADIENT { get { return Byoc.Program("Colour gradient on the screen").Source; } }
         public static (string Name, string Source)[] Programs
         {
-            get { return BuiltInPackages.Default.Programs.Select(p => (p.Name, p.Source)).ToArray(); }
+            get { return Byoc.Programs.Select(p => (p.Name, p.Source)).ToArray(); }
         }
 
         public const string ROMDATA = @"p	pc	output	FTC	x	x	x	x

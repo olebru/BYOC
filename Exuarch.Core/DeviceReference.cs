@@ -24,6 +24,7 @@ namespace Exuarch.Core
             ["mmu"] = new[] { "memory-and-banks" },
             ["display"] = new[] { "first-machine" },
             ["framebuffer"] = new[] { "bus-masters", "graphics-pipeline" },
+            ["doubleFramebuffer"] = new[] { "bus-masters", "graphics-pipeline" },
             ["blitter"] = new[] { "bus-masters", "interrupts" },
             ["interruptController"] = new[] { "interrupts" },
             ["timer"] = new[] { "interrupts" },

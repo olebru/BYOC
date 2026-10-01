@@ -36,6 +36,7 @@ Beyond one bus and one CPU: [bridges](exuarch:guide/bridges) move values between
 
 The built in machines each take a different direction. Load one from **Machines** in this drawer, take it apart, and start your own from a copy with **New…**. Everything you change is kept in the browser; **Export** saves a machine as a file.
 
+- [TINY-16](exuarch:package/TINY-16): the one to start with, one register and seven instructions.
 - [BYOC-16](exuarch:package/BYOC-16): a classic accumulator machine on one bus.
 - [RISC-16](exuarch:package/RISC-16): load/store with four registers, inspired by ARM.
 - [RF-16](exuarch:package/RF-16): RISC-16 with a register file, so registers are operands: `ADD R0, R2`.
@@ -43,4 +44,5 @@ The built in machines each take a different direction. Load one from **Machines*
 - [MOVE-16](exuarch:package/MOVE-16): no instruction set, only moves between ports.
 - [COPRO-16](exuarch:package/COPRO-16): a CPU that hands work to a blitter on its own bus.
 - [GPU-16](exuarch:package/GPU-16): a small 3D pipeline, with shaded triangles, a depth buffer and a spinning cube.
+- [FLIP-16](exuarch:package/FLIP-16): GPU-16 with a double buffered screen, so each frame appears whole.
 - [IRQ-16](exuarch:package/IRQ-16): interrupts from a timer, the keypad and the blitter.

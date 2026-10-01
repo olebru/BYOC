@@ -505,4 +505,72 @@ public class GpuTests
         m.Mac.Enable("mul");
         Assert.Throws<Exception>(() => m.Mac.Enable("mac"));
     }
+
+    // The list bus has two masters and no arbiter: the cube waits for the rasterizer before writing the list, and
+    // without that wait an STL and a triangle read meet on the list bus (the GPU-16 README shows this).
+    [Fact]
+    public void CubeWithoutItsWaitShortsTheListBus()
+    {
+        var package = BuiltInPackages.Get("GPU-16");
+        var source = package.Program("A spinning cube").Source;
+        var unguarded = source.Replace("wait:      GST\n           CMPI   0\n           JNE    wait\n", "wait:      NOP\n");
+        Assert.NotEqual(source, unguarded);
+        var c = new Machine(package.Machine, unguarded) { RecordHistory = false };
+        var e = Record.Exception(() => { for (int i = 0; i < 1_000_000; i++) c.SingleStep(); });
+        Assert.NotNull(e);
+        Assert.Contains("on bus 'list'", e.Message);
+    }
+
+    // FLIP-16 is GPU-16 with a double buffered screen: the triangle is drawn out of sight and SWAP shows it, the
+    // same picture GPU-16 draws in plain sight.
+    [Fact]
+    public void FlipShowsTheTriangleOnlyAfterSwap()
+    {
+        var flip = new Machine(BuiltInPackages.Get("FLIP-16").Machine, BuiltInPackages.Get("FLIP-16").Program("A triangle drawn out of sight").Source) { RecordHistory = false };
+        var fb = flip.Device<DoubleFramebuffer>("fb");
+        while (!flip.IsHalted)
+        {
+            flip.SingleStep();
+            if (fb.Swaps == 0) Assert.Equal(0, fb.Shown[240 * Framebuffer.Width + 320]);
+        }
+        Assert.Equal(1, fb.Swaps);
+        var gpu = new Machine(BuiltInPackages.Get("GPU-16").Machine, BuiltInPackages.Get("GPU-16").Program("One flat triangle").Source) { RecordHistory = false };
+        while (!gpu.IsHalted) gpu.SingleStep();
+        Assert.Equal(gpu.Device<Framebuffer>("fb").Pixels, fb.Shown);
+        Assert.Contains(fb.Shown, p => p != 0);
+    }
+
+    // In the cube the picture on the screen changes only at a SWAP, and then to a whole frame.
+    [Fact]
+    public void FlipCubeChangesTheScreenOnlyAtSwaps()
+    {
+        var c = new Machine(BuiltInPackages.Get("FLIP-16").Machine, BuiltInPackages.Get("FLIP-16").Program("A spinning cube").Source) { RecordHistory = false };
+        var fb = c.Device<DoubleFramebuffer>("fb");
+        while (fb.Swaps < 2) c.SingleStep();
+        var shown = (ushort[])fb.Shown.Clone();
+        Assert.Contains(shown, p => p != 0);
+        long checkedTicks = 0;
+        while (fb.Swaps == 2)
+        {
+            c.SingleStep();
+            if (++checkedTicks % 5000 == 0) Assert.Equal(shown, fb.Shown);
+        }
+        Assert.True(checkedTicks > 50_000, $"a frame took only {checkedTicks} ticks");
+        Assert.NotEqual(shown, fb.Shown);
+        Assert.Empty(c.MicrocodeWarnings);
+    }
+
+    [Fact]
+    public void FlipIsGpuWithADoubleBufferedScreenAndSwap()
+    {
+        var gpu = BuiltInPackages.Get("GPU-16").Machine;
+        var flip = BuiltInPackages.Get("FLIP-16").Machine;
+        Assert.Equal("framebuffer", gpu.FindDevice("fb").Type);
+        Assert.Equal("doubleFramebuffer", flip.FindDevice("fb").Type);
+        var gpuOps = gpu.Decoder.Microcode.Instructions.Select(i => i.Mnemonic).ToList();
+        Assert.Equal(gpuOps.Append("SWAP"), flip.Decoder.Microcode.Instructions.Select(i => i.Mnemonic));
+        var gpuRom = new DecoderRom(gpu.Decoder.Microcode);
+        var flipRom = new DecoderRom(flip.Decoder.Microcode);
+        Assert.All(gpuOps, op => Assert.Equal(gpuRom.FetchByteCodeFromMnemonic(op), flipRom.FetchByteCodeFromMnemonic(op)));
+    }
 }

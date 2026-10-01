@@ -1,5 +1,5 @@
 {
-  "name": "GPU-16",
+  "name": "FLIP-16",
   "buses": [
     {
       "id": "main",
@@ -126,7 +126,7 @@
     },
     {
       "id": "fb",
-      "type": "framebuffer",
+      "type": "doubleFramebuffer",
       "name": "SCREEN",
       "bus": "video",
       "layout": { "x": 216, "y": 780 }
@@ -143,7 +143,7 @@
     "status": "flags",
     "instructionRegister": "ir",
     "microcode": {
-      "name": "GPU-16 microcode",
+      "name": "FLIP-16 microcode",
       "fetch": {
         "mnemonic": "FETCH",
         "description": "Load the opcode at the address in PC from MEMORY into IR and step PC past it; there is no interrupt check",
@@ -680,7 +680,7 @@
         },
         {
           "mnemonic": "CLS",
-          "description": "Clear the SCREEN framebuffer to 0 (black) and move its cursor to the top left; flags unchanged",
+          "description": "Clear the back buffer of SCREEN to 0 (black), out of sight, and move its cursor to the top left; the picture shown is unchanged; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -882,6 +882,16 @@
           "steps": [
             {
               "signals": ["mac.output", "a.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "SWAP",
+          "description": "Swap SCREEN\u0027s buffers: show the frame drawn in the back buffer, and draw on the old front one from now on, which still holds the frame before last; cursor and flags unchanged",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": ["fb.swap", "ir.reset"]
             }
           ]
         }

@@ -1,0 +1,12 @@
+{
+  "name": "TINY-16",
+  "default": true,
+  "description": "The machine to start with: one register, A, and seven instructions, LOAD, ADD, SUB, OUT, JUMP, JZ and HALT. Small enough to follow every tick, and enough to print, add and loop.",
+  "readme": "README.md",
+  "machine": "machine.json",
+  "programs": [
+    { "name": "Say Hi", "description": "LOAD a character into A, OUT prints it", "file": "hi.asm" },
+    { "name": "2 + 3", "description": "ADD works on character codes too: '2' + 3 is '5'", "file": "add.asm" },
+    { "name": "Count down from 9 to 0", "description": "A loop with a label, JUMP back and JZ out", "file": "countdown.asm" }
+  ]
+}

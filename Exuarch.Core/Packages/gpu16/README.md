@@ -19,6 +19,24 @@ A triangle is 12 words in the list: x, y, depth and an RGB565 colour for each co
 
 The rasterizer reads each triangle, two ticks per word, then fills it row by row. For every pixel it reads the depth buffer, and only if the triangle is nearer there does it write the new depth and plot the colour, blended from the three corner colours. [GST](exuarch:instruction/GST) tells the CPU whether it is still busy.
 
+## Sharing the triangle list
+
+The list bus has two masters. The CPU drives it through the bridge: two of [STL](exuarch:instruction/STL)'s four steps put a value on it, first the address and then the word. The rasterizer drives it too, whenever it reads a triangle. Nothing arbitrates between them: there is no hardware that makes one wait for the other. If both drive the list bus in the same tick, the machine stops with *multiple bus devices has output enabled at the same time on bus 'list'*, the simulator's version of a short circuit on a real bus.
+
+So the rule is kept in software: **do not write the list while the rasterizer is busy.** Before writing a new frame's triangles, wait for it to finish, as [A spinning cube](<exuarch:program/A spinning cube>) does:
+
+```asm
+wait:      GST              ; A = 1 while the rasterizer is busy
+           CMPI   0         ; GST leaves the flags alone, so compare
+           JNE    wait
+```
+
+The clash does not happen every time, which makes it easy to miss. The rasterizer only uses the list bus while it reads a triangle's 12 words; while it fills the triangle, the list bus is free and an `STL` gets through. Whether a program without the wait fails depends on timing. Even an `STL` that gets through is wrong: the rasterizer reads `GADR` and `GCNT` again for every triangle and reads each triangle only when it gets to it, so changing the list mid-job changes what it draws.
+
+Real machines solve this in hardware: an arbiter holds the CPU in a wait state until the bus is free, or the memory has two ports. GPU-16 leaves it to the program on purpose, so the rule is visible: remove the wait loop from the cube and run it to see the clash.
+
+## Turning and projecting
+
 For 3D, the CPU first turns each corner with [MA](exuarch:instruction/MA), [MB](exuarch:instruction/MB), [MUL](exuarch:instruction/MUL) and [MAC](exuarch:instruction/MAC): x times the cosine plus z times the sine. It then projects the result with [MDIV](exuarch:instruction/MDIV): x times the focal length, divided by the distance. [MRD](exuarch:instruction/MRD) reads the answer back.
 
 ## Things to try

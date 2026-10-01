@@ -148,3 +148,94 @@ public class FramebufferTests
         Assert.Empty(c.MicrocodeWarnings);
     }
 }
+
+public class DoubleFramebufferTests
+{
+    private readonly Bus bus = new Bus();
+    private readonly Register source;
+    private readonly DoubleFramebuffer screen;
+
+    public DoubleFramebufferTests()
+    {
+        source = new Register("SRC", "src", bus);
+        screen = new DoubleFramebuffer("SCREEN", "fb", bus);
+        bus.devices.Add(source);
+        bus.devices.Add(screen);
+    }
+
+    private void Put(params (string Line, int Value)[] lines)
+    {
+        source.Data = lines[0].Value;
+        source.Enable("output");
+        foreach (var (line, _) in lines) screen.Enable(line);
+        bus.Clk();
+    }
+    private void Put(string line, int value) { Put((line, value)); }
+    private int ShownAt(int x, int y) { return screen.Shown[y * 640 + x]; }
+
+    [Fact]
+    public void DrawingStaysOutOfSightUntilSwap()
+    {
+        screen.TakeDirtyRegion();
+        Put("plot", 0xF800);
+        Assert.Equal(0xF800, screen.Pixels[0]);
+        Assert.Equal(0, ShownAt(0, 0));
+        Assert.Null(screen.TakeDirtyRegion());
+        Assert.Equal(0, screen.FrontBuffer);
+        Put("swap", 0);
+        Assert.Equal(0xF800, ShownAt(0, 0));
+        Assert.Equal(0, screen.Pixels[0]);
+        Assert.Equal(1, screen.FrontBuffer);
+        Assert.Equal((0, 0, 640, 480), screen.TakeDirtyRegion());
+        Assert.Equal((1, 0), (screen.X, screen.Y));
+        Assert.Equal(0xF800, screen.LastWriteValue);
+    }
+
+    [Fact]
+    public void SwapsAlternateTheTwoBuffers()
+    {
+        Put("plot", 1);
+        Put("swap", 0);
+        Put("loadx", 0);
+        Put("plot", 2);
+        Put("swap", 0);
+        Assert.Equal(2, ShownAt(0, 0));
+        // The back buffer holds the frame before last.
+        Assert.Equal(1, screen.Pixels[0]);
+        Assert.Equal(0, screen.FrontBuffer);
+        Assert.Equal(2, screen.Swaps);
+    }
+
+    [Fact]
+    public void APlotInTheSwapTickIsPartOfTheFrameShown()
+    {
+        Put(("plot", 0x001F), ("swap", 0x001F));
+        Assert.Equal(0x001F, ShownAt(0, 0));
+    }
+
+    [Fact]
+    public void ClearBlanksOnlyTheBackBuffer()
+    {
+        Put("plot", 7);
+        Put("swap", 0);
+        Put("plot", 9);
+        Put("clear", 0);
+        Assert.Equal(7, ShownAt(0, 0));
+        Assert.All(screen.Pixels, p => Assert.Equal(0, p));
+        Assert.Equal((0, 0), (screen.X, screen.Y));
+    }
+
+    [Fact]
+    public void TheRasterizerCanDrawOnIt()
+    {
+        var gpu = BuiltInPackages.Get("GPU-16").Machine;
+        gpu.Devices.First(d => d.Id == "fb").Type = "doubleFramebuffer";
+        var c = new Machine(gpu, BuiltInPackages.Get("GPU-16").Program("One flat triangle").Source) { RecordHistory = false };
+        for (int i = 0; i < 2_000_000 && !c.IsHalted; i++) c.SingleStep();
+        var fb = c.Device<DoubleFramebuffer>("fb");
+        Assert.True(fb.WriteCount > 0);
+        Assert.Contains(fb.Pixels, p => p != 0);
+        Assert.All(fb.Shown, p => Assert.Equal(0, p));
+        Assert.Contains("swap", fb.SignalLines());
+    }
+}

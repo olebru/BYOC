@@ -1,0 +1,18 @@
+{
+  "name": "FLIP-16",
+  "description": "GPU-16 with a double buffered screen. The rasterizer draws each frame in the back buffer, out of sight, and one SWAP shows it whole: the same cube as GPU-16, without seeing every frame cleared and redrawn.",
+  "readme": "README.md",
+  "machine": "machine.json",
+  "programs": [
+    {
+      "name": "A triangle drawn out of sight",
+      "description": "The rasterizer fills it in the back buffer; SWAP shows it in one tick",
+      "file": "flat.asm"
+    },
+    {
+      "name": "A spinning cube",
+      "description": "GPU-16's cube with a SWAP after each frame",
+      "file": "cube.asm"
+    }
+  ]
+}

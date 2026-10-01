@@ -1,0 +1,202 @@
+{
+  "name": "TINY-16",
+  "buses": [
+    {
+      "id": "main",
+      "layout": { "x": 0, "y": 190 }
+    }
+  ],
+  "devices": [
+    {
+      "id": "pc",
+      "type": "register",
+      "name": "PC",
+      "bus": "main",
+      "layout": { "x": 30, "y": 50 }
+    },
+    {
+      "id": "mem",
+      "type": "ram",
+      "name": "MEMORY",
+      "bus": "main",
+      "parameters": { "size": 256 },
+      "layout": { "x": 216, "y": 50 }
+    },
+    {
+      "id": "ir",
+      "type": "instructionRegister",
+      "name": "IR",
+      "bus": "main",
+      "layout": { "x": 402, "y": 50 }
+    },
+    {
+      "id": "clk",
+      "type": "clock",
+      "name": "CLOCK",
+      "layout": { "x": 774, "y": 50 }
+    },
+    {
+      "id": "a",
+      "type": "register",
+      "name": "A",
+      "bus": "main",
+      "layout": { "x": 30, "y": 250 }
+    },
+    {
+      "id": "b",
+      "type": "register",
+      "name": "OPERAND",
+      "bus": "main",
+      "layout": { "x": 216, "y": 250 }
+    },
+    {
+      "id": "alu",
+      "type": "alu",
+      "name": "ALU",
+      "bus": "main",
+      "connections": { "a": "a", "b": "b", "status": "flags" },
+      "layout": { "x": 402, "y": 230 }
+    },
+    {
+      "id": "flags",
+      "type": "statusRegister",
+      "name": "FLAGS",
+      "bus": "main",
+      "layout": { "x": 588, "y": 250 }
+    },
+    {
+      "id": "lcd",
+      "type": "display",
+      "name": "LCD",
+      "bus": "main",
+      "parameters": { "columns": 16, "rows": 2 },
+      "layout": { "x": 774, "y": 250 }
+    }
+  ],
+  "decoder": {
+    "status": "flags",
+    "instructionRegister": "ir",
+    "microcode": {
+      "name": "TINY-16 microcode",
+      "fetch": {
+        "mnemonic": "FETCH",
+        "description": "Read the opcode at the address in PC into IR and step PC past it, so PC points at the operand if there is one",
+        "steps": [
+          {
+            "signals": ["pc.output", "mem.loadmar"]
+          },
+          {
+            "signals": ["mem.output", "ir.load", "pc.inc"]
+          }
+        ]
+      },
+      "instructions": [
+        {
+          "mnemonic": "LOAD",
+          "description": "A = the number written after LOAD; flags unchanged",
+          "operands": 1,
+          "operandTypes": ["value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "a.load", "pc.inc", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "ADD",
+          "description": "A = A + the number written after ADD, through OPERAND; sets Z if the answer is 0, and N, C and V",
+          "operands": 1,
+          "operandTypes": ["value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "b.load", "pc.inc"]
+            },
+            {
+              "signals": ["alu.add", "a.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "SUB",
+          "description": "A = A - the number written after SUB, through OPERAND; sets Z if the answer is 0, and N, C (borrow) and V",
+          "operands": 1,
+          "operandTypes": ["value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "b.load", "pc.inc"]
+            },
+            {
+              "signals": ["alu.sub", "a.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "OUT",
+          "description": "Print the low 8 bits of A as a character at the LCD cursor and move the cursor right; A and the flags unchanged",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": ["a.output", "lcd.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "JUMP",
+          "description": "Jump: PC = the address written after JUMP, so the program goes on from there; flags unchanged",
+          "operands": 1,
+          "operandTypes": ["address"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "JZ",
+          "description": "Jump to the address written after JZ if Z is set (the last ADD or SUB gave 0); otherwise go on with the next instruction",
+          "operands": 1,
+          "operandTypes": ["address"],
+          "steps": [
+            {
+              "when": { "Z": true },
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "when": { "Z": true },
+              "signals": ["mem.output", "pc.load", "ir.reset"]
+            },
+            {
+              "when": { "Z": false },
+              "signals": ["pc.inc", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "HALT",
+          "description": "Stop the clock, which ends the program; PC stays on the HALT",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": ["clk.disable"]
+            }
+          ]
+        }
+      ]
+    },
+    "layout": { "x": 588, "y": 50 }
+  },
+  "halt": "clk",
+  "programMemory": "mem"
+}

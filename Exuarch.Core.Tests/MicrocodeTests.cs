@@ -73,6 +73,9 @@ public class MicrocodeTests
             // The legacy PEA and PEB read whichever MMU bank was selected; they now read the stack in bank 0, like
             // POA and POB (PackageTests.ByocPeeksReadTheStackInBankZero).
             if (instruction.Mnemonic is "PEA" or "PEB") continue;
+            // The legacy LPA and LPB read the operand address like LRA and LRB, never following the pointer stored
+            // there; they now follow it (PackageTests.ByocPointerLoadsFollowThePointer).
+            if (instruction.Mnemonic is "LPA" or "LPB") continue;
             Assert.Equal(Behaviour(original), Behaviour(instruction));
         }
     }
@@ -81,7 +84,7 @@ public class MicrocodeTests
     public void DefaultMicrocodeIsCleanForTheDefaultMachine()
     {
         Assert.Empty(Validate(DefaultMicrocode()));
-        Assert.Empty(Machine.CreateDefault().MicrocodeWarnings);
+        Assert.Empty(Machine.CreateExample().MicrocodeWarnings);
     }
 
     [Fact]
@@ -234,6 +237,7 @@ public class MicrocodeTests
         machine.Devices.Add(new DeviceDefinition { Id = "bridge", Type = "dualPortRegister", Buses = { ["a"] = "main", ["b"] = "io" } });
         // The blitter and the rasterizer draw on a screen on their own video bus.
         machine.Devices.Add(new DeviceDefinition { Id = "screen", Type = "framebuffer", Bus = "io" });
+        machine.Devices.Add(new DeviceDefinition { Id = "pages", Type = "doubleFramebuffer", Bus = "io" });
         machine.Devices.Add(new DeviceDefinition { Id = "blit", Type = "blitter", Buses = { ["host"] = "main", ["video"] = "io" }, Connections = { ["screen"] = "screen" } });
         machine.Devices.Add(new DeviceDefinition { Id = "tick", Type = "timer", Bus = "main" });
         machine.Devices.Add(new DeviceDefinition { Id = "pic", Type = "interruptController", Bus = "main", Connections = { ["irq0"] = "tick", ["irq1"] = "blit" } });

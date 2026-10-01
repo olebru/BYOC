@@ -1,6 +1,6 @@
 # Bus masters and coprocessors
 
-In most of a machine, nothing happens unless the microcode says so. Every control line is switched on by a step, and the decoder is the only thing issuing steps. A bus master breaks that rule. It is a device that drives another device's control lines by itself, tick after tick, while the CPU carries on with its own program. In ExµArch that device is the blitter, a small graphics coprocessor.
+In most of a machine, nothing happens unless the microcode says so. Every control line is switched on by a step, and the decoder is the only thing issuing steps. A bus master breaks that rule. It is a device that drives another device's control lines by itself, tick after tick, while the CPU carries on with its own program. ExµArch has two: the blitter, a small graphics coprocessor that fills rectangles, and the [rasterizer](exuarch:reference/rasterizer), which fills triangles in [GPU-16](exuarch:package/GPU-16).
 
 ## The framebuffer it draws on
 
@@ -11,6 +11,12 @@ A [`framebuffer`](exuarch:reference/framebuffer) is a 640 × 480 colour screen. 
 - `plot` writes the bus value at the cursor and moves one pixel right. Past the last column it goes to the start of the next row, and past the last row back to the top.
 - `skip` moves the cursor one pixel right the same way, without writing.
 - `clear` blanks the screen and puts the cursor at the top left.
+
+A [`doubleFramebuffer`](exuarch:reference/doubleFramebuffer) is the same screen with two pictures, and one more line:
+
+- `swap` shows the picture that was being drawn, and from then on drawing goes to the other one.
+
+`plot`, `skip` and `clear` always work on the back buffer, out of sight, while the front buffer stays on the screen. A program draws a whole frame and then swaps, so the screen never shows a frame half drawn. After a swap the back buffer still holds the frame before last; clear it, or draw over all of it. A swap is instant, and there is no waiting for the screen's refresh as on real hardware. It can stand in for a framebuffer anywhere, including as the screen of a blitter or a rasterizer.
 
 A CPU can drive these lines from its own microcode, as BYOC-16 does. Filling a rectangle that way costs at least one tick per pixel, and the CPU can do nothing else meanwhile.
 
@@ -38,6 +44,26 @@ The blitter reads its rectangle and colour as it goes, so wait until `status` re
 The point of the separate video bus is that the blitter's transfers never meet the CPU's. Each bus carries one value per tick, and a second device driving it in the same tick stops the machine with a bus error. With the framebuffer alone on the video bus, the blitter has that bus to itself. The CPU keeps fetching and running instructions on the main bus in the same ticks.
 
 In the Run view you can see both. The **Last tick** panel lists each bus with the device that drove it and the devices that read it. On the video bus the driver is the blitter and the reader is the screen, even though no microcode step named them.
+
+## Working alongside a bus master
+
+Once a bus master has started, two things run at once, and neither waits for the other. Three rules follow, and they hold for the blitter and the rasterizer alike.
+
+**A start while busy is ignored.** Both devices drop a `start` that arrives while they are still working, without any error. Read `status` first, and only start a new job when it reads 0.
+
+**Its settings are read live.** The blitter reads its rectangle and colour again on every row and pixel, and the rasterizer reads its list address and count again for every triangle, and each triangle only when it gets to it. Nothing is copied when the job starts, so changing a setting, or the triangle list, in the middle of a job changes the job. Wait for `status` to read 0 before setting up the next one.
+
+**A shared bus needs a rule.** If the CPU can reach a bus that the bus master also drives, the two can drive it in the same tick, and the machine stops with a bus error, the simulator's version of a short circuit. The blitter avoids this by design: in COPRO-16 and IRQ-16 its video bus holds only the screen, and the CPU has no way onto it. The rasterizer cannot avoid it: in GPU-16 the CPU writes the triangle list over the same list bus the rasterizer reads it from. A write that lands while the rasterizer is reading a triangle shorts the bus, one that lands while it is filling gets through, so a program without the rule can run for a while before it fails. The [GPU-16 README](exuarch:package/GPU-16) shows the clash.
+
+In the built in machines, the program keeps these rules: a software guard. It polls `status` in a loop, or, with an interrupt controller, waits for the interrupt the device raises when it is done:
+
+```asm
+wait:   GST             ; GPU-16: A = 1 while the rasterizer is busy
+        CMPI   0
+        JNE    wait
+```
+
+Real machines often keep them in hardware instead. An **arbiter** grants the shared bus to one master at a time and holds the other in a wait state until the bus is free. **Dual-ported memory** gives each master its own port, so they never share a bus. **Shadow registers** let the CPU load the next job's settings while the current one runs, and copy them across on `start`. None of these are built in, so you can see what goes wrong without them, and add one yourself.
 
 ## COPRO-16
 

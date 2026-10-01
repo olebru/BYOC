@@ -65,6 +65,8 @@ namespace Exuarch.Core
         public string Description { get; set; }
         // The README file in the package folder, if any.
         public string Readme { get; set; }
+        // The package the app opens with. Exactly one built in package sets it.
+        public bool Default { get; set; }
         public string Machine { get; set; }
         public List<ManifestProgram> Programs { get; set; } = new List<ManifestProgram>();
     }
@@ -80,8 +82,9 @@ namespace Exuarch.Core
         private const string Prefix = "Exuarch.Core.Packages/";
         private static readonly Lazy<IReadOnlyList<MachinePackage>> all = new Lazy<IReadOnlyList<MachinePackage>>(Load);
 
-        // In folder name order; the first is the default.
+        // The default first, then the others in folder name order.
         public static IReadOnlyList<MachinePackage> All { get { return all.Value; } }
+        // The package whose package.json says "default": true.
         public static MachinePackage Default { get { return All[0]; } }
 
         // A fresh copy that can be changed without affecting the built in one.
@@ -97,7 +100,7 @@ namespace Exuarch.Core
                 .Where(n => n.StartsWith(Prefix) && n.EndsWith("/package.json"))
                 .Select(n => n.Substring(0, n.Length - "package.json".Length))
                 .OrderBy(n => n, StringComparer.Ordinal);
-            return folders.Select(folder =>
+            var packages = folders.Select(folder =>
             {
                 string Read(string file)
                 {
@@ -107,15 +110,19 @@ namespace Exuarch.Core
                     return reader.ReadToEnd();
                 }
                 var manifest = JsonSerializer.Deserialize(Read("package.json"), MachineDefinitionJsonContext.Default.PackageManifest);
-                return new MachinePackage
+                return (manifest.Default, Package: new MachinePackage
                 {
                     Name = manifest.Name,
                     Description = manifest.Description,
                     Readme = manifest.Readme == null ? null : Read(manifest.Readme).TrimEnd('\n', '\r'),
                     Machine = MachineDefinition.FromJson(Read(manifest.Machine)),
                     Programs = manifest.Programs.Select(p => new PackageProgram { Name = p.Name, Description = p.Description, Source = Read(p.File).TrimEnd('\n', '\r') }).ToList(),
-                };
+                });
             }).ToList();
+            var defaults = packages.Where(p => p.Default).Select(p => p.Package.Name).ToList();
+            if (defaults.Count != 1)
+                throw new InvalidOperationException($"Exactly one built in package must be the default, found {defaults.Count}: {string.Join(", ", defaults)}.");
+            return packages.OrderBy(p => p.Default ? 0 : 1).Select(p => p.Package).ToList();
         }
     }
 }

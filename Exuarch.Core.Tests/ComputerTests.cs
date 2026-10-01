@@ -61,7 +61,7 @@ public class ComputerTests
     [Fact]
     public void ExampleProgramRunsWithoutBusConflicts()
     {
-        var c = Machine.CreateDefault();
+        var c = Machine.CreateExample();
         for (int i = 0; i < 1000; i++) c.SingleStep();
         Assert.Equal(1000, c.Cycles);
     }

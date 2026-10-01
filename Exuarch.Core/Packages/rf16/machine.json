@@ -102,7 +102,7 @@
       "name": "RF-16 microcode",
       "fetch": {
         "mnemonic": "FETCH",
-        "description": "Load the opcode at the program counter and step past it",
+        "description": "Read the opcode at the address in PC into the micro step counter and add 1 to PC, so PC points at the first operand",
         "steps": [
           {
             "signals": ["pc.output", "mem.loadmar"]
@@ -115,7 +115,7 @@
       "instructions": [
         {
           "mnemonic": "NOP",
-          "description": "Do nothing",
+          "description": "Do nothing and go on to the next instruction; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -125,7 +125,7 @@
         },
         {
           "mnemonic": "HLT",
-          "description": "Halt the machine",
+          "description": "Stop the clock, halting the machine with PC pointing past the HLT; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -135,7 +135,7 @@
         },
         {
           "mnemonic": "MOVI",
-          "description": "Rd = value",
+          "description": "Rd = value, the 16-bit word after the register operand; flags unchanged",
           "operands": 2,
           "operandTypes": ["register", "value"],
           "steps": [
@@ -155,7 +155,7 @@
         },
         {
           "mnemonic": "ADR",
-          "description": "Rd = the address of a label, to walk memory with LDR and STR",
+          "description": "Rd = address, the address of a label, to use as a pointer with LDR and STR; flags unchanged",
           "operands": 2,
           "operandTypes": ["register", "address"],
           "steps": [
@@ -175,7 +175,7 @@
         },
         {
           "mnemonic": "MOV",
-          "description": "Rd = Rs",
+          "description": "Rd = Rs, copying the register and leaving Rs unchanged; flags unchanged",
           "operands": 2,
           "operandTypes": ["register", "register"],
           "steps": [
@@ -204,7 +204,7 @@
         },
         {
           "mnemonic": "ADD",
-          "description": "Rd = Rd \u002B Rs, sets Z N C V",
+          "description": "Rd = Rd \u002B Rs; sets Z, N, C (carry out) and V (signed overflow)",
           "operands": 2,
           "operandTypes": ["register", "register"],
           "steps": [
@@ -236,7 +236,7 @@
         },
         {
           "mnemonic": "SUB",
-          "description": "Rd = Rd - Rs, sets Z N C V (C when Rd \u003C Rs, a borrow)",
+          "description": "Rd = Rd - Rs; sets Z, N, C (Rd \u003C Rs unsigned, a borrow) and V (signed overflow)",
           "operands": 2,
           "operandTypes": ["register", "register"],
           "steps": [
@@ -268,7 +268,7 @@
         },
         {
           "mnemonic": "AND",
-          "description": "Rd = Rd AND Rs, sets Z N",
+          "description": "Rd = Rd AND Rs, bitwise; sets Z and N from the result, clears C and V",
           "operands": 2,
           "operandTypes": ["register", "register"],
           "steps": [
@@ -300,7 +300,7 @@
         },
         {
           "mnemonic": "ORR",
-          "description": "Rd = Rd OR Rs, sets Z N",
+          "description": "Rd = Rd OR Rs, bitwise; sets Z and N from the result, clears C and V",
           "operands": 2,
           "operandTypes": ["register", "register"],
           "steps": [
@@ -332,7 +332,7 @@
         },
         {
           "mnemonic": "EOR",
-          "description": "Rd = Rd XOR Rs, sets Z N",
+          "description": "Rd = Rd XOR Rs, bitwise; sets Z and N from the result, clears C and V",
           "operands": 2,
           "operandTypes": ["register", "register"],
           "steps": [
@@ -364,7 +364,7 @@
         },
         {
           "mnemonic": "CMP",
-          "description": "Set the flags for Rd - Rs: Z when equal, C when Rd \u003C Rs",
+          "description": "Set the flags for Rd - Rs without changing Rd: Z if equal, C if Rd \u003C Rs unsigned, N from bit 15, V on signed overflow",
           "operands": 2,
           "operandTypes": ["register", "register"],
           "steps": [
@@ -396,7 +396,7 @@
         },
         {
           "mnemonic": "ADDI",
-          "description": "Rd = Rd \u002B value",
+          "description": "Rd = Rd \u002B value; sets Z, N, C (carry out) and V (signed overflow)",
           "operands": 2,
           "operandTypes": ["register", "value"],
           "steps": [
@@ -422,7 +422,7 @@
         },
         {
           "mnemonic": "SUBI",
-          "description": "Rd = Rd - value",
+          "description": "Rd = Rd - value; sets Z, N, C (Rd \u003C value unsigned, a borrow) and V (signed overflow)",
           "operands": 2,
           "operandTypes": ["register", "value"],
           "steps": [
@@ -448,7 +448,7 @@
         },
         {
           "mnemonic": "ANDI",
-          "description": "Rd = Rd AND value",
+          "description": "Rd = Rd AND value, bitwise; sets Z and N from the result, clears C and V",
           "operands": 2,
           "operandTypes": ["register", "value"],
           "steps": [
@@ -474,7 +474,7 @@
         },
         {
           "mnemonic": "CMPI",
-          "description": "Set the flags for Rd - value: Z when equal, C when Rd \u003C value",
+          "description": "Set the flags for Rd - value without changing Rd: Z if equal, C if Rd \u003C value unsigned, N from bit 15, V on signed overflow",
           "operands": 2,
           "operandTypes": ["register", "value"],
           "steps": [
@@ -500,7 +500,7 @@
         },
         {
           "mnemonic": "LDR",
-          "description": "Rd = the memory cell at the address in Ra",
+          "description": "Rd = the memory cell at the address in Ra (modulo the 4096-cell memory); flags unchanged",
           "operands": 2,
           "operandTypes": ["register", "register"],
           "steps": [
@@ -529,7 +529,7 @@
         },
         {
           "mnemonic": "STR",
-          "description": "Store Rs in memory at the address in Ra",
+          "description": "Store Rs in the memory cell at the address in Ra (modulo the 4096-cell memory); flags unchanged",
           "operands": 2,
           "operandTypes": ["register", "register"],
           "steps": [
@@ -558,7 +558,7 @@
         },
         {
           "mnemonic": "INC",
-          "description": "Rd = Rd \u002B 1, flags unchanged",
+          "description": "Rd = Rd \u002B 1, wrapping from FFFF to 0 at 16 bits; flags unchanged",
           "operands": 1,
           "operandTypes": ["register"],
           "steps": [
@@ -575,7 +575,7 @@
         },
         {
           "mnemonic": "DEC",
-          "description": "Rd = Rd - 1, flags unchanged",
+          "description": "Rd = Rd - 1, wrapping from 0 to FFFF at 16 bits; flags unchanged",
           "operands": 1,
           "operandTypes": ["register"],
           "steps": [
@@ -592,7 +592,7 @@
         },
         {
           "mnemonic": "PUSH",
-          "description": "Push Rs on the stack",
+          "description": "SP = SP - 1, then store Rs at the address in SP; the stack grows down and SP points at the last value pushed; flags unchanged",
           "operands": 1,
           "operandTypes": ["register"],
           "steps": [
@@ -612,7 +612,7 @@
         },
         {
           "mnemonic": "POP",
-          "description": "Pop the top of the stack into Rd",
+          "description": "Rd = the memory cell at the address in SP, then SP = SP \u002B 1; flags unchanged",
           "operands": 1,
           "operandTypes": ["register"],
           "steps": [
@@ -632,7 +632,7 @@
         },
         {
           "mnemonic": "OUT",
-          "description": "Print the character in Rs on the LCD",
+          "description": "Print the low 8 bits of Rs as a Latin-1 character at the LCD cursor and move the cursor right (line feed and carriage return move it to a row start); flags unchanged",
           "operands": 1,
           "operandTypes": ["register"],
           "steps": [
@@ -649,7 +649,7 @@
         },
         {
           "mnemonic": "CLT",
-          "description": "Clear the LCD",
+          "description": "Clear the LCD to spaces and move the cursor to the top-left cell; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -659,7 +659,7 @@
         },
         {
           "mnemonic": "B",
-          "description": "Branch to the address",
+          "description": "PC = address, an unconditional jump to the address; flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -673,7 +673,7 @@
         },
         {
           "mnemonic": "BEQ",
-          "description": "Branch if equal (Z set)",
+          "description": "PC = address if Z is set (equal after a CMP), otherwise go to the next instruction; flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -693,7 +693,7 @@
         },
         {
           "mnemonic": "BNE",
-          "description": "Branch if not equal (Z clear)",
+          "description": "PC = address if Z is clear (not equal after a CMP), otherwise go to the next instruction; flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -713,7 +713,7 @@
         },
         {
           "mnemonic": "BCS",
-          "description": "Branch if carry set, or a CMP borrowed (lower)",
+          "description": "PC = address if C is set (Rd \u003C Rs unsigned after a CMP, or a carry out after ADD), otherwise go to the next instruction; flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -733,7 +733,7 @@
         },
         {
           "mnemonic": "BCC",
-          "description": "Branch if carry clear (higher or same)",
+          "description": "PC = address if C is clear (Rd \u003E= Rs unsigned after a CMP), otherwise go to the next instruction; flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -753,7 +753,7 @@
         },
         {
           "mnemonic": "BMI",
-          "description": "Branch if negative (N set)",
+          "description": "PC = address if N is set (bit 15 of the last ALU result set, negative), otherwise go to the next instruction; flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -773,7 +773,7 @@
         },
         {
           "mnemonic": "BPL",
-          "description": "Branch if positive or zero (N clear)",
+          "description": "PC = address if N is clear (bit 15 of the last ALU result clear, zero or positive), otherwise go to the next instruction; flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -793,7 +793,7 @@
         },
         {
           "mnemonic": "CALL",
-          "description": "Call a subroutine: push the return address, then jump",
+          "description": "SP = SP - 1, store the address after the CALL at the address in SP, then PC = address; flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -816,7 +816,7 @@
         },
         {
           "mnemonic": "RET",
-          "description": "Return from a subroutine",
+          "description": "PC = the memory cell at the address in SP, then SP = SP \u002B 1, returning from a CALL; flags unchanged",
           "operands": 0,
           "steps": [
             {

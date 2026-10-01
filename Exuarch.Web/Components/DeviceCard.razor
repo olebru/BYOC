@@ -71,9 +71,9 @@
                     <span class="sub">@lcd.Columns×@lcd.Rows · last '@CharacterDisplay.ToChar(lastChar)'</span>
                     break;
                 case Framebuffer screenDevice:
-                    var lastPixel = screenDevice.LastWriteAddress >= 0 ? screenDevice.Pixels[screenDevice.LastWriteAddress] : 0;
+                    var lastPixel = screenDevice.LastWriteValue;
                     var (pr, pg, pb) = Framebuffer.ToRgb(lastPixel);
-                    <span class="mem">cursor <strong>@screenDevice.X, @screenDevice.Y</strong></span>
+                    <span class="mem">cursor <strong>@screenDevice.X, @screenDevice.Y</strong>@(screenDevice is DoubleFramebuffer pages ? $" · front {pages.FrontBuffer}" : "")</span>
                     <span class="sub"><span class="swatch" style="background:rgb(@pr,@pg,@pb)"></span> last @Hex(lastPixel)</span>
                     break;
                 case InterruptController controller:
