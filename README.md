@@ -39,3 +39,10 @@ dotnet test Exuarch.Core.Tests       # the tests
 ## Deployment
 
 Every push to `main` is built, tested and deployed to Azure Static Web Apps, which serves [www.exuarch.com](https://www.exuarch.com), by `.github/workflows/deploy.yml`. Each pull request gets a preview site of its own, linked from the pull request and removed when it closes.
+
+## History
+
+- **Before 2019: the .NET Framework original.** The simulator started as a .NET Framework program, from before Ole was on GitHub.
+- **2019: [BYOCCore](https://github.com/olebru/BYOCCore).** The first public commit, on 3 September 2019, put it on GitHub as an "8Bit MCU Designer": registers, an ALU, RAM, ROM, an MMU, a decoder ROM and an assembler, wired together in a class called `LowLevelPileOfPartsActingAsAMCU`. Ten days later it moved to .NET Core 2.2, and in September 2021 to .NET 5. That repository is now a public archive.
+- **2021: BYOC.** This repository started on 6 September 2021, with the BYOCCore engine, a console UI, and a first Blazor WebAssembly UI deployed to Azure Static Web Apps. It ran a single machine and showed its registers and memory. Then it rested for five years.
+- **2026: ExµArch.** At the end of September 2026 it came back. It moved to .NET 10, and the machine became 16 bits throughout and is described as data, buses and microcode included. It gained a drag and drop hardware editor, a microcode editor, an assembly editor, the run view, packages and the handbook. Then came the example machines, from a one register CPU to a small 3D GPU. On 29 September the project was renamed ExµArch, and the site moved to [www.exuarch.com](https://www.exuarch.com).

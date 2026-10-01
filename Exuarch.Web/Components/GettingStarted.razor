@@ -121,7 +121,15 @@
             }
             <div class="machines-title silk">Examples</div>
             <p class="machines-empty">Machines to take apart and start from. Change them as much as you like: <strong>Reset</strong> brings one back the way it ships.</p>
-            @foreach (var example in BuiltInPackages.All)
+            @foreach (var level in BuiltInPackages.Levels)
+            {
+                var examples = BuiltInPackages.All.Where(p => BuiltInPackages.Level(p.Name) == level).ToList();
+                var open = LevelOpen(level);
+                <button class="level-toggle @(open ? "" : "collapsed")" title="@LevelHint(level)" @onclick="() => ToggleLevel(level)">
+                    <i class="chev"></i>@LevelTitle(level) <span class="level-count">@examples.Count</span>
+                </button>
+                @if (!open) { continue; }
+            @foreach (var example in examples)
             {
                 var current = example.Name == Package.Name;
                 var edited = Workspace?.IsEdited(example.Name) == true;
@@ -147,6 +155,7 @@
                     </div>
                     <div class="example-description">@example.Description</div>
                 </div>
+            }
             }
         }
         else
@@ -241,6 +250,28 @@
             if (!firstRender) await JS.InvokeVoidAsync("exuarchReadme.scrollTop", body);
         }
     }
+
+    // Which example groups are open. Simple starts open, and so does the group of the machine that is open.
+    private readonly Dictionary<string, bool> levelOpen = new Dictionary<string, bool>();
+
+    private bool LevelOpen(string level)
+    {
+        return levelOpen.TryGetValue(level, out var open) ? open : level == "simple" || BuiltInPackages.Level(Package?.Name) == level;
+    }
+
+    private void ToggleLevel(string level)
+    {
+        levelOpen[level] = !LevelOpen(level);
+    }
+
+    private static string LevelTitle(string level) => char.ToUpperInvariant(level[0]) + level.Substring(1);
+
+    private static string LevelHint(string level) => level switch
+    {
+        "simple" => "One bus and a handful of registers: start here",
+        "advanced" => "Register files, several buses, transport triggering, coprocessors and interrupts",
+        _ => "Graphics pipelines, and one machine tuned until it is hard to read",
+    };
 
     private void ShowMachine(string view)
     {

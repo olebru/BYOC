@@ -38,16 +38,24 @@ Beyond one bus and one CPU: [bridges](exuarch:guide/bridges) move values between
 
 ## The examples
 
-The built in machines each take a different direction. Load one from **Machines** in this drawer, take it apart, and start your own from a copy with **New…**. Everything you change is kept in the browser; **Export** saves a machine as a file.
+The built in machines each take a different direction. Load one from **Machines** in this drawer, take it apart, and start your own from a copy with **New…**. Everything you change is kept in the browser; **Export** saves a machine as a file. They come in three levels, and the drawer folds away the two harder ones until you open them.
+
+**Simple**: one bus and a few registers.
 
 - [TINY-16](exuarch:package/TINY-16): the one to start with, one register and seven instructions.
 - [BYOC-16](exuarch:package/BYOC-16): a classic accumulator machine on one bus.
 - [RISC-16](exuarch:package/RISC-16): load/store with four registers, inspired by ARM.
+
+**Advanced**: more buses, other ways to build a CPU, and devices that work on their own.
+
 - [RF-16](exuarch:package/RF-16): RISC-16 with a register file, so registers are operands: `ADD R0, R2`.
 - [HARVARD-16](exuarch:package/HARVARD-16): three buses, with separate program and data memory.
 - [MOVE-16](exuarch:package/MOVE-16): no instruction set, only moves between ports.
 - [COPRO-16](exuarch:package/COPRO-16): a CPU that hands work to a blitter on its own bus.
+- [IRQ-16](exuarch:package/IRQ-16): interrupts from a timer, the keypad and the blitter.
+
+**Ludicrous**: a 3D graphics pipeline, and how far it can be pushed.
+
 - [GPU-16](exuarch:package/GPU-16): a small 3D pipeline, with shaded triangles, a depth buffer and a spinning cube.
 - [FLIP-16](exuarch:package/FLIP-16): GPU-16 with a double buffered screen, so each frame appears whole.
 - [TURBO-16](exuarch:package/TURBO-16): FLIP-16 rebuilt for speed, the same cube in under a fifth of the ticks.
-- [IRQ-16](exuarch:package/IRQ-16): interrupts from a timer, the keypad and the blitter.
