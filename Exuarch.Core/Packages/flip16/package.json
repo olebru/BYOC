@@ -1,6 +1,7 @@
 {
   "name": "FLIP-16",
   "description": "GPU-16 with a double buffered screen. The rasterizer draws each frame in the back buffer, out of sight, and one SWAP shows it whole: the same cube as GPU-16, without seeing every frame cleared and redrawn.",
+  "level": "ludicrous",
   "readme": "README.md",
   "machine": "machine.json",
   "programs": [

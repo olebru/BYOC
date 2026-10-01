@@ -1,6 +1,7 @@
 {
   "name": "BYOC-16",
   "description": "The original accumulator machine: registers A and B, an ALU, a stack in the MMU, an LCD and a colour screen. Instructions work on A and B.",
+  "level": "simple",
   "readme": "README.md",
   "machine": "machine.json",
   "programs": [

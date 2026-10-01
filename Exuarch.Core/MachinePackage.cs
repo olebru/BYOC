@@ -67,6 +67,8 @@ namespace Exuarch.Core
         public string Readme { get; set; }
         // The package the app opens with. Exactly one built in package sets it.
         public bool Default { get; set; }
+        // simple, advanced or ludicrous: how much of the app a machine expects you to know.
+        public string Level { get; set; }
         public string Machine { get; set; }
         public List<ManifestProgram> Programs { get; set; } = new List<ManifestProgram>();
     }
@@ -82,8 +84,19 @@ namespace Exuarch.Core
         private const string Prefix = "Exuarch.Core.Packages/";
         private static readonly Lazy<IReadOnlyList<MachinePackage>> all = new Lazy<IReadOnlyList<MachinePackage>>(Load);
 
+        // How far into the app each example goes, for grouping them in the picker.
+        public static readonly string[] Levels = { "simple", "advanced", "ludicrous" };
+        private static readonly Dictionary<string, string> levels = new Dictionary<string, string>();
+
         // The default first, then the others in folder name order.
         public static IReadOnlyList<MachinePackage> All { get { return all.Value; } }
+
+        // The level of the built in package with this name, one of Levels, or null for any other name.
+        public static string Level(string name)
+        {
+            _ = all.Value;
+            return name != null && levels.TryGetValue(name, out var level) ? level : null;
+        }
         // The package whose package.json says "default": true.
         public static MachinePackage Default { get { return All[0]; } }
 
@@ -110,6 +123,9 @@ namespace Exuarch.Core
                     return reader.ReadToEnd();
                 }
                 var manifest = JsonSerializer.Deserialize(Read("package.json"), MachineDefinitionJsonContext.Default.PackageManifest);
+                if (!Levels.Contains(manifest.Level))
+                    throw new InvalidOperationException($"Built in package '{manifest.Name}' needs a \"level\": {string.Join(", ", Levels)}.");
+                levels[manifest.Name] = manifest.Level;
                 return (manifest.Default, Package: new MachinePackage
                 {
                     Name = manifest.Name,

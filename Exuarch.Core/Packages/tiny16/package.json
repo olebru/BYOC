@@ -2,6 +2,7 @@
   "name": "TINY-16",
   "default": true,
   "description": "The machine to start with: one register, A, and seven instructions, LOAD, ADD, SUB, OUT, JUMP, JZ and HALT. Small enough to follow every tick, and enough to print, add and loop.",
+  "level": "simple",
   "readme": "README.md",
   "machine": "machine.json",
   "programs": [

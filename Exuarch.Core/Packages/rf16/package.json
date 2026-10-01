@@ -1,6 +1,7 @@
 {
   "name": "RF-16",
   "description": "A load/store machine with a register file: eight registers R0-R7 named as operands, so one ADD Rd, Rs, one MOV and one LDR work with any of them, where RISC-16 needs an opcode per register. The cost is ticks: selecting each register is a transfer of its own.",
+  "level": "advanced",
   "readme": "README.md",
   "machine": "machine.json",
   "programs": [

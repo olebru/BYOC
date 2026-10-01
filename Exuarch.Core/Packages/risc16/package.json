@@ -1,6 +1,7 @@
 {
   "name": "RISC-16",
   "description": "A load/store machine inspired by ARM, kept simple: four explicit registers R0-R3 with R0 as the accumulator, registers named in the mnemonic (MOV_R1_R0, ADD_R2), memory reached through LDR/STR via an address register (and PUSH/POP on the stack), conditional branches on the CPSR flags and BL/RET with a link register.",
+  "level": "simple",
   "readme": "README.md",
   "machine": "machine.json",
   "programs": [
