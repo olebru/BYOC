@@ -146,7 +146,7 @@
       "name": "GPU-16 microcode",
       "fetch": {
         "mnemonic": "FETCH",
-        "description": "Load the opcode at the program counter and step past it",
+        "description": "Load the opcode at the address in PC from MEMORY into IR and step PC past it; there is no interrupt check",
         "steps": [
           {
             "signals": ["pc.output", "mem.loadmar"]
@@ -159,7 +159,7 @@
       "instructions": [
         {
           "mnemonic": "NOP",
-          "description": "Do nothing",
+          "description": "Do nothing; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -169,7 +169,7 @@
         },
         {
           "mnemonic": "HLT",
-          "description": "Halt the machine",
+          "description": "Stop the clock, halting the machine; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -179,7 +179,7 @@
         },
         {
           "mnemonic": "LDI",
-          "description": "A = value",
+          "description": "A = the value after the opcode; flags unchanged",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -193,7 +193,7 @@
         },
         {
           "mnemonic": "LBI",
-          "description": "B = value",
+          "description": "B = the value after the opcode; flags unchanged",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -207,7 +207,7 @@
         },
         {
           "mnemonic": "LBA",
-          "description": "B = an address, to walk memory with LDX and STX",
+          "description": "B = the address after the opcode, for walking memory with LDX and STX (the same steps as LBI); flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -221,7 +221,7 @@
         },
         {
           "mnemonic": "LDA",
-          "description": "A = the memory cell at the address",
+          "description": "A = the MEMORY cell at the address after the opcode; flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -238,7 +238,7 @@
         },
         {
           "mnemonic": "STA",
-          "description": "Store A in memory at the address",
+          "description": "Store A in the MEMORY cell at the address after the opcode; flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -255,7 +255,7 @@
         },
         {
           "mnemonic": "LDX",
-          "description": "A = the memory cell at the address in B",
+          "description": "A = the MEMORY cell at the address in B; B and flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -268,7 +268,7 @@
         },
         {
           "mnemonic": "STX",
-          "description": "Store A in memory at the address in B",
+          "description": "Store A in the MEMORY cell at the address in B; B and flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -281,7 +281,7 @@
         },
         {
           "mnemonic": "TAB",
-          "description": "B = A",
+          "description": "B = A; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -291,7 +291,7 @@
         },
         {
           "mnemonic": "TBA",
-          "description": "A = B",
+          "description": "A = B; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -301,7 +301,7 @@
         },
         {
           "mnemonic": "INA",
-          "description": "A = A \u002B 1, flags unchanged",
+          "description": "A = A \u002B 1, wrapping from FFFF to 0; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -311,7 +311,7 @@
         },
         {
           "mnemonic": "INB",
-          "description": "B = B \u002B 1, flags unchanged",
+          "description": "B = B \u002B 1, wrapping from FFFF to 0; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -321,7 +321,7 @@
         },
         {
           "mnemonic": "DEB",
-          "description": "B = B - 1, flags unchanged",
+          "description": "B = B - 1, wrapping from 0 to FFFF; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -331,7 +331,7 @@
         },
         {
           "mnemonic": "ADD",
-          "description": "A = A \u002B B",
+          "description": "A = A \u002B B; sets Z and N, C on carry out and V on signed overflow",
           "operands": 0,
           "steps": [
             {
@@ -344,7 +344,7 @@
         },
         {
           "mnemonic": "SUB",
-          "description": "A = A - B",
+          "description": "A = A - B; sets Z and N, C if A \u003C B unsigned (a borrow) and V on signed overflow",
           "operands": 0,
           "steps": [
             {
@@ -357,7 +357,7 @@
         },
         {
           "mnemonic": "AND",
-          "description": "A = A AND B",
+          "description": "A = A AND B, bit by bit; sets Z and N, clears C and V",
           "operands": 0,
           "steps": [
             {
@@ -370,7 +370,7 @@
         },
         {
           "mnemonic": "ADDI",
-          "description": "A = A \u002B value",
+          "description": "A = A \u002B the value after the opcode; sets Z and N, C on carry out and V on signed overflow",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -387,7 +387,7 @@
         },
         {
           "mnemonic": "SUBI",
-          "description": "A = A - value",
+          "description": "A = A - the value after the opcode; sets Z and N, C if A \u003C the value unsigned (a borrow) and V on signed overflow",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -404,7 +404,7 @@
         },
         {
           "mnemonic": "ANDI",
-          "description": "A = A AND value",
+          "description": "A = A AND the value after the opcode, bit by bit; sets Z and N, clears C and V",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -421,7 +421,7 @@
         },
         {
           "mnemonic": "EORI",
-          "description": "A = A XOR value",
+          "description": "A = A XOR the value after the opcode, bit by bit; sets Z and N, clears C and V",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -438,7 +438,7 @@
         },
         {
           "mnemonic": "LSRI",
-          "description": "A = A shifted right by value",
+          "description": "A = A shifted right, filling with 0, by the low 4 bits of the value after the opcode (0-15); sets Z and N, C to the last bit shifted out (clear for a shift of 0), clears V",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -455,7 +455,7 @@
         },
         {
           "mnemonic": "CMPI",
-          "description": "Set the flags for A - value",
+          "description": "Set the flags for A - the value after the opcode without changing A: Z if equal, C if A \u003C the value unsigned, N from bit 15 of the difference, V on signed overflow",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -472,7 +472,7 @@
         },
         {
           "mnemonic": "JMP",
-          "description": "Jump to the address",
+          "description": "Jump to the address after the opcode; flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -486,7 +486,7 @@
         },
         {
           "mnemonic": "JEQ",
-          "description": "Jump if equal (Z set)",
+          "description": "Jump to the address after the opcode if Z is set (equal after CMPI); otherwise go on with the next instruction. Flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -506,7 +506,7 @@
         },
         {
           "mnemonic": "JNE",
-          "description": "Jump if not equal (Z clear)",
+          "description": "Jump to the address after the opcode if Z is clear (not equal after CMPI); otherwise go on with the next instruction. Flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -526,7 +526,7 @@
         },
         {
           "mnemonic": "JCS",
-          "description": "Jump if carry set, or a CMP borrowed (A lower)",
+          "description": "Jump to the address after the opcode if C is set (A \u003C the value unsigned after CMPI, or a carry out of ADD); otherwise go on with the next instruction. Flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -546,7 +546,7 @@
         },
         {
           "mnemonic": "JCC",
-          "description": "Jump if carry clear (A higher or same)",
+          "description": "Jump to the address after the opcode if C is clear (A \u003E= the value unsigned after CMPI, or no carry out of ADD); otherwise go on with the next instruction. Flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -566,7 +566,7 @@
         },
         {
           "mnemonic": "CALL",
-          "description": "Call a subroutine: push the return address, then jump",
+          "description": "Push the address of the next instruction (SP is decremented first, then the address is stored at SP in MEMORY) and jump to the address after the opcode; flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -589,7 +589,7 @@
         },
         {
           "mnemonic": "RET",
-          "description": "Return from a subroutine",
+          "description": "Return: PC = the MEMORY cell at SP, then SP is incremented; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -602,7 +602,7 @@
         },
         {
           "mnemonic": "PSA",
-          "description": "Push A",
+          "description": "Push A: SP is decremented first, then A is stored at SP in MEMORY (a full descending stack); flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -618,7 +618,7 @@
         },
         {
           "mnemonic": "POA",
-          "description": "Pop A",
+          "description": "Pop A: A = the MEMORY cell at SP, then SP is incremented; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -631,7 +631,7 @@
         },
         {
           "mnemonic": "PSB",
-          "description": "Push B",
+          "description": "Push B: SP is decremented first, then B is stored at SP in MEMORY (a full descending stack); flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -647,7 +647,7 @@
         },
         {
           "mnemonic": "POB",
-          "description": "Pop B",
+          "description": "Pop B: B = the MEMORY cell at SP, then SP is incremented; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -660,7 +660,7 @@
         },
         {
           "mnemonic": "OUT",
-          "description": "Print the character in A on the LCD",
+          "description": "Print the low 8 bits of A as a character at the LCD cursor and move the cursor on (10 starts a new line, 13 goes to the line start; the LCD scrolls at the bottom); flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -670,7 +670,7 @@
         },
         {
           "mnemonic": "CLT",
-          "description": "Clear the LCD",
+          "description": "Clear the LCD to spaces and move its cursor to the top left; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -680,7 +680,7 @@
         },
         {
           "mnemonic": "CLS",
-          "description": "Clear the screen",
+          "description": "Clear the SCREEN framebuffer to 0 (black) and move its cursor to the top left; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -690,7 +690,7 @@
         },
         {
           "mnemonic": "JMI",
-          "description": "Jump if negative (N set)",
+          "description": "Jump to the address after the opcode if N is set (bit 15 of the last ALU result set: negative); otherwise go on with the next instruction. Flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -710,7 +710,7 @@
         },
         {
           "mnemonic": "JPL",
-          "description": "Jump if positive or zero (N clear)",
+          "description": "Jump to the address after the opcode if N is clear (bit 15 of the last ALU result clear: positive or zero); otherwise go on with the next instruction. Flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -730,7 +730,7 @@
         },
         {
           "mnemonic": "STL",
-          "description": "Store A in the triangle list at the address in B, through the bridge (only while the rasterizer is idle)",
+          "description": "Store A in the TRIANGLE LIST cell at the address in B through the bridge register, which is left holding A. Only while the rasterizer is idle: while it reads the list both drive the list bus at once",
           "operands": 0,
           "steps": [
             {
@@ -749,7 +749,7 @@
         },
         {
           "mnemonic": "GADR",
-          "description": "Tell the rasterizer where its triangles start in the list, from A",
+          "description": "Set the rasterizer\u0027s triangle list start address from A; it is taken at once, so a change mid-job moves the triangles not yet read. Flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -759,7 +759,7 @@
         },
         {
           "mnemonic": "GCNT",
-          "description": "Tell the rasterizer how many triangles to draw, from A",
+          "description": "Set the number of triangles the rasterizer draws, 12 list words each, from A; it is taken at once, even mid-job. Flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -769,7 +769,7 @@
         },
         {
           "mnemonic": "GO",
-          "description": "Start the rasterizer; it draws the triangles by itself while the CPU carries on",
+          "description": "Start the rasterizer if it is idle and its count is not 0 (otherwise ignored). It reads each triangle\u0027s x, y, z and RGB565 colour per corner and fills it, plotting a pixel only where its z is below the depth buffer\u0027s, while the CPU carries on",
           "operands": 0,
           "steps": [
             {
@@ -779,7 +779,7 @@
         },
         {
           "mnemonic": "GST",
-          "description": "A = the rasterizer\u0027s status: 1 while it is busy, 0 when it is idle",
+          "description": "A = the rasterizer\u0027s status: 1 while it is busy, 0 when it is idle; flags unchanged, so follow with CMPI to branch",
           "operands": 0,
           "steps": [
             {
@@ -789,7 +789,7 @@
         },
         {
           "mnemonic": "ZCLR",
-          "description": "Clear the depth buffer: every pixel as far as it goes",
+          "description": "Fill the depth buffer with FFFF (the farthest depth) and move its cursor to the top left; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -799,7 +799,7 @@
         },
         {
           "mnemonic": "MA",
-          "description": "Give the multiply-accumulate unit its operand a, from A",
+          "description": "Set the multiply-accumulate unit\u0027s operand a to A, read as a signed 16-bit number; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -809,7 +809,7 @@
         },
         {
           "mnemonic": "MB",
-          "description": "Give the multiply-accumulate unit its operand b, from A",
+          "description": "Set the multiply-accumulate unit\u0027s operand b to A, read as a signed 16-bit number; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -819,7 +819,7 @@
         },
         {
           "mnemonic": "MAI",
-          "description": "Give the multiply-accumulate unit its operand a",
+          "description": "Set the multiply-accumulate unit\u0027s operand a to the value after the opcode, read as a signed 16-bit number; flags unchanged",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -833,7 +833,7 @@
         },
         {
           "mnemonic": "MBI",
-          "description": "Give the multiply-accumulate unit its operand b",
+          "description": "Set the multiply-accumulate unit\u0027s operand b to the value after the opcode, read as a signed 16-bit number; flags unchanged",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -847,7 +847,7 @@
         },
         {
           "mnemonic": "MUL",
-          "description": "Accumulator = a \u00D7 b",
+          "description": "Accumulator = a \u00D7 b, signed, clamped to a signed 32-bit range (8.8 times 8.8 gives 16.16); flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -857,7 +857,7 @@
         },
         {
           "mnemonic": "MAC",
-          "description": "Accumulator = accumulator \u002B a \u00D7 b",
+          "description": "Accumulator = accumulator \u002B a \u00D7 b, signed, clamped to a signed 32-bit range; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -867,7 +867,7 @@
         },
         {
           "mnemonic": "MDIV",
-          "description": "Accumulator = accumulator / b, keeping the 8.8 scale",
+          "description": "Accumulator = accumulator \u00D7 256 / b, signed, rounded toward 0 and clamped to 32 bits; b = 0 gives the largest value with the accumulator\u0027s sign. Flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -877,7 +877,7 @@
         },
         {
           "mnemonic": "MRD",
-          "description": "A = the accumulator in 8.8 fixed point: shifted right by 8, clamped to 16 bits",
+          "description": "A = the accumulator shifted right by 8, sign kept, clamped to -32768..32767 (the 8.8 fixed-point result); accumulator and flags unchanged",
           "operands": 0,
           "steps": [
             {

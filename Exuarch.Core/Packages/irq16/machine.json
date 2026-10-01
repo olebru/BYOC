@@ -144,7 +144,7 @@
       "name": "IRQ-16 microcode",
       "fetch": {
         "mnemonic": "FETCH",
-        "description": "With no interrupt pending (I=0): load the next opcode and step past it. With one pending (I=1): push the PC and the flags, switch interrupts off and jump to the handler in VEC",
+        "description": "I=0: load the opcode at the address in PC into IR and step PC past it. I=1 (interrupts enabled and an unmasked bit pending): push PC, then FLAGS, disable interrupts and set PC = VECTOR; the pending bit stays set until ACK",
         "steps": [
           {
             "when": { "I": false },
@@ -183,7 +183,7 @@
       "instructions": [
         {
           "mnemonic": "NOP",
-          "description": "Do nothing",
+          "description": "Does nothing; registers and flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -193,7 +193,7 @@
         },
         {
           "mnemonic": "HLT",
-          "description": "Halt the machine",
+          "description": "Stops the clock, halting the machine",
           "operands": 0,
           "steps": [
             {
@@ -203,7 +203,7 @@
         },
         {
           "mnemonic": "LDI",
-          "description": "A = value",
+          "description": "A = the value after the opcode; flags unchanged",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -217,7 +217,7 @@
         },
         {
           "mnemonic": "LBI",
-          "description": "B = value",
+          "description": "B = the value after the opcode; flags unchanged",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -231,7 +231,7 @@
         },
         {
           "mnemonic": "LBA",
-          "description": "B = an address, to walk memory with LDX and STX",
+          "description": "B = the address after the opcode, as a pointer for LDX and STX; flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -245,7 +245,7 @@
         },
         {
           "mnemonic": "LDA",
-          "description": "A = the memory cell at the address",
+          "description": "A = the cell at the address after the opcode; flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -262,7 +262,7 @@
         },
         {
           "mnemonic": "STA",
-          "description": "Store A in memory at the address",
+          "description": "Stores A in the cell at the address after the opcode; flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -279,7 +279,7 @@
         },
         {
           "mnemonic": "LDX",
-          "description": "A = the memory cell at the address in B",
+          "description": "A = the cell at the address in B; B and flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -292,7 +292,7 @@
         },
         {
           "mnemonic": "STX",
-          "description": "Store A in memory at the address in B",
+          "description": "Stores A in the cell at the address in B; B and flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -305,7 +305,7 @@
         },
         {
           "mnemonic": "TAB",
-          "description": "B = A",
+          "description": "B = A; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -315,7 +315,7 @@
         },
         {
           "mnemonic": "TBA",
-          "description": "A = B",
+          "description": "A = B; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -325,7 +325,7 @@
         },
         {
           "mnemonic": "INA",
-          "description": "A = A \u002B 1, flags unchanged",
+          "description": "A = A \u002B 1, wrapping from FFFF to 0; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -335,7 +335,7 @@
         },
         {
           "mnemonic": "INB",
-          "description": "B = B \u002B 1, flags unchanged",
+          "description": "B = B \u002B 1, wrapping from FFFF to 0; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -345,7 +345,7 @@
         },
         {
           "mnemonic": "DEB",
-          "description": "B = B - 1, flags unchanged",
+          "description": "B = B - 1, wrapping from 0 to FFFF; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -355,7 +355,7 @@
         },
         {
           "mnemonic": "ADD",
-          "description": "A = A \u002B B",
+          "description": "A = A \u002B B; sets Z, N, C on carry out and V on signed overflow; ALU OPERAND is overwritten with B",
           "operands": 0,
           "steps": [
             {
@@ -368,7 +368,7 @@
         },
         {
           "mnemonic": "SUB",
-          "description": "A = A - B",
+          "description": "A = A - B; sets Z, N, C if A < B unsigned (a borrow) and V on signed overflow; ALU OPERAND is overwritten with B",
           "operands": 0,
           "steps": [
             {
@@ -381,7 +381,7 @@
         },
         {
           "mnemonic": "AND",
-          "description": "A = A AND B",
+          "description": "A = A AND B; sets Z and N, clears C and V; ALU OPERAND is overwritten with B",
           "operands": 0,
           "steps": [
             {
@@ -394,7 +394,7 @@
         },
         {
           "mnemonic": "ADDI",
-          "description": "A = A \u002B value",
+          "description": "A = A \u002B the value after the opcode; sets Z, N, C on carry out and V on signed overflow; ALU OPERAND is overwritten",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -411,7 +411,7 @@
         },
         {
           "mnemonic": "SUBI",
-          "description": "A = A - value",
+          "description": "A = A - the value after the opcode; sets Z, N, C if A < value unsigned (a borrow) and V on signed overflow; ALU OPERAND is overwritten",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -428,7 +428,7 @@
         },
         {
           "mnemonic": "ANDI",
-          "description": "A = A AND value",
+          "description": "A = A AND the value after the opcode; sets Z and N, clears C and V; ALU OPERAND is overwritten",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -445,7 +445,7 @@
         },
         {
           "mnemonic": "EORI",
-          "description": "A = A XOR value",
+          "description": "A = A XOR the value after the opcode; sets Z and N, clears C and V; ALU OPERAND is overwritten",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -462,7 +462,7 @@
         },
         {
           "mnemonic": "LSRI",
-          "description": "A = A shifted right by value",
+          "description": "A = A shifted right, zero-filled, by the low 4 bits of the value after the opcode; sets Z and N, C to the last bit shifted out (clear for a shift of 0), clears V; ALU OPERAND is overwritten",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -479,7 +479,7 @@
         },
         {
           "mnemonic": "CMPI",
-          "description": "Set the flags for A - value",
+          "description": "Sets the flags for A - the value after the opcode without changing A: Z if equal, C if A < value unsigned, N and V as for SUBI; ALU OPERAND is overwritten",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -496,7 +496,7 @@
         },
         {
           "mnemonic": "JMP",
-          "description": "Jump to the address",
+          "description": "PC = the address after the opcode; flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -510,7 +510,7 @@
         },
         {
           "mnemonic": "JEQ",
-          "description": "Jump if equal (Z set)",
+          "description": "Jumps to the address after the opcode if Z is set (equal after CMPI); otherwise continues with the next instruction",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -530,7 +530,7 @@
         },
         {
           "mnemonic": "JNE",
-          "description": "Jump if not equal (Z clear)",
+          "description": "Jumps to the address after the opcode if Z is clear (not equal after CMPI); otherwise continues with the next instruction",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -550,7 +550,7 @@
         },
         {
           "mnemonic": "JCS",
-          "description": "Jump if carry set, or a CMP borrowed (A lower)",
+          "description": "Jumps to the address after the opcode if C is set (A < value unsigned after CMPI, or a carry out of ADD); otherwise continues with the next instruction",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -570,7 +570,7 @@
         },
         {
           "mnemonic": "JCC",
-          "description": "Jump if carry clear (A higher or same)",
+          "description": "Jumps to the address after the opcode if C is clear (A >= value unsigned after CMPI); otherwise continues with the next instruction",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -590,7 +590,7 @@
         },
         {
           "mnemonic": "CALL",
-          "description": "Call a subroutine: push the return address, then jump",
+          "description": "Pushes the return address (the instruction after CALL) and jumps to the address after the opcode; the stack grows down, SP is decremented before the write and points at the last item pushed; ALU OPERAND is overwritten; flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -613,7 +613,7 @@
         },
         {
           "mnemonic": "RET",
-          "description": "Return from a subroutine",
+          "description": "PC = the cell at SP (the return address CALL pushed), then SP is incremented; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -626,7 +626,7 @@
         },
         {
           "mnemonic": "PSA",
-          "description": "Push A",
+          "description": "Decrements SP, then stores A in the cell at SP (the stack grows down); flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -642,7 +642,7 @@
         },
         {
           "mnemonic": "POA",
-          "description": "Pop A",
+          "description": "A = the cell at SP, then SP is incremented; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -655,7 +655,7 @@
         },
         {
           "mnemonic": "PSB",
-          "description": "Push B",
+          "description": "Decrements SP, then stores B in the cell at SP (the stack grows down); flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -671,7 +671,7 @@
         },
         {
           "mnemonic": "POB",
-          "description": "Pop B",
+          "description": "B = the cell at SP, then SP is incremented; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -684,7 +684,7 @@
         },
         {
           "mnemonic": "SETV",
-          "description": "Set the interrupt handler\u0027s address",
+          "description": "VECTOR = the address after the opcode: where FETCH jumps when it takes an interrupt; flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -698,7 +698,7 @@
         },
         {
           "mnemonic": "EI",
-          "description": "Enable interrupts",
+          "description": "Enables interrupts: the next fetch takes one if an unmasked bit is pending",
           "operands": 0,
           "steps": [
             {
@@ -708,7 +708,7 @@
         },
         {
           "mnemonic": "DI",
-          "description": "Disable interrupts",
+          "description": "Disables interrupts; pending bits are kept and are taken after EI or RTI",
           "operands": 0,
           "steps": [
             {
@@ -718,7 +718,7 @@
         },
         {
           "mnemonic": "MASKI",
-          "description": "Set the interrupt mask: bit 0 timer, bit 1 keypad, bit 2 blitter",
+          "description": "Interrupt mask = the low 4 bits of the value after the opcode (bit 0 timer, bit 1 keypad, bit 2 blitter); only unmasked pending bits interrupt, and all are unmasked at reset",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -732,7 +732,7 @@
         },
         {
           "mnemonic": "CAUSE",
-          "description": "A = the pending interrupt bits: 1 timer, 2 keypad, 4 blitter",
+          "description": "A = the pending interrupt bits that are unmasked (1 timer, 2 keypad, 4 blitter); they stay pending until ACK; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -742,7 +742,7 @@
         },
         {
           "mnemonic": "ACK",
-          "description": "Clear the pending interrupt bits that are set in A",
+          "description": "Clears the pending interrupt bits that are set in A (1 timer, 2 keypad, 4 blitter); A and flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -752,7 +752,7 @@
         },
         {
           "mnemonic": "RTI",
-          "description": "Return from an interrupt: pop the flags and the PC, and enable interrupts again",
+          "description": "Pops FLAGS, then PC (the reverse of interrupt entry), incrementing SP after each, and enables interrupts; a pending bit not cleared by ACK interrupts again at the next fetch",
           "operands": 0,
           "steps": [
             {
@@ -771,7 +771,7 @@
         },
         {
           "mnemonic": "TPERI",
-          "description": "Set the timer\u0027s period in ticks",
+          "description": "Sets the timer\u0027s period to the value after the opcode, in clock ticks; a running timer raises irq0 every period ticks, and a period of 0 never fires",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -785,7 +785,7 @@
         },
         {
           "mnemonic": "TGO",
-          "description": "Start the timer",
+          "description": "Starts the timer from a count of 0; it raises irq0 every period ticks until TSTOP",
           "operands": 0,
           "steps": [
             {
@@ -795,7 +795,7 @@
         },
         {
           "mnemonic": "TSTOP",
-          "description": "Stop the timer",
+          "description": "Stops the timer; TGO restarts it from a count of 0",
           "operands": 0,
           "steps": [
             {
@@ -805,7 +805,7 @@
         },
         {
           "mnemonic": "OUT",
-          "description": "Print the character in A on the LCD",
+          "description": "Writes the low 8 bits of A to the LCD at its cursor and moves the cursor on; 10 (line feed) and 13 (carriage return) move the cursor instead, and the LCD scrolls up when full",
           "operands": 0,
           "steps": [
             {
@@ -815,7 +815,7 @@
         },
         {
           "mnemonic": "CLT",
-          "description": "Clear the LCD",
+          "description": "Fills the LCD with spaces and moves its cursor to the top left",
           "operands": 0,
           "steps": [
             {
@@ -825,7 +825,7 @@
         },
         {
           "mnemonic": "IN",
-          "description": "A = the keys: 1 up, 2 down, 4 left, 8 right, 16 space",
+          "description": "A = the keypad: keys held or pressed since the last IN (1 up, 2 down, 4 left, 8 right, 16 space); a new key press also raises irq1; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -835,7 +835,7 @@
         },
         {
           "mnemonic": "BX",
-          "description": "Give the blitter its left column from A",
+          "description": "Sets the blitter\u0027s left column to A; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -845,7 +845,7 @@
         },
         {
           "mnemonic": "BXI",
-          "description": "Give the blitter its left column",
+          "description": "Sets the blitter\u0027s left column to the value after the opcode; flags unchanged",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -859,7 +859,7 @@
         },
         {
           "mnemonic": "BY",
-          "description": "Give the blitter its top row from A",
+          "description": "Sets the blitter\u0027s top row to A; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -869,7 +869,7 @@
         },
         {
           "mnemonic": "BYI",
-          "description": "Give the blitter its top row",
+          "description": "Sets the blitter\u0027s top row to the value after the opcode; flags unchanged",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -883,7 +883,7 @@
         },
         {
           "mnemonic": "BW",
-          "description": "Give the blitter its width from A",
+          "description": "Sets the blitter\u0027s width in pixels to A; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -893,7 +893,7 @@
         },
         {
           "mnemonic": "BWI",
-          "description": "Give the blitter its width",
+          "description": "Sets the blitter\u0027s width in pixels to the value after the opcode; flags unchanged",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -907,7 +907,7 @@
         },
         {
           "mnemonic": "BH",
-          "description": "Give the blitter its height from A",
+          "description": "Sets the blitter\u0027s height in pixels to A; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -917,7 +917,7 @@
         },
         {
           "mnemonic": "BHI",
-          "description": "Give the blitter its height",
+          "description": "Sets the blitter\u0027s height in pixels to the value after the opcode; flags unchanged",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -931,7 +931,7 @@
         },
         {
           "mnemonic": "BC",
-          "description": "Give the blitter its RGB565 colour from A",
+          "description": "Sets the blitter\u0027s RGB565 fill colour to A; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -941,7 +941,7 @@
         },
         {
           "mnemonic": "BCI",
-          "description": "Give the blitter its RGB565 colour",
+          "description": "Sets the blitter\u0027s RGB565 fill colour to the value after the opcode; flags unchanged",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -955,7 +955,7 @@
         },
         {
           "mnemonic": "GO",
-          "description": "Start the blitter; it interrupts (irq2) when the rectangle is done",
+          "description": "Starts the blitter filling its width x height rectangle at its left column and top row with its colour, raising irq2 when done; ignored while busy or if width or height is 0",
           "operands": 0,
           "steps": [
             {
@@ -965,7 +965,7 @@
         },
         {
           "mnemonic": "CLS",
-          "description": "Clear the screen",
+          "description": "Clears every pixel of the screen to 0 (black) and resets its X and Y to 0",
           "operands": 0,
           "steps": [
             {

@@ -61,7 +61,7 @@ public class AssemblyLanguageTests
         var start = Language().Complete(source, 2, 4);
         var lai = Assert.Single(start, i => i.Label == "LAI");
         Assert.Equal("value", lai.Detail);
-        Assert.Equal("Load A with the operand", lai.Documentation);
+        Assert.Equal(Microcode.Instructions.Single(i => i.Mnemonic == "LAI").Description, lai.Documentation);
         Assert.Equal("LAI ", lai.InsertText);
         Assert.Contains(start, i => i.Label == ".DATA" && i.Kind == CompletionKind.Directive);
         Assert.Contains(start, i => i.Label == ".STRING" && i.Kind == CompletionKind.Directive);
@@ -82,7 +82,7 @@ public class AssemblyLanguageTests
         var source = "loop: JEQ loop\n LAI #65";
         var jeq = Language().Hover(source, 1, 8);
         Assert.Contains("**JEQ** address", jeq);
-        Assert.Contains("Jump to the operand address if Z is set", jeq);
+        Assert.Contains(Microcode.Instructions.Single(i => i.Mnemonic == "JEQ").Description, jeq);
         Assert.Contains("when Z=1", jeq);
         Assert.Equal("label **loop** at `0x0000` (0)\n\n**address** for JEQ: the memory location it uses", Language().Hover(source, 1, 12));
         Assert.Equal("`65` · `0x0041` · 'A'\n\n**value** for LAI: used as it is", Language().Hover(source, 2, 7));

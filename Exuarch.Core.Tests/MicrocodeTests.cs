@@ -73,6 +73,9 @@ public class MicrocodeTests
             // The legacy PEA and PEB read whichever MMU bank was selected; they now read the stack in bank 0, like
             // POA and POB (PackageTests.ByocPeeksReadTheStackInBankZero).
             if (instruction.Mnemonic is "PEA" or "PEB") continue;
+            // The legacy LPA and LPB read the operand address like LRA and LRB, never following the pointer stored
+            // there; they now follow it (PackageTests.ByocPointerLoadsFollowThePointer).
+            if (instruction.Mnemonic is "LPA" or "LPB") continue;
             Assert.Equal(Behaviour(original), Behaviour(instruction));
         }
     }
@@ -81,7 +84,7 @@ public class MicrocodeTests
     public void DefaultMicrocodeIsCleanForTheDefaultMachine()
     {
         Assert.Empty(Validate(DefaultMicrocode()));
-        Assert.Empty(Machine.CreateDefault().MicrocodeWarnings);
+        Assert.Empty(Machine.CreateExample().MicrocodeWarnings);
     }
 
     [Fact]

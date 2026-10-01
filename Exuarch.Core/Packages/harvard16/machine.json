@@ -138,7 +138,7 @@
       "name": "HARVARD-16 microcode",
       "fetch": {
         "mnemonic": "FETCH",
-        "description": "Load the opcode at the program counter into the micro step register and step past it. Most instructions do their successor\u0027s fetch themselves, in parallel with their own work",
+        "description": "Load the opcode at PC in program memory into IR and step PC past it; most instructions do this fetch for their successor in their own last steps, so the routine itself only runs at start-up and after jumps, calls and returns",
         "steps": [
           {
             "signals": ["pc.output", "pmem.loadmar"]
@@ -151,7 +151,7 @@
       "instructions": [
         {
           "mnemonic": "NOP",
-          "description": "Do nothing",
+          "description": "Do nothing except fetch the next instruction; registers, memory and flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -164,7 +164,7 @@
         },
         {
           "mnemonic": "HLT",
-          "description": "Halt the machine",
+          "description": "Stop the clock, halting the machine with PC at the cell after HLT; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -174,7 +174,7 @@
         },
         {
           "mnemonic": "LDI",
-          "description": "A = value",
+          "description": "A = the value after the opcode; flags unchanged",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -194,7 +194,7 @@
         },
         {
           "mnemonic": "LBI",
-          "description": "B = value",
+          "description": "B = the value after the opcode; flags unchanged",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -214,7 +214,7 @@
         },
         {
           "mnemonic": "LBA",
-          "description": "B = the address of a label, to walk a table in program memory with LPM",
+          "description": "B = the label address after the opcode (same steps as LBI), to walk a table in program memory with LPM; flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -234,7 +234,7 @@
         },
         {
           "mnemonic": "LDA",
-          "description": "A = the data memory cell at the address",
+          "description": "A = the data memory cell at the address after the opcode; flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -254,7 +254,7 @@
         },
         {
           "mnemonic": "LDB",
-          "description": "B = the data memory cell at the address",
+          "description": "B = the data memory cell at the address after the opcode; flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -274,7 +274,7 @@
         },
         {
           "mnemonic": "STA",
-          "description": "Store A in data memory at the address",
+          "description": "Store A in the data memory cell at the address after the opcode; flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -294,7 +294,7 @@
         },
         {
           "mnemonic": "STB",
-          "description": "Store B in data memory at the address",
+          "description": "Store B in the data memory cell at the address after the opcode; flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -314,7 +314,7 @@
         },
         {
           "mnemonic": "LDX",
-          "description": "A = the data memory cell at the address in B",
+          "description": "A = the data memory cell at the address in B; B and flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -327,7 +327,7 @@
         },
         {
           "mnemonic": "STX",
-          "description": "Store A in data memory at the address in B",
+          "description": "Store A in the data memory cell at the address in B; B and flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -340,7 +340,7 @@
         },
         {
           "mnemonic": "LPM",
-          "description": "A = the program memory cell at the address in B (tables and strings stored with the program)",
+          "description": "A = the program memory cell at the address in B, for tables and strings stored with the program; B and flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -362,7 +362,7 @@
         },
         {
           "mnemonic": "TAB",
-          "description": "B = A",
+          "description": "B = A; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -375,7 +375,7 @@
         },
         {
           "mnemonic": "TBA",
-          "description": "A = B",
+          "description": "A = B; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -388,7 +388,7 @@
         },
         {
           "mnemonic": "INA",
-          "description": "A = A \u002B 1, flags unchanged",
+          "description": "A = A \u002B 1, wrapping from FFFF to 0; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -401,7 +401,7 @@
         },
         {
           "mnemonic": "DEA",
-          "description": "A = A - 1, flags unchanged",
+          "description": "A = A - 1, wrapping from 0 to FFFF; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -414,7 +414,7 @@
         },
         {
           "mnemonic": "INB",
-          "description": "B = B \u002B 1, flags unchanged",
+          "description": "B = B \u002B 1, wrapping from FFFF to 0; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -427,7 +427,7 @@
         },
         {
           "mnemonic": "DEB",
-          "description": "B = B - 1, flags unchanged",
+          "description": "B = B - 1, wrapping from 0 to FFFF; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -440,7 +440,7 @@
         },
         {
           "mnemonic": "ADD",
-          "description": "A = A \u002B B; C on carry out, V on signed overflow",
+          "description": "A = A \u002B B; sets Z, N, C (carry out) and V (signed overflow); ALU OPERAND is left holding B",
           "operands": 0,
           "steps": [
             {
@@ -453,7 +453,7 @@
         },
         {
           "mnemonic": "SUB",
-          "description": "A = A - B; C when A \u003C B unsigned (borrow), N from the sign of the result",
+          "description": "A = A - B; sets Z, N, V (signed overflow) and C if A \u003C B unsigned (borrow); ALU OPERAND is left holding B",
           "operands": 0,
           "steps": [
             {
@@ -466,7 +466,7 @@
         },
         {
           "mnemonic": "AND",
-          "description": "A = A AND B",
+          "description": "A = A AND B, bitwise; sets Z and N, clears C and V; ALU OPERAND is left holding B",
           "operands": 0,
           "steps": [
             {
@@ -479,7 +479,7 @@
         },
         {
           "mnemonic": "ORR",
-          "description": "A = A OR B",
+          "description": "A = A OR B, bitwise; sets Z and N, clears C and V; ALU OPERAND is left holding B",
           "operands": 0,
           "steps": [
             {
@@ -492,7 +492,7 @@
         },
         {
           "mnemonic": "EOR",
-          "description": "A = A XOR B",
+          "description": "A = A XOR B, bitwise; sets Z and N, clears C and V; ALU OPERAND is left holding B",
           "operands": 0,
           "steps": [
             {
@@ -505,7 +505,7 @@
         },
         {
           "mnemonic": "LSL",
-          "description": "A = A shifted left by B; C is the last bit out",
+          "description": "A = A shifted left by the low 4 bits of B (0 to 15), zeros in; sets Z and N, C to the last bit shifted out (clear for a shift of 0), clears V; ALU OPERAND is left holding B",
           "operands": 0,
           "steps": [
             {
@@ -518,7 +518,7 @@
         },
         {
           "mnemonic": "LSR",
-          "description": "A = A shifted right by B; C is the last bit out",
+          "description": "A = A shifted right by the low 4 bits of B (0 to 15), zeros in; sets Z and N, C to the last bit shifted out (clear for a shift of 0), clears V; ALU OPERAND is left holding B",
           "operands": 0,
           "steps": [
             {
@@ -531,7 +531,7 @@
         },
         {
           "mnemonic": "CMP",
-          "description": "Set the flags for A - B",
+          "description": "Set the flags for A - B without changing A: Z if equal, C if A \u003C B unsigned, N from bit 15 of the difference, V on signed overflow; ALU OPERAND is left holding B",
           "operands": 0,
           "steps": [
             {
@@ -544,7 +544,7 @@
         },
         {
           "mnemonic": "ADDI",
-          "description": "A = A \u002B value",
+          "description": "A = A \u002B the value after the opcode; sets Z, N, C (carry out) and V (signed overflow); ALU OPERAND is left holding the value",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -564,7 +564,7 @@
         },
         {
           "mnemonic": "SUBI",
-          "description": "A = A - value",
+          "description": "A = A - the value after the opcode; sets Z, N, V (signed overflow) and C if A \u003C value unsigned (borrow); ALU OPERAND is left holding the value",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -584,7 +584,7 @@
         },
         {
           "mnemonic": "ANDI",
-          "description": "A = A AND value",
+          "description": "A = A AND the value after the opcode, bitwise; sets Z and N, clears C and V; ALU OPERAND is left holding the value",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -604,7 +604,7 @@
         },
         {
           "mnemonic": "CMPI",
-          "description": "Set the flags for A - value",
+          "description": "Set the flags for A - the value after the opcode without changing A: Z if equal, C if A \u003C value unsigned, N from bit 15, V on signed overflow; ALU OPERAND is left holding the value",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -624,7 +624,7 @@
         },
         {
           "mnemonic": "JMP",
-          "description": "Jump to the address",
+          "description": "Jump to the address after the opcode; flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -638,7 +638,7 @@
         },
         {
           "mnemonic": "JEQ",
-          "description": "Jump if equal (Z set)",
+          "description": "Jump to the address after the opcode if Z is set (equal after CMP); otherwise go on with the next instruction; flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -658,7 +658,7 @@
         },
         {
           "mnemonic": "JNE",
-          "description": "Jump if not equal (Z clear)",
+          "description": "Jump to the address after the opcode if Z is clear (not equal after CMP); otherwise go on with the next instruction; flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -678,7 +678,7 @@
         },
         {
           "mnemonic": "JCS",
-          "description": "Jump if carry set: an ADD carried out, or a CMP/SUB borrowed (A lower)",
+          "description": "Jump to the address after the opcode if C is set (A \u003C B unsigned after CMP, or a carry out of ADD); otherwise go on with the next instruction; flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -698,7 +698,7 @@
         },
         {
           "mnemonic": "JCC",
-          "description": "Jump if carry clear: no carry out, or no borrow (A higher or same)",
+          "description": "Jump to the address after the opcode if C is clear (A \u003E= B unsigned after CMP, or no carry out of ADD); otherwise go on with the next instruction; flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -718,7 +718,7 @@
         },
         {
           "mnemonic": "JMI",
-          "description": "Jump if negative (N set)",
+          "description": "Jump to the address after the opcode if N is set (bit 15 of the last ALU result set); otherwise go on with the next instruction; flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -738,7 +738,7 @@
         },
         {
           "mnemonic": "JPL",
-          "description": "Jump if positive or zero (N clear)",
+          "description": "Jump to the address after the opcode if N is clear (bit 15 of the last ALU result clear); otherwise go on with the next instruction; flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -758,7 +758,7 @@
         },
         {
           "mnemonic": "CALL",
-          "description": "Call a subroutine: push the return address on the stack in data memory, then jump",
+          "description": "Push the return address (the cell after the operand) onto the stack in data memory and jump to the address after the opcode; SP is decremented first, so it points at the pushed address; flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -775,7 +775,7 @@
         },
         {
           "mnemonic": "RET",
-          "description": "Return from a subroutine: pop the return address into the PC",
+          "description": "Pop the return address from the stack in data memory: PC = the cell at SP, then SP = SP \u002B 1; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -791,7 +791,7 @@
         },
         {
           "mnemonic": "PUSH",
-          "description": "Push A on the stack in data memory",
+          "description": "Push A onto the stack in data memory: SP = SP - 1, then store A in the cell at SP, so the stack grows down and SP points at the top item; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -807,7 +807,7 @@
         },
         {
           "mnemonic": "POP",
-          "description": "Pop the top of the stack into A",
+          "description": "Pop the top of the stack into A: A = the data memory cell at SP, then SP = SP \u002B 1; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -820,7 +820,7 @@
         },
         {
           "mnemonic": "OUT",
-          "description": "Print the character in A on the LCD",
+          "description": "Print the low 8 bits of A as a character at the LCD cursor and move the cursor right; 10 and 13 move to the start of the next or current row, and the LCD scrolls up when full; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -833,7 +833,7 @@
         },
         {
           "mnemonic": "PX",
-          "description": "Move the screen cursor to column A",
+          "description": "Set the screen cursor\u0027s column to A modulo 640; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -846,7 +846,7 @@
         },
         {
           "mnemonic": "PY",
-          "description": "Move the screen cursor to row A",
+          "description": "Set the screen cursor\u0027s row to A modulo 480; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -859,7 +859,7 @@
         },
         {
           "mnemonic": "PLOT",
-          "description": "Plot the RGB565 colour in A at the screen cursor and move right",
+          "description": "Write the RGB565 colour in A to the screen pixel at the cursor and move the cursor right, wrapping to the next row and from the bottom row to the top; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -872,7 +872,7 @@
         },
         {
           "mnemonic": "CLT",
-          "description": "Clear the LCD",
+          "description": "Clear the LCD to spaces and move its cursor to the top-left cell; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -885,7 +885,7 @@
         },
         {
           "mnemonic": "CLS",
-          "description": "Clear the screen and move its cursor to 0, 0",
+          "description": "Clear every screen pixel to black (0) and move the screen cursor to 0, 0; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -898,7 +898,7 @@
         },
         {
           "mnemonic": "IN",
-          "description": "A = the keys: 1 up, 2 down, 4 left, 8 right, 16 space",
+          "description": "A = the keypad keys held or pressed since the last read: 1 up, 2 down, 4 left, 8 right, 16 space; the read clears the pressed record; flags unchanged",
           "operands": 0,
           "steps": [
             {

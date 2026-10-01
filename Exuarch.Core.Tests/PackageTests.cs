@@ -108,6 +108,23 @@ public class PackageTests
         Assert.Equal(0xFFFF, c.Device<Register>("regsp").Data);
     }
 
+    // LPA and LPB follow the pointer stored at the operand address; LRA reads the operand address itself.
+    [Fact]
+    public void ByocPointerLoadsFollowThePointer()
+    {
+        var c = Run(BuiltInPackages.Get("BYOC-16"), @"
+            LPA    ptr
+            LPB    ptr
+            HLT
+    ptr:    .DATA  target
+    target: .DATA  42");
+        Assert.Equal(42, c.Device<Register>("rega").Data);
+        Assert.Equal(42, c.Device<Register>("regb").Data);
+        Assert.Equal(0, c.Device<Register>("regs").Data);
+        c = Run(BuiltInPackages.Get("BYOC-16"), "LRA ptr\nHLT\nptr: .DATA 7");
+        Assert.Equal(7, c.Device<Register>("rega").Data);
+    }
+
     [Fact]
     public void ExampleDataHasByocsPrograms()
     {

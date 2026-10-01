@@ -143,7 +143,7 @@
       "name": "MOVE-16 microcode",
       "fetch": {
         "mnemonic": "FETCH",
-        "description": "Load the next move\u0027s opcode at the program counter and step past it",
+        "description": "Load the opcode at PC into IR, where that instruction\u0027s micro steps start, and step PC past it",
         "steps": [
           {
             "signals": ["pc.output", "mem.loadmar"]
@@ -156,7 +156,7 @@
       "instructions": [
         {
           "mnemonic": "IMM_TO_R0",
-          "description": "Move the value written after the move into R0",
+          "description": "Copy the value after the opcode into R0, a general-purpose register; flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -170,7 +170,7 @@
         },
         {
           "mnemonic": "IMM_TO_R1",
-          "description": "Move the value written after the move into R1",
+          "description": "Copy the value after the opcode into R1, a general-purpose register; flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -184,7 +184,7 @@
         },
         {
           "mnemonic": "IMM_TO_R2",
-          "description": "Move the value written after the move into R2",
+          "description": "Copy the value after the opcode into R2, a general-purpose register; flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -198,7 +198,7 @@
         },
         {
           "mnemonic": "IMM_TO_R3",
-          "description": "Move the value written after the move into R3",
+          "description": "Copy the value after the opcode into R3, where CALL also leaves the return address; flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -212,7 +212,7 @@
         },
         {
           "mnemonic": "IMM_TO_A",
-          "description": "Move the value written after the move into the function unit\u0027s A port",
+          "description": "Copy the value after the opcode into A, the first operand of the next ALU move; flags unchanged",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -226,7 +226,7 @@
         },
         {
           "mnemonic": "IMM_TO_MAR",
-          "description": "Move the value written after the move into MAR: where MEM reads and writes",
+          "description": "Copy the value after the opcode into MAR, the address MEM reads and writes; flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -240,7 +240,7 @@
         },
         {
           "mnemonic": "IMM_TO_MEM",
-          "description": "Move the value written after the move into memory at MAR",
+          "description": "Store the value after the opcode in memory at the address in MAR, via TEMP (TEMP is overwritten); flags unchanged",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -260,7 +260,7 @@
         },
         {
           "mnemonic": "IMM_TO_LCD",
-          "description": "Move the value written after the move to the LCD: prints it",
+          "description": "Print the low 8 bits of the value after the opcode as a character on the LCD and move the cursor right (10 new line, 13 line start); flags unchanged",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -274,7 +274,7 @@
         },
         {
           "mnemonic": "IMM_TO_X",
-          "description": "Move the value written after the move to the screen: sets the cursor column",
+          "description": "Set the screen cursor column to the value after the opcode, taken mod 640; flags unchanged",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -288,7 +288,7 @@
         },
         {
           "mnemonic": "IMM_TO_Y",
-          "description": "Move the value written after the move to the screen: sets the cursor row",
+          "description": "Set the screen cursor row to the value after the opcode, taken mod 480; flags unchanged",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -302,7 +302,7 @@
         },
         {
           "mnemonic": "IMM_TO_PIXEL",
-          "description": "Move the value written after the move to the screen: plots that RGB565 colour and moves right",
+          "description": "Plot the value after the opcode as an RGB565 colour at the screen cursor and move the cursor right; flags unchanged",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -316,7 +316,7 @@
         },
         {
           "mnemonic": "IMM_TO_JMP",
-          "description": "Move the value written after the move into the PC: jumps",
+          "description": "Jump to the value after the opcode: PC is set to it and the next instruction is fetched from there; flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -330,7 +330,7 @@
         },
         {
           "mnemonic": "IMM_TO_ADD",
-          "description": "Move the value written after the move into the ADD trigger: RES = A ADD the value, and the flags follow",
+          "description": "RES = A + the value after the opcode; sets Z, N, C (carry out) and V (signed overflow)",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -347,7 +347,7 @@
         },
         {
           "mnemonic": "IMM_TO_SUB",
-          "description": "Move the value written after the move into the SUB trigger: RES = A SUB the value, and the flags follow",
+          "description": "RES = A - the value after the opcode; sets Z, N, C (borrow, A \u003C the value unsigned) and V (signed overflow)",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -364,7 +364,7 @@
         },
         {
           "mnemonic": "IMM_TO_AND",
-          "description": "Move the value written after the move into the AND trigger: RES = A AND the value, and the flags follow",
+          "description": "RES = A AND the value after the opcode, bit by bit; sets Z if the result is 0 and N from bit 15, clears C and V",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -381,7 +381,7 @@
         },
         {
           "mnemonic": "IMM_TO_OR",
-          "description": "Move the value written after the move into the OR trigger: RES = A OR the value, and the flags follow",
+          "description": "RES = A OR the value after the opcode, bit by bit; sets Z if the result is 0 and N from bit 15, clears C and V",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -398,7 +398,7 @@
         },
         {
           "mnemonic": "IMM_TO_XOR",
-          "description": "Move the value written after the move into the XOR trigger: RES = A XOR the value, and the flags follow",
+          "description": "RES = A XOR the value after the opcode, bit by bit; sets Z if the result is 0 and N from bit 15, clears C and V",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -415,7 +415,7 @@
         },
         {
           "mnemonic": "IMM_TO_SHL",
-          "description": "Move the value written after the move into the SHL trigger: RES = A SHL the value, and the flags follow",
+          "description": "RES = A shifted left by the low 4 bits of the value after the opcode; sets Z and N, C to the last bit shifted out, clears V",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -432,7 +432,7 @@
         },
         {
           "mnemonic": "IMM_TO_SHR",
-          "description": "Move the value written after the move into the SHR trigger: RES = A SHR the value, and the flags follow",
+          "description": "RES = A shifted right by the low 4 bits of the value after the opcode; sets Z and N, C to the last bit shifted out, clears V",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -449,7 +449,7 @@
         },
         {
           "mnemonic": "IMM_TO_CMP",
-          "description": "Move the value written after the move into the CMP trigger: sets the flags for A - the value, RES unchanged",
+          "description": "Set the flags for A - the value after the opcode without changing RES: Z if equal, C if A \u003C the value unsigned",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -466,7 +466,7 @@
         },
         {
           "mnemonic": "IMM_TO_JZ",
-          "description": "Move the value written after the move into the PC if the last result was zero",
+          "description": "Jump to the value after the opcode if Z is set (the last ALU result was 0); otherwise go on with the next instruction",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -486,7 +486,7 @@
         },
         {
           "mnemonic": "IMM_TO_JNZ",
-          "description": "Move the value written after the move into the PC if the last result was not zero",
+          "description": "Jump to the value after the opcode if Z is clear (the last ALU result was not 0); otherwise go on with the next instruction",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -506,7 +506,7 @@
         },
         {
           "mnemonic": "IMM_TO_JN",
-          "description": "Move the value written after the move into the PC if the last result was negative (N set)",
+          "description": "Jump to the value after the opcode if N is set (the last ALU result was negative); otherwise go on with the next instruction",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -526,7 +526,7 @@
         },
         {
           "mnemonic": "IMM_TO_JC",
-          "description": "Move the value written after the move into the PC if the last result carried out (or a CMP/SUB borrowed)",
+          "description": "Jump to the value after the opcode if C is set (carry out, borrow or last bit shifted out); otherwise go on with the next instruction",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -546,7 +546,7 @@
         },
         {
           "mnemonic": "IMM_TO_CALL",
-          "description": "Move the value written after the move into the CALL port: jumps there and puts the return address in R3",
+          "description": "Jump to the value after the opcode and set R3 to the return address (the next instruction); flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -563,7 +563,7 @@
         },
         {
           "mnemonic": "IMM_TO_CLEAR",
-          "description": "Move the value written after the move into the LCD\u0027s CLEAR port: blanks the LCD",
+          "description": "Clear the LCD to spaces and move its cursor to the start; the value after the opcode is ignored and skipped",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -574,7 +574,7 @@
         },
         {
           "mnemonic": "IMM_TO_CLS",
-          "description": "Move the value written after the move into the screen\u0027s CLS port: blanks the screen",
+          "description": "Clear the screen to black and move the screen cursor to 0,0; the value after the opcode is ignored and skipped",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -585,7 +585,7 @@
         },
         {
           "mnemonic": "IMM_TO_HALT",
-          "description": "Move the value written after the move into the HALT port: stops the clock",
+          "description": "Stop the clock, halting the machine; the value after the opcode is ignored and skipped",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -596,7 +596,7 @@
         },
         {
           "mnemonic": "R0_TO_R1",
-          "description": "Move R0 into R1",
+          "description": "Copy R0 into R1, a general-purpose register; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -606,7 +606,7 @@
         },
         {
           "mnemonic": "R0_TO_R2",
-          "description": "Move R0 into R2",
+          "description": "Copy R0 into R2, a general-purpose register; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -616,7 +616,7 @@
         },
         {
           "mnemonic": "R0_TO_R3",
-          "description": "Move R0 into R3",
+          "description": "Copy R0 into R3, where CALL also leaves the return address; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -626,7 +626,7 @@
         },
         {
           "mnemonic": "R0_TO_A",
-          "description": "Move R0 into the function unit\u0027s A port",
+          "description": "Copy R0 into A, the first operand of the next ALU move; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -636,7 +636,7 @@
         },
         {
           "mnemonic": "R0_TO_MAR",
-          "description": "Move R0 into MAR: where MEM reads and writes",
+          "description": "Copy R0 into MAR, the address MEM reads and writes; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -646,7 +646,7 @@
         },
         {
           "mnemonic": "R0_TO_MEM",
-          "description": "Move R0 into memory at MAR",
+          "description": "Store R0 in memory at the address in MAR, via TEMP (TEMP is overwritten); flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -662,7 +662,7 @@
         },
         {
           "mnemonic": "R0_TO_LCD",
-          "description": "Move R0 to the LCD: prints it",
+          "description": "Print the low 8 bits of R0 as a character on the LCD and move the cursor right (10 new line, 13 line start); flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -672,7 +672,7 @@
         },
         {
           "mnemonic": "R0_TO_X",
-          "description": "Move R0 to the screen: sets the cursor column",
+          "description": "Set the screen cursor column to R0, taken mod 640; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -682,7 +682,7 @@
         },
         {
           "mnemonic": "R0_TO_Y",
-          "description": "Move R0 to the screen: sets the cursor row",
+          "description": "Set the screen cursor row to R0, taken mod 480; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -692,7 +692,7 @@
         },
         {
           "mnemonic": "R0_TO_PIXEL",
-          "description": "Move R0 to the screen: plots that RGB565 colour and moves right",
+          "description": "Plot R0 as an RGB565 colour at the screen cursor and move the cursor right; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -702,7 +702,7 @@
         },
         {
           "mnemonic": "R0_TO_JMP",
-          "description": "Move R0 into the PC: jumps",
+          "description": "Jump to R0: PC is set to it and the next instruction is fetched from there; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -712,7 +712,7 @@
         },
         {
           "mnemonic": "R0_TO_ADD",
-          "description": "Move R0 into the ADD trigger: RES = A ADD the value, and the flags follow",
+          "description": "RES = A + R0; sets Z, N, C (carry out) and V (signed overflow)",
           "operands": 0,
           "steps": [
             {
@@ -725,7 +725,7 @@
         },
         {
           "mnemonic": "R0_TO_SUB",
-          "description": "Move R0 into the SUB trigger: RES = A SUB the value, and the flags follow",
+          "description": "RES = A - R0; sets Z, N, C (borrow, A \u003C R0 unsigned) and V (signed overflow)",
           "operands": 0,
           "steps": [
             {
@@ -738,7 +738,7 @@
         },
         {
           "mnemonic": "R0_TO_AND",
-          "description": "Move R0 into the AND trigger: RES = A AND the value, and the flags follow",
+          "description": "RES = A AND R0, bit by bit; sets Z if the result is 0 and N from bit 15, clears C and V",
           "operands": 0,
           "steps": [
             {
@@ -751,7 +751,7 @@
         },
         {
           "mnemonic": "R0_TO_OR",
-          "description": "Move R0 into the OR trigger: RES = A OR the value, and the flags follow",
+          "description": "RES = A OR R0, bit by bit; sets Z if the result is 0 and N from bit 15, clears C and V",
           "operands": 0,
           "steps": [
             {
@@ -764,7 +764,7 @@
         },
         {
           "mnemonic": "R0_TO_XOR",
-          "description": "Move R0 into the XOR trigger: RES = A XOR the value, and the flags follow",
+          "description": "RES = A XOR R0, bit by bit; sets Z if the result is 0 and N from bit 15, clears C and V",
           "operands": 0,
           "steps": [
             {
@@ -777,7 +777,7 @@
         },
         {
           "mnemonic": "R0_TO_SHL",
-          "description": "Move R0 into the SHL trigger: RES = A SHL the value, and the flags follow",
+          "description": "RES = A shifted left by the low 4 bits of R0; sets Z and N, C to the last bit shifted out, clears V",
           "operands": 0,
           "steps": [
             {
@@ -790,7 +790,7 @@
         },
         {
           "mnemonic": "R0_TO_SHR",
-          "description": "Move R0 into the SHR trigger: RES = A SHR the value, and the flags follow",
+          "description": "RES = A shifted right by the low 4 bits of R0; sets Z and N, C to the last bit shifted out, clears V",
           "operands": 0,
           "steps": [
             {
@@ -803,7 +803,7 @@
         },
         {
           "mnemonic": "R0_TO_CMP",
-          "description": "Move R0 into the CMP trigger: sets the flags for A - the value, RES unchanged",
+          "description": "Set the flags for A - R0 without changing RES: Z if equal, C if A \u003C R0 unsigned",
           "operands": 0,
           "steps": [
             {
@@ -816,7 +816,7 @@
         },
         {
           "mnemonic": "R0_TO_JZ",
-          "description": "Move R0 into the PC if the last result was zero",
+          "description": "Jump to R0 if Z is set (the last ALU result was 0); otherwise go on with the next instruction",
           "operands": 0,
           "steps": [
             {
@@ -831,7 +831,7 @@
         },
         {
           "mnemonic": "R0_TO_JNZ",
-          "description": "Move R0 into the PC if the last result was not zero",
+          "description": "Jump to R0 if Z is clear (the last ALU result was not 0); otherwise go on with the next instruction",
           "operands": 0,
           "steps": [
             {
@@ -846,7 +846,7 @@
         },
         {
           "mnemonic": "R0_TO_JN",
-          "description": "Move R0 into the PC if the last result was negative (N set)",
+          "description": "Jump to R0 if N is set (the last ALU result was negative); otherwise go on with the next instruction",
           "operands": 0,
           "steps": [
             {
@@ -861,7 +861,7 @@
         },
         {
           "mnemonic": "R0_TO_JC",
-          "description": "Move R0 into the PC if the last result carried out (or a CMP/SUB borrowed)",
+          "description": "Jump to R0 if C is set (carry out, borrow or last bit shifted out); otherwise go on with the next instruction",
           "operands": 0,
           "steps": [
             {
@@ -876,7 +876,7 @@
         },
         {
           "mnemonic": "R0_TO_CALL",
-          "description": "Move R0 into the CALL port: jumps there and puts the return address in R3",
+          "description": "Jump to R0 and set R3 to the return address (the next instruction), overwriting TEMP; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -892,7 +892,7 @@
         },
         {
           "mnemonic": "R0_TO_CLEAR",
-          "description": "Move R0 into the LCD\u0027s CLEAR port: blanks the LCD",
+          "description": "Clear the LCD to spaces and move its cursor to the start; the value of R0 is ignored",
           "operands": 0,
           "steps": [
             {
@@ -902,7 +902,7 @@
         },
         {
           "mnemonic": "R0_TO_CLS",
-          "description": "Move R0 into the screen\u0027s CLS port: blanks the screen",
+          "description": "Clear the screen to black and move the screen cursor to 0,0; the value of R0 is ignored",
           "operands": 0,
           "steps": [
             {
@@ -912,7 +912,7 @@
         },
         {
           "mnemonic": "R0_TO_HALT",
-          "description": "Move R0 into the HALT port: stops the clock",
+          "description": "Stop the clock, halting the machine; the value of R0 is ignored",
           "operands": 0,
           "steps": [
             {
@@ -922,7 +922,7 @@
         },
         {
           "mnemonic": "R1_TO_R0",
-          "description": "Move R1 into R0",
+          "description": "Copy R1 into R0, a general-purpose register; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -932,7 +932,7 @@
         },
         {
           "mnemonic": "R1_TO_R2",
-          "description": "Move R1 into R2",
+          "description": "Copy R1 into R2, a general-purpose register; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -942,7 +942,7 @@
         },
         {
           "mnemonic": "R1_TO_R3",
-          "description": "Move R1 into R3",
+          "description": "Copy R1 into R3, where CALL also leaves the return address; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -952,7 +952,7 @@
         },
         {
           "mnemonic": "R1_TO_A",
-          "description": "Move R1 into the function unit\u0027s A port",
+          "description": "Copy R1 into A, the first operand of the next ALU move; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -962,7 +962,7 @@
         },
         {
           "mnemonic": "R1_TO_MAR",
-          "description": "Move R1 into MAR: where MEM reads and writes",
+          "description": "Copy R1 into MAR, the address MEM reads and writes; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -972,7 +972,7 @@
         },
         {
           "mnemonic": "R1_TO_MEM",
-          "description": "Move R1 into memory at MAR",
+          "description": "Store R1 in memory at the address in MAR, via TEMP (TEMP is overwritten); flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -988,7 +988,7 @@
         },
         {
           "mnemonic": "R1_TO_LCD",
-          "description": "Move R1 to the LCD: prints it",
+          "description": "Print the low 8 bits of R1 as a character on the LCD and move the cursor right (10 new line, 13 line start); flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -998,7 +998,7 @@
         },
         {
           "mnemonic": "R1_TO_X",
-          "description": "Move R1 to the screen: sets the cursor column",
+          "description": "Set the screen cursor column to R1, taken mod 640; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -1008,7 +1008,7 @@
         },
         {
           "mnemonic": "R1_TO_Y",
-          "description": "Move R1 to the screen: sets the cursor row",
+          "description": "Set the screen cursor row to R1, taken mod 480; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -1018,7 +1018,7 @@
         },
         {
           "mnemonic": "R1_TO_PIXEL",
-          "description": "Move R1 to the screen: plots that RGB565 colour and moves right",
+          "description": "Plot R1 as an RGB565 colour at the screen cursor and move the cursor right; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -1028,7 +1028,7 @@
         },
         {
           "mnemonic": "R1_TO_JMP",
-          "description": "Move R1 into the PC: jumps",
+          "description": "Jump to R1: PC is set to it and the next instruction is fetched from there; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -1038,7 +1038,7 @@
         },
         {
           "mnemonic": "R1_TO_ADD",
-          "description": "Move R1 into the ADD trigger: RES = A ADD the value, and the flags follow",
+          "description": "RES = A + R1; sets Z, N, C (carry out) and V (signed overflow)",
           "operands": 0,
           "steps": [
             {
@@ -1051,7 +1051,7 @@
         },
         {
           "mnemonic": "R1_TO_SUB",
-          "description": "Move R1 into the SUB trigger: RES = A SUB the value, and the flags follow",
+          "description": "RES = A - R1; sets Z, N, C (borrow, A \u003C R1 unsigned) and V (signed overflow)",
           "operands": 0,
           "steps": [
             {
@@ -1064,7 +1064,7 @@
         },
         {
           "mnemonic": "R1_TO_AND",
-          "description": "Move R1 into the AND trigger: RES = A AND the value, and the flags follow",
+          "description": "RES = A AND R1, bit by bit; sets Z if the result is 0 and N from bit 15, clears C and V",
           "operands": 0,
           "steps": [
             {
@@ -1077,7 +1077,7 @@
         },
         {
           "mnemonic": "R1_TO_OR",
-          "description": "Move R1 into the OR trigger: RES = A OR the value, and the flags follow",
+          "description": "RES = A OR R1, bit by bit; sets Z if the result is 0 and N from bit 15, clears C and V",
           "operands": 0,
           "steps": [
             {
@@ -1090,7 +1090,7 @@
         },
         {
           "mnemonic": "R1_TO_XOR",
-          "description": "Move R1 into the XOR trigger: RES = A XOR the value, and the flags follow",
+          "description": "RES = A XOR R1, bit by bit; sets Z if the result is 0 and N from bit 15, clears C and V",
           "operands": 0,
           "steps": [
             {
@@ -1103,7 +1103,7 @@
         },
         {
           "mnemonic": "R1_TO_SHL",
-          "description": "Move R1 into the SHL trigger: RES = A SHL the value, and the flags follow",
+          "description": "RES = A shifted left by the low 4 bits of R1; sets Z and N, C to the last bit shifted out, clears V",
           "operands": 0,
           "steps": [
             {
@@ -1116,7 +1116,7 @@
         },
         {
           "mnemonic": "R1_TO_SHR",
-          "description": "Move R1 into the SHR trigger: RES = A SHR the value, and the flags follow",
+          "description": "RES = A shifted right by the low 4 bits of R1; sets Z and N, C to the last bit shifted out, clears V",
           "operands": 0,
           "steps": [
             {
@@ -1129,7 +1129,7 @@
         },
         {
           "mnemonic": "R1_TO_CMP",
-          "description": "Move R1 into the CMP trigger: sets the flags for A - the value, RES unchanged",
+          "description": "Set the flags for A - R1 without changing RES: Z if equal, C if A \u003C R1 unsigned",
           "operands": 0,
           "steps": [
             {
@@ -1142,7 +1142,7 @@
         },
         {
           "mnemonic": "R1_TO_JZ",
-          "description": "Move R1 into the PC if the last result was zero",
+          "description": "Jump to R1 if Z is set (the last ALU result was 0); otherwise go on with the next instruction",
           "operands": 0,
           "steps": [
             {
@@ -1157,7 +1157,7 @@
         },
         {
           "mnemonic": "R1_TO_JNZ",
-          "description": "Move R1 into the PC if the last result was not zero",
+          "description": "Jump to R1 if Z is clear (the last ALU result was not 0); otherwise go on with the next instruction",
           "operands": 0,
           "steps": [
             {
@@ -1172,7 +1172,7 @@
         },
         {
           "mnemonic": "R1_TO_JN",
-          "description": "Move R1 into the PC if the last result was negative (N set)",
+          "description": "Jump to R1 if N is set (the last ALU result was negative); otherwise go on with the next instruction",
           "operands": 0,
           "steps": [
             {
@@ -1187,7 +1187,7 @@
         },
         {
           "mnemonic": "R1_TO_JC",
-          "description": "Move R1 into the PC if the last result carried out (or a CMP/SUB borrowed)",
+          "description": "Jump to R1 if C is set (carry out, borrow or last bit shifted out); otherwise go on with the next instruction",
           "operands": 0,
           "steps": [
             {
@@ -1202,7 +1202,7 @@
         },
         {
           "mnemonic": "R1_TO_CALL",
-          "description": "Move R1 into the CALL port: jumps there and puts the return address in R3",
+          "description": "Jump to R1 and set R3 to the return address (the next instruction), overwriting TEMP; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -1218,7 +1218,7 @@
         },
         {
           "mnemonic": "R1_TO_CLEAR",
-          "description": "Move R1 into the LCD\u0027s CLEAR port: blanks the LCD",
+          "description": "Clear the LCD to spaces and move its cursor to the start; the value of R1 is ignored",
           "operands": 0,
           "steps": [
             {
@@ -1228,7 +1228,7 @@
         },
         {
           "mnemonic": "R1_TO_CLS",
-          "description": "Move R1 into the screen\u0027s CLS port: blanks the screen",
+          "description": "Clear the screen to black and move the screen cursor to 0,0; the value of R1 is ignored",
           "operands": 0,
           "steps": [
             {
@@ -1238,7 +1238,7 @@
         },
         {
           "mnemonic": "R1_TO_HALT",
-          "description": "Move R1 into the HALT port: stops the clock",
+          "description": "Stop the clock, halting the machine; the value of R1 is ignored",
           "operands": 0,
           "steps": [
             {
@@ -1248,7 +1248,7 @@
         },
         {
           "mnemonic": "R2_TO_R0",
-          "description": "Move R2 into R0",
+          "description": "Copy R2 into R0, a general-purpose register; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -1258,7 +1258,7 @@
         },
         {
           "mnemonic": "R2_TO_R1",
-          "description": "Move R2 into R1",
+          "description": "Copy R2 into R1, a general-purpose register; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -1268,7 +1268,7 @@
         },
         {
           "mnemonic": "R2_TO_R3",
-          "description": "Move R2 into R3",
+          "description": "Copy R2 into R3, where CALL also leaves the return address; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -1278,7 +1278,7 @@
         },
         {
           "mnemonic": "R2_TO_A",
-          "description": "Move R2 into the function unit\u0027s A port",
+          "description": "Copy R2 into A, the first operand of the next ALU move; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -1288,7 +1288,7 @@
         },
         {
           "mnemonic": "R2_TO_MAR",
-          "description": "Move R2 into MAR: where MEM reads and writes",
+          "description": "Copy R2 into MAR, the address MEM reads and writes; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -1298,7 +1298,7 @@
         },
         {
           "mnemonic": "R2_TO_MEM",
-          "description": "Move R2 into memory at MAR",
+          "description": "Store R2 in memory at the address in MAR, via TEMP (TEMP is overwritten); flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -1314,7 +1314,7 @@
         },
         {
           "mnemonic": "R2_TO_LCD",
-          "description": "Move R2 to the LCD: prints it",
+          "description": "Print the low 8 bits of R2 as a character on the LCD and move the cursor right (10 new line, 13 line start); flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -1324,7 +1324,7 @@
         },
         {
           "mnemonic": "R2_TO_X",
-          "description": "Move R2 to the screen: sets the cursor column",
+          "description": "Set the screen cursor column to R2, taken mod 640; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -1334,7 +1334,7 @@
         },
         {
           "mnemonic": "R2_TO_Y",
-          "description": "Move R2 to the screen: sets the cursor row",
+          "description": "Set the screen cursor row to R2, taken mod 480; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -1344,7 +1344,7 @@
         },
         {
           "mnemonic": "R2_TO_PIXEL",
-          "description": "Move R2 to the screen: plots that RGB565 colour and moves right",
+          "description": "Plot R2 as an RGB565 colour at the screen cursor and move the cursor right; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -1354,7 +1354,7 @@
         },
         {
           "mnemonic": "R2_TO_JMP",
-          "description": "Move R2 into the PC: jumps",
+          "description": "Jump to R2: PC is set to it and the next instruction is fetched from there; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -1364,7 +1364,7 @@
         },
         {
           "mnemonic": "R2_TO_ADD",
-          "description": "Move R2 into the ADD trigger: RES = A ADD the value, and the flags follow",
+          "description": "RES = A + R2; sets Z, N, C (carry out) and V (signed overflow)",
           "operands": 0,
           "steps": [
             {
@@ -1377,7 +1377,7 @@
         },
         {
           "mnemonic": "R2_TO_SUB",
-          "description": "Move R2 into the SUB trigger: RES = A SUB the value, and the flags follow",
+          "description": "RES = A - R2; sets Z, N, C (borrow, A \u003C R2 unsigned) and V (signed overflow)",
           "operands": 0,
           "steps": [
             {
@@ -1390,7 +1390,7 @@
         },
         {
           "mnemonic": "R2_TO_AND",
-          "description": "Move R2 into the AND trigger: RES = A AND the value, and the flags follow",
+          "description": "RES = A AND R2, bit by bit; sets Z if the result is 0 and N from bit 15, clears C and V",
           "operands": 0,
           "steps": [
             {
@@ -1403,7 +1403,7 @@
         },
         {
           "mnemonic": "R2_TO_OR",
-          "description": "Move R2 into the OR trigger: RES = A OR the value, and the flags follow",
+          "description": "RES = A OR R2, bit by bit; sets Z if the result is 0 and N from bit 15, clears C and V",
           "operands": 0,
           "steps": [
             {
@@ -1416,7 +1416,7 @@
         },
         {
           "mnemonic": "R2_TO_XOR",
-          "description": "Move R2 into the XOR trigger: RES = A XOR the value, and the flags follow",
+          "description": "RES = A XOR R2, bit by bit; sets Z if the result is 0 and N from bit 15, clears C and V",
           "operands": 0,
           "steps": [
             {
@@ -1429,7 +1429,7 @@
         },
         {
           "mnemonic": "R2_TO_SHL",
-          "description": "Move R2 into the SHL trigger: RES = A SHL the value, and the flags follow",
+          "description": "RES = A shifted left by the low 4 bits of R2; sets Z and N, C to the last bit shifted out, clears V",
           "operands": 0,
           "steps": [
             {
@@ -1442,7 +1442,7 @@
         },
         {
           "mnemonic": "R2_TO_SHR",
-          "description": "Move R2 into the SHR trigger: RES = A SHR the value, and the flags follow",
+          "description": "RES = A shifted right by the low 4 bits of R2; sets Z and N, C to the last bit shifted out, clears V",
           "operands": 0,
           "steps": [
             {
@@ -1455,7 +1455,7 @@
         },
         {
           "mnemonic": "R2_TO_CMP",
-          "description": "Move R2 into the CMP trigger: sets the flags for A - the value, RES unchanged",
+          "description": "Set the flags for A - R2 without changing RES: Z if equal, C if A \u003C R2 unsigned",
           "operands": 0,
           "steps": [
             {
@@ -1468,7 +1468,7 @@
         },
         {
           "mnemonic": "R2_TO_JZ",
-          "description": "Move R2 into the PC if the last result was zero",
+          "description": "Jump to R2 if Z is set (the last ALU result was 0); otherwise go on with the next instruction",
           "operands": 0,
           "steps": [
             {
@@ -1483,7 +1483,7 @@
         },
         {
           "mnemonic": "R2_TO_JNZ",
-          "description": "Move R2 into the PC if the last result was not zero",
+          "description": "Jump to R2 if Z is clear (the last ALU result was not 0); otherwise go on with the next instruction",
           "operands": 0,
           "steps": [
             {
@@ -1498,7 +1498,7 @@
         },
         {
           "mnemonic": "R2_TO_JN",
-          "description": "Move R2 into the PC if the last result was negative (N set)",
+          "description": "Jump to R2 if N is set (the last ALU result was negative); otherwise go on with the next instruction",
           "operands": 0,
           "steps": [
             {
@@ -1513,7 +1513,7 @@
         },
         {
           "mnemonic": "R2_TO_JC",
-          "description": "Move R2 into the PC if the last result carried out (or a CMP/SUB borrowed)",
+          "description": "Jump to R2 if C is set (carry out, borrow or last bit shifted out); otherwise go on with the next instruction",
           "operands": 0,
           "steps": [
             {
@@ -1528,7 +1528,7 @@
         },
         {
           "mnemonic": "R2_TO_CALL",
-          "description": "Move R2 into the CALL port: jumps there and puts the return address in R3",
+          "description": "Jump to R2 and set R3 to the return address (the next instruction), overwriting TEMP; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -1544,7 +1544,7 @@
         },
         {
           "mnemonic": "R2_TO_CLEAR",
-          "description": "Move R2 into the LCD\u0027s CLEAR port: blanks the LCD",
+          "description": "Clear the LCD to spaces and move its cursor to the start; the value of R2 is ignored",
           "operands": 0,
           "steps": [
             {
@@ -1554,7 +1554,7 @@
         },
         {
           "mnemonic": "R2_TO_CLS",
-          "description": "Move R2 into the screen\u0027s CLS port: blanks the screen",
+          "description": "Clear the screen to black and move the screen cursor to 0,0; the value of R2 is ignored",
           "operands": 0,
           "steps": [
             {
@@ -1564,7 +1564,7 @@
         },
         {
           "mnemonic": "R2_TO_HALT",
-          "description": "Move R2 into the HALT port: stops the clock",
+          "description": "Stop the clock, halting the machine; the value of R2 is ignored",
           "operands": 0,
           "steps": [
             {
@@ -1574,7 +1574,7 @@
         },
         {
           "mnemonic": "R3_TO_R0",
-          "description": "Move R3 (the return address after a CALL) into R0",
+          "description": "Copy R3 into R0, a general-purpose register; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -1584,7 +1584,7 @@
         },
         {
           "mnemonic": "R3_TO_R1",
-          "description": "Move R3 (the return address after a CALL) into R1",
+          "description": "Copy R3 into R1, a general-purpose register; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -1594,7 +1594,7 @@
         },
         {
           "mnemonic": "R3_TO_R2",
-          "description": "Move R3 (the return address after a CALL) into R2",
+          "description": "Copy R3 into R2, a general-purpose register; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -1604,7 +1604,7 @@
         },
         {
           "mnemonic": "R3_TO_A",
-          "description": "Move R3 (the return address after a CALL) into the function unit\u0027s A port",
+          "description": "Copy R3 into A, the first operand of the next ALU move; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -1614,7 +1614,7 @@
         },
         {
           "mnemonic": "R3_TO_MAR",
-          "description": "Move R3 (the return address after a CALL) into MAR: where MEM reads and writes",
+          "description": "Copy R3 into MAR, the address MEM reads and writes; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -1624,7 +1624,7 @@
         },
         {
           "mnemonic": "R3_TO_MEM",
-          "description": "Move R3 (the return address after a CALL) into memory at MAR",
+          "description": "Store R3 in memory at the address in MAR, via TEMP (TEMP is overwritten); flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -1640,7 +1640,7 @@
         },
         {
           "mnemonic": "R3_TO_LCD",
-          "description": "Move R3 (the return address after a CALL) to the LCD: prints it",
+          "description": "Print the low 8 bits of R3 as a character on the LCD and move the cursor right (10 new line, 13 line start); flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -1650,7 +1650,7 @@
         },
         {
           "mnemonic": "R3_TO_X",
-          "description": "Move R3 (the return address after a CALL) to the screen: sets the cursor column",
+          "description": "Set the screen cursor column to R3, taken mod 640; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -1660,7 +1660,7 @@
         },
         {
           "mnemonic": "R3_TO_Y",
-          "description": "Move R3 (the return address after a CALL) to the screen: sets the cursor row",
+          "description": "Set the screen cursor row to R3, taken mod 480; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -1670,7 +1670,7 @@
         },
         {
           "mnemonic": "R3_TO_PIXEL",
-          "description": "Move R3 (the return address after a CALL) to the screen: plots that RGB565 colour and moves right",
+          "description": "Plot R3 as an RGB565 colour at the screen cursor and move the cursor right; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -1680,7 +1680,7 @@
         },
         {
           "mnemonic": "R3_TO_JMP",
-          "description": "Move R3 (the return address after a CALL) into the PC: jumps",
+          "description": "Jump to R3: PC is set to it and the next instruction is fetched from there; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -1690,7 +1690,7 @@
         },
         {
           "mnemonic": "R3_TO_ADD",
-          "description": "Move R3 (the return address after a CALL) into the ADD trigger: RES = A ADD the value, and the flags follow",
+          "description": "RES = A + R3; sets Z, N, C (carry out) and V (signed overflow)",
           "operands": 0,
           "steps": [
             {
@@ -1703,7 +1703,7 @@
         },
         {
           "mnemonic": "R3_TO_SUB",
-          "description": "Move R3 (the return address after a CALL) into the SUB trigger: RES = A SUB the value, and the flags follow",
+          "description": "RES = A - R3; sets Z, N, C (borrow, A \u003C R3 unsigned) and V (signed overflow)",
           "operands": 0,
           "steps": [
             {
@@ -1716,7 +1716,7 @@
         },
         {
           "mnemonic": "R3_TO_AND",
-          "description": "Move R3 (the return address after a CALL) into the AND trigger: RES = A AND the value, and the flags follow",
+          "description": "RES = A AND R3, bit by bit; sets Z if the result is 0 and N from bit 15, clears C and V",
           "operands": 0,
           "steps": [
             {
@@ -1729,7 +1729,7 @@
         },
         {
           "mnemonic": "R3_TO_OR",
-          "description": "Move R3 (the return address after a CALL) into the OR trigger: RES = A OR the value, and the flags follow",
+          "description": "RES = A OR R3, bit by bit; sets Z if the result is 0 and N from bit 15, clears C and V",
           "operands": 0,
           "steps": [
             {
@@ -1742,7 +1742,7 @@
         },
         {
           "mnemonic": "R3_TO_XOR",
-          "description": "Move R3 (the return address after a CALL) into the XOR trigger: RES = A XOR the value, and the flags follow",
+          "description": "RES = A XOR R3, bit by bit; sets Z if the result is 0 and N from bit 15, clears C and V",
           "operands": 0,
           "steps": [
             {
@@ -1755,7 +1755,7 @@
         },
         {
           "mnemonic": "R3_TO_SHL",
-          "description": "Move R3 (the return address after a CALL) into the SHL trigger: RES = A SHL the value, and the flags follow",
+          "description": "RES = A shifted left by the low 4 bits of R3; sets Z and N, C to the last bit shifted out, clears V",
           "operands": 0,
           "steps": [
             {
@@ -1768,7 +1768,7 @@
         },
         {
           "mnemonic": "R3_TO_SHR",
-          "description": "Move R3 (the return address after a CALL) into the SHR trigger: RES = A SHR the value, and the flags follow",
+          "description": "RES = A shifted right by the low 4 bits of R3; sets Z and N, C to the last bit shifted out, clears V",
           "operands": 0,
           "steps": [
             {
@@ -1781,7 +1781,7 @@
         },
         {
           "mnemonic": "R3_TO_CMP",
-          "description": "Move R3 (the return address after a CALL) into the CMP trigger: sets the flags for A - the value, RES unchanged",
+          "description": "Set the flags for A - R3 without changing RES: Z if equal, C if A \u003C R3 unsigned",
           "operands": 0,
           "steps": [
             {
@@ -1794,7 +1794,7 @@
         },
         {
           "mnemonic": "R3_TO_JZ",
-          "description": "Move R3 (the return address after a CALL) into the PC if the last result was zero",
+          "description": "Jump to R3 if Z is set (the last ALU result was 0); otherwise go on with the next instruction",
           "operands": 0,
           "steps": [
             {
@@ -1809,7 +1809,7 @@
         },
         {
           "mnemonic": "R3_TO_JNZ",
-          "description": "Move R3 (the return address after a CALL) into the PC if the last result was not zero",
+          "description": "Jump to R3 if Z is clear (the last ALU result was not 0); otherwise go on with the next instruction",
           "operands": 0,
           "steps": [
             {
@@ -1824,7 +1824,7 @@
         },
         {
           "mnemonic": "R3_TO_JN",
-          "description": "Move R3 (the return address after a CALL) into the PC if the last result was negative (N set)",
+          "description": "Jump to R3 if N is set (the last ALU result was negative); otherwise go on with the next instruction",
           "operands": 0,
           "steps": [
             {
@@ -1839,7 +1839,7 @@
         },
         {
           "mnemonic": "R3_TO_JC",
-          "description": "Move R3 (the return address after a CALL) into the PC if the last result carried out (or a CMP/SUB borrowed)",
+          "description": "Jump to R3 if C is set (carry out, borrow or last bit shifted out); otherwise go on with the next instruction",
           "operands": 0,
           "steps": [
             {
@@ -1854,7 +1854,7 @@
         },
         {
           "mnemonic": "R3_TO_CLEAR",
-          "description": "Move R3 (the return address after a CALL) into the LCD\u0027s CLEAR port: blanks the LCD",
+          "description": "Clear the LCD to spaces and move its cursor to the start; the value of R3 is ignored",
           "operands": 0,
           "steps": [
             {
@@ -1864,7 +1864,7 @@
         },
         {
           "mnemonic": "R3_TO_CLS",
-          "description": "Move R3 (the return address after a CALL) into the screen\u0027s CLS port: blanks the screen",
+          "description": "Clear the screen to black and move the screen cursor to 0,0; the value of R3 is ignored",
           "operands": 0,
           "steps": [
             {
@@ -1874,7 +1874,7 @@
         },
         {
           "mnemonic": "R3_TO_HALT",
-          "description": "Move R3 (the return address after a CALL) into the HALT port: stops the clock",
+          "description": "Stop the clock, halting the machine; the value of R3 is ignored",
           "operands": 0,
           "steps": [
             {
@@ -1884,7 +1884,7 @@
         },
         {
           "mnemonic": "RES_TO_R0",
-          "description": "Move the last function unit result into R0",
+          "description": "Copy RES (the last ALU result) into R0, a general-purpose register; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -1894,7 +1894,7 @@
         },
         {
           "mnemonic": "RES_TO_R1",
-          "description": "Move the last function unit result into R1",
+          "description": "Copy RES (the last ALU result) into R1, a general-purpose register; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -1904,7 +1904,7 @@
         },
         {
           "mnemonic": "RES_TO_R2",
-          "description": "Move the last function unit result into R2",
+          "description": "Copy RES (the last ALU result) into R2, a general-purpose register; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -1914,7 +1914,7 @@
         },
         {
           "mnemonic": "RES_TO_R3",
-          "description": "Move the last function unit result into R3",
+          "description": "Copy RES (the last ALU result) into R3, where CALL also leaves the return address; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -1924,7 +1924,7 @@
         },
         {
           "mnemonic": "RES_TO_A",
-          "description": "Move the last function unit result into the function unit\u0027s A port",
+          "description": "Copy RES (the last ALU result) into A, the first operand of the next ALU move; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -1934,7 +1934,7 @@
         },
         {
           "mnemonic": "RES_TO_MAR",
-          "description": "Move the last function unit result into MAR: where MEM reads and writes",
+          "description": "Copy RES (the last ALU result) into MAR, the address MEM reads and writes; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -1944,7 +1944,7 @@
         },
         {
           "mnemonic": "RES_TO_MEM",
-          "description": "Move the last function unit result into memory at MAR",
+          "description": "Store RES (the last ALU result) in memory at the address in MAR, via TEMP (TEMP is overwritten); flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -1960,7 +1960,7 @@
         },
         {
           "mnemonic": "RES_TO_LCD",
-          "description": "Move the last function unit result to the LCD: prints it",
+          "description": "Print the low 8 bits of RES (the last ALU result) as a character on the LCD and move the cursor right (10 new line, 13 line start); flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -1970,7 +1970,7 @@
         },
         {
           "mnemonic": "RES_TO_X",
-          "description": "Move the last function unit result to the screen: sets the cursor column",
+          "description": "Set the screen cursor column to RES (the last ALU result), taken mod 640; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -1980,7 +1980,7 @@
         },
         {
           "mnemonic": "RES_TO_Y",
-          "description": "Move the last function unit result to the screen: sets the cursor row",
+          "description": "Set the screen cursor row to RES (the last ALU result), taken mod 480; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -1990,7 +1990,7 @@
         },
         {
           "mnemonic": "RES_TO_PIXEL",
-          "description": "Move the last function unit result to the screen: plots that RGB565 colour and moves right",
+          "description": "Plot RES (the last ALU result) as an RGB565 colour at the screen cursor and move the cursor right; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -2000,7 +2000,7 @@
         },
         {
           "mnemonic": "RES_TO_JMP",
-          "description": "Move the last function unit result into the PC: jumps",
+          "description": "Jump to RES (the last ALU result): PC is set to it and the next instruction is fetched from there; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -2010,7 +2010,7 @@
         },
         {
           "mnemonic": "RES_TO_ADD",
-          "description": "Move the last function unit result into the ADD trigger: RES = A ADD the value, and the flags follow",
+          "description": "RES = A + RES (the last ALU result); sets Z, N, C (carry out) and V (signed overflow)",
           "operands": 0,
           "steps": [
             {
@@ -2023,7 +2023,7 @@
         },
         {
           "mnemonic": "RES_TO_SUB",
-          "description": "Move the last function unit result into the SUB trigger: RES = A SUB the value, and the flags follow",
+          "description": "RES = A - RES (the last ALU result); sets Z, N, C (borrow, A \u003C RES unsigned) and V (signed overflow)",
           "operands": 0,
           "steps": [
             {
@@ -2036,7 +2036,7 @@
         },
         {
           "mnemonic": "RES_TO_AND",
-          "description": "Move the last function unit result into the AND trigger: RES = A AND the value, and the flags follow",
+          "description": "RES = A AND RES (the last ALU result), bit by bit; sets Z if the result is 0 and N from bit 15, clears C and V",
           "operands": 0,
           "steps": [
             {
@@ -2049,7 +2049,7 @@
         },
         {
           "mnemonic": "RES_TO_OR",
-          "description": "Move the last function unit result into the OR trigger: RES = A OR the value, and the flags follow",
+          "description": "RES = A OR RES (the last ALU result), bit by bit; sets Z if the result is 0 and N from bit 15, clears C and V",
           "operands": 0,
           "steps": [
             {
@@ -2062,7 +2062,7 @@
         },
         {
           "mnemonic": "RES_TO_XOR",
-          "description": "Move the last function unit result into the XOR trigger: RES = A XOR the value, and the flags follow",
+          "description": "RES = A XOR RES (the last ALU result), bit by bit; sets Z if the result is 0 and N from bit 15, clears C and V",
           "operands": 0,
           "steps": [
             {
@@ -2075,7 +2075,7 @@
         },
         {
           "mnemonic": "RES_TO_SHL",
-          "description": "Move the last function unit result into the SHL trigger: RES = A SHL the value, and the flags follow",
+          "description": "RES = A shifted left by the low 4 bits of RES (the last ALU result); sets Z and N, C to the last bit shifted out, clears V",
           "operands": 0,
           "steps": [
             {
@@ -2088,7 +2088,7 @@
         },
         {
           "mnemonic": "RES_TO_SHR",
-          "description": "Move the last function unit result into the SHR trigger: RES = A SHR the value, and the flags follow",
+          "description": "RES = A shifted right by the low 4 bits of RES (the last ALU result); sets Z and N, C to the last bit shifted out, clears V",
           "operands": 0,
           "steps": [
             {
@@ -2101,7 +2101,7 @@
         },
         {
           "mnemonic": "RES_TO_CMP",
-          "description": "Move the last function unit result into the CMP trigger: sets the flags for A - the value, RES unchanged",
+          "description": "Set the flags for A - RES (the last ALU result) without changing RES: Z if equal, C if A \u003C RES unsigned",
           "operands": 0,
           "steps": [
             {
@@ -2114,7 +2114,7 @@
         },
         {
           "mnemonic": "RES_TO_JZ",
-          "description": "Move the last function unit result into the PC if the last result was zero",
+          "description": "Jump to RES (the last ALU result) if Z is set (the last ALU result was 0); otherwise go on with the next instruction",
           "operands": 0,
           "steps": [
             {
@@ -2129,7 +2129,7 @@
         },
         {
           "mnemonic": "RES_TO_JNZ",
-          "description": "Move the last function unit result into the PC if the last result was not zero",
+          "description": "Jump to RES (the last ALU result) if Z is clear (the last ALU result was not 0); otherwise go on with the next instruction",
           "operands": 0,
           "steps": [
             {
@@ -2144,7 +2144,7 @@
         },
         {
           "mnemonic": "RES_TO_JN",
-          "description": "Move the last function unit result into the PC if the last result was negative (N set)",
+          "description": "Jump to RES (the last ALU result) if N is set (the last ALU result was negative); otherwise go on with the next instruction",
           "operands": 0,
           "steps": [
             {
@@ -2159,7 +2159,7 @@
         },
         {
           "mnemonic": "RES_TO_JC",
-          "description": "Move the last function unit result into the PC if the last result carried out (or a CMP/SUB borrowed)",
+          "description": "Jump to RES (the last ALU result) if C is set (carry out, borrow or last bit shifted out); otherwise go on with the next instruction",
           "operands": 0,
           "steps": [
             {
@@ -2174,7 +2174,7 @@
         },
         {
           "mnemonic": "RES_TO_CALL",
-          "description": "Move the last function unit result into the CALL port: jumps there and puts the return address in R3",
+          "description": "Jump to RES (the last ALU result) and set R3 to the return address (the next instruction), overwriting TEMP; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -2190,7 +2190,7 @@
         },
         {
           "mnemonic": "RES_TO_CLEAR",
-          "description": "Move the last function unit result into the LCD\u0027s CLEAR port: blanks the LCD",
+          "description": "Clear the LCD to spaces and move its cursor to the start; the value of RES (the last ALU result) is ignored",
           "operands": 0,
           "steps": [
             {
@@ -2200,7 +2200,7 @@
         },
         {
           "mnemonic": "RES_TO_CLS",
-          "description": "Move the last function unit result into the screen\u0027s CLS port: blanks the screen",
+          "description": "Clear the screen to black and move the screen cursor to 0,0; the value of RES (the last ALU result) is ignored",
           "operands": 0,
           "steps": [
             {
@@ -2210,7 +2210,7 @@
         },
         {
           "mnemonic": "RES_TO_HALT",
-          "description": "Move the last function unit result into the HALT port: stops the clock",
+          "description": "Stop the clock, halting the machine; the value of RES (the last ALU result) is ignored",
           "operands": 0,
           "steps": [
             {
@@ -2220,7 +2220,7 @@
         },
         {
           "mnemonic": "MEM_TO_R0",
-          "description": "Move the memory cell at MAR into R0",
+          "description": "Copy the memory cell at the address in MAR into R0, a general-purpose register; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -2233,7 +2233,7 @@
         },
         {
           "mnemonic": "MEM_TO_R1",
-          "description": "Move the memory cell at MAR into R1",
+          "description": "Copy the memory cell at the address in MAR into R1, a general-purpose register; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -2246,7 +2246,7 @@
         },
         {
           "mnemonic": "MEM_TO_R2",
-          "description": "Move the memory cell at MAR into R2",
+          "description": "Copy the memory cell at the address in MAR into R2, a general-purpose register; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -2259,7 +2259,7 @@
         },
         {
           "mnemonic": "MEM_TO_R3",
-          "description": "Move the memory cell at MAR into R3",
+          "description": "Copy the memory cell at the address in MAR into R3, where CALL also leaves the return address; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -2272,7 +2272,7 @@
         },
         {
           "mnemonic": "MEM_TO_A",
-          "description": "Move the memory cell at MAR into the function unit\u0027s A port",
+          "description": "Copy the memory cell at the address in MAR into A, the first operand of the next ALU move; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -2285,7 +2285,7 @@
         },
         {
           "mnemonic": "MEM_TO_MAR",
-          "description": "Move the memory cell at MAR into MAR: where MEM reads and writes",
+          "description": "Copy the memory cell at the address in MAR into MAR, the address MEM reads and writes; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -2298,7 +2298,7 @@
         },
         {
           "mnemonic": "MEM_TO_LCD",
-          "description": "Move the memory cell at MAR to the LCD: prints it",
+          "description": "Print the low 8 bits of the memory cell at the address in MAR as a character on the LCD and move the cursor right (10 new line, 13 line start); flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -2311,7 +2311,7 @@
         },
         {
           "mnemonic": "MEM_TO_X",
-          "description": "Move the memory cell at MAR to the screen: sets the cursor column",
+          "description": "Set the screen cursor column to the memory cell at the address in MAR, taken mod 640; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -2324,7 +2324,7 @@
         },
         {
           "mnemonic": "MEM_TO_Y",
-          "description": "Move the memory cell at MAR to the screen: sets the cursor row",
+          "description": "Set the screen cursor row to the memory cell at the address in MAR, taken mod 480; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -2337,7 +2337,7 @@
         },
         {
           "mnemonic": "MEM_TO_PIXEL",
-          "description": "Move the memory cell at MAR to the screen: plots that RGB565 colour and moves right",
+          "description": "Plot the memory cell at the address in MAR as an RGB565 colour at the screen cursor and move the cursor right; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -2350,7 +2350,7 @@
         },
         {
           "mnemonic": "MEM_TO_JMP",
-          "description": "Move the memory cell at MAR into the PC: jumps",
+          "description": "Jump to the memory cell at the address in MAR: PC is set to it and the next instruction is fetched from there; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -2363,7 +2363,7 @@
         },
         {
           "mnemonic": "MEM_TO_ADD",
-          "description": "Move the memory cell at MAR into the ADD trigger: RES = A ADD the value, and the flags follow",
+          "description": "RES = A + the memory cell at the address in MAR; sets Z, N, C (carry out) and V (signed overflow)",
           "operands": 0,
           "steps": [
             {
@@ -2379,7 +2379,7 @@
         },
         {
           "mnemonic": "MEM_TO_SUB",
-          "description": "Move the memory cell at MAR into the SUB trigger: RES = A SUB the value, and the flags follow",
+          "description": "RES = A - the memory cell at the address in MAR; sets Z, N, C (borrow, A \u003C the cell unsigned) and V (signed overflow)",
           "operands": 0,
           "steps": [
             {
@@ -2395,7 +2395,7 @@
         },
         {
           "mnemonic": "MEM_TO_AND",
-          "description": "Move the memory cell at MAR into the AND trigger: RES = A AND the value, and the flags follow",
+          "description": "RES = A AND the memory cell at the address in MAR, bit by bit; sets Z if the result is 0 and N from bit 15, clears C and V",
           "operands": 0,
           "steps": [
             {
@@ -2411,7 +2411,7 @@
         },
         {
           "mnemonic": "MEM_TO_OR",
-          "description": "Move the memory cell at MAR into the OR trigger: RES = A OR the value, and the flags follow",
+          "description": "RES = A OR the memory cell at the address in MAR, bit by bit; sets Z if the result is 0 and N from bit 15, clears C and V",
           "operands": 0,
           "steps": [
             {
@@ -2427,7 +2427,7 @@
         },
         {
           "mnemonic": "MEM_TO_XOR",
-          "description": "Move the memory cell at MAR into the XOR trigger: RES = A XOR the value, and the flags follow",
+          "description": "RES = A XOR the memory cell at the address in MAR, bit by bit; sets Z if the result is 0 and N from bit 15, clears C and V",
           "operands": 0,
           "steps": [
             {
@@ -2443,7 +2443,7 @@
         },
         {
           "mnemonic": "MEM_TO_SHL",
-          "description": "Move the memory cell at MAR into the SHL trigger: RES = A SHL the value, and the flags follow",
+          "description": "RES = A shifted left by the low 4 bits of the memory cell at the address in MAR; sets Z and N, C to the last bit shifted out, clears V",
           "operands": 0,
           "steps": [
             {
@@ -2459,7 +2459,7 @@
         },
         {
           "mnemonic": "MEM_TO_SHR",
-          "description": "Move the memory cell at MAR into the SHR trigger: RES = A SHR the value, and the flags follow",
+          "description": "RES = A shifted right by the low 4 bits of the memory cell at the address in MAR; sets Z and N, C to the last bit shifted out, clears V",
           "operands": 0,
           "steps": [
             {
@@ -2475,7 +2475,7 @@
         },
         {
           "mnemonic": "MEM_TO_CMP",
-          "description": "Move the memory cell at MAR into the CMP trigger: sets the flags for A - the value, RES unchanged",
+          "description": "Set the flags for A - the memory cell at the address in MAR without changing RES: Z if equal, C if A \u003C the cell unsigned",
           "operands": 0,
           "steps": [
             {
@@ -2491,7 +2491,7 @@
         },
         {
           "mnemonic": "MEM_TO_JZ",
-          "description": "Move the memory cell at MAR into the PC if the last result was zero",
+          "description": "Jump to the memory cell at the address in MAR if Z is set (the last ALU result was 0); otherwise go on with the next instruction",
           "operands": 0,
           "steps": [
             {
@@ -2510,7 +2510,7 @@
         },
         {
           "mnemonic": "MEM_TO_JNZ",
-          "description": "Move the memory cell at MAR into the PC if the last result was not zero",
+          "description": "Jump to the memory cell at the address in MAR if Z is clear (the last ALU result was not 0); otherwise go on with the next instruction",
           "operands": 0,
           "steps": [
             {
@@ -2529,7 +2529,7 @@
         },
         {
           "mnemonic": "MEM_TO_JN",
-          "description": "Move the memory cell at MAR into the PC if the last result was negative (N set)",
+          "description": "Jump to the memory cell at the address in MAR if N is set (the last ALU result was negative); otherwise go on with the next instruction",
           "operands": 0,
           "steps": [
             {
@@ -2548,7 +2548,7 @@
         },
         {
           "mnemonic": "MEM_TO_JC",
-          "description": "Move the memory cell at MAR into the PC if the last result carried out (or a CMP/SUB borrowed)",
+          "description": "Jump to the memory cell at the address in MAR if C is set (carry out, borrow or last bit shifted out); otherwise go on with the next instruction",
           "operands": 0,
           "steps": [
             {
@@ -2567,7 +2567,7 @@
         },
         {
           "mnemonic": "MEM_TO_CALL",
-          "description": "Move the memory cell at MAR into the CALL port: jumps there and puts the return address in R3",
+          "description": "Jump to the memory cell at the address in MAR and set R3 to the return address (the next instruction), overwriting TEMP; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -2586,7 +2586,7 @@
         },
         {
           "mnemonic": "MEM_TO_CLEAR",
-          "description": "Move the memory cell at MAR into the LCD\u0027s CLEAR port: blanks the LCD",
+          "description": "Clear the LCD to spaces and move its cursor to the start; the memory cell at the address in MAR is ignored (not read)",
           "operands": 0,
           "steps": [
             {
@@ -2596,7 +2596,7 @@
         },
         {
           "mnemonic": "MEM_TO_CLS",
-          "description": "Move the memory cell at MAR into the screen\u0027s CLS port: blanks the screen",
+          "description": "Clear the screen to black and move the screen cursor to 0,0; the memory cell at the address in MAR is ignored (not read)",
           "operands": 0,
           "steps": [
             {
@@ -2606,7 +2606,7 @@
         },
         {
           "mnemonic": "MEM_TO_HALT",
-          "description": "Move the memory cell at MAR into the HALT port: stops the clock",
+          "description": "Stop the clock, halting the machine; the memory cell at the address in MAR is ignored (not read)",
           "operands": 0,
           "steps": [
             {
@@ -2616,7 +2616,7 @@
         },
         {
           "mnemonic": "KEYS_TO_R0",
-          "description": "Move the keypad (1 up, 2 down, 4 left, 8 right, 16 space) into R0",
+          "description": "Copy the keypad state (1 up, 2 down, 4 left, 8 right, 16 space) into R0, a general-purpose register; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -2626,7 +2626,7 @@
         },
         {
           "mnemonic": "KEYS_TO_R1",
-          "description": "Move the keypad (1 up, 2 down, 4 left, 8 right, 16 space) into R1",
+          "description": "Copy the keypad state (1 up, 2 down, 4 left, 8 right, 16 space) into R1, a general-purpose register; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -2636,7 +2636,7 @@
         },
         {
           "mnemonic": "KEYS_TO_R2",
-          "description": "Move the keypad (1 up, 2 down, 4 left, 8 right, 16 space) into R2",
+          "description": "Copy the keypad state (1 up, 2 down, 4 left, 8 right, 16 space) into R2, a general-purpose register; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -2646,7 +2646,7 @@
         },
         {
           "mnemonic": "KEYS_TO_R3",
-          "description": "Move the keypad (1 up, 2 down, 4 left, 8 right, 16 space) into R3",
+          "description": "Copy the keypad state (1 up, 2 down, 4 left, 8 right, 16 space) into R3, where CALL also leaves the return address; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -2656,7 +2656,7 @@
         },
         {
           "mnemonic": "KEYS_TO_A",
-          "description": "Move the keypad (1 up, 2 down, 4 left, 8 right, 16 space) into the function unit\u0027s A port",
+          "description": "Copy the keypad state (1 up, 2 down, 4 left, 8 right, 16 space) into A, the first operand of the next ALU move; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -2666,7 +2666,7 @@
         },
         {
           "mnemonic": "KEYS_TO_MAR",
-          "description": "Move the keypad (1 up, 2 down, 4 left, 8 right, 16 space) into MAR: where MEM reads and writes",
+          "description": "Copy the keypad state (1 up, 2 down, 4 left, 8 right, 16 space) into MAR, the address MEM reads and writes; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -2676,7 +2676,7 @@
         },
         {
           "mnemonic": "KEYS_TO_MEM",
-          "description": "Move the keypad (1 up, 2 down, 4 left, 8 right, 16 space) into memory at MAR",
+          "description": "Store the keypad state (1 up, 2 down, 4 left, 8 right, 16 space) in memory at the address in MAR, via TEMP (TEMP is overwritten); flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -2692,7 +2692,7 @@
         },
         {
           "mnemonic": "KEYS_TO_LCD",
-          "description": "Move the keypad (1 up, 2 down, 4 left, 8 right, 16 space) to the LCD: prints it",
+          "description": "Print the low 8 bits of the keypad state (1 up, 2 down, 4 left, 8 right, 16 space) as a character on the LCD and move the cursor right (10 new line, 13 line start); flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -2702,7 +2702,7 @@
         },
         {
           "mnemonic": "KEYS_TO_X",
-          "description": "Move the keypad (1 up, 2 down, 4 left, 8 right, 16 space) to the screen: sets the cursor column",
+          "description": "Set the screen cursor column to the keypad state (1 up, 2 down, 4 left, 8 right, 16 space), taken mod 640; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -2712,7 +2712,7 @@
         },
         {
           "mnemonic": "KEYS_TO_Y",
-          "description": "Move the keypad (1 up, 2 down, 4 left, 8 right, 16 space) to the screen: sets the cursor row",
+          "description": "Set the screen cursor row to the keypad state (1 up, 2 down, 4 left, 8 right, 16 space), taken mod 480; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -2722,7 +2722,7 @@
         },
         {
           "mnemonic": "KEYS_TO_PIXEL",
-          "description": "Move the keypad (1 up, 2 down, 4 left, 8 right, 16 space) to the screen: plots that RGB565 colour and moves right",
+          "description": "Plot the keypad state (1 up, 2 down, 4 left, 8 right, 16 space) as an RGB565 colour at the screen cursor and move the cursor right; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -2732,7 +2732,7 @@
         },
         {
           "mnemonic": "KEYS_TO_JMP",
-          "description": "Move the keypad (1 up, 2 down, 4 left, 8 right, 16 space) into the PC: jumps",
+          "description": "Jump to the keypad state (1 up, 2 down, 4 left, 8 right, 16 space): PC is set to it and the next instruction is fetched from there; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -2742,7 +2742,7 @@
         },
         {
           "mnemonic": "KEYS_TO_ADD",
-          "description": "Move the keypad (1 up, 2 down, 4 left, 8 right, 16 space) into the ADD trigger: RES = A ADD the value, and the flags follow",
+          "description": "RES = A + the keypad state (1 up, 2 down, 4 left, 8 right, 16 space); sets Z, N, C (carry out) and V (signed overflow)",
           "operands": 0,
           "steps": [
             {
@@ -2755,7 +2755,7 @@
         },
         {
           "mnemonic": "KEYS_TO_SUB",
-          "description": "Move the keypad (1 up, 2 down, 4 left, 8 right, 16 space) into the SUB trigger: RES = A SUB the value, and the flags follow",
+          "description": "RES = A - the keypad state (1 up, 2 down, 4 left, 8 right, 16 space); sets Z, N, C (borrow, A \u003C the keypad state unsigned) and V (signed overflow)",
           "operands": 0,
           "steps": [
             {
@@ -2768,7 +2768,7 @@
         },
         {
           "mnemonic": "KEYS_TO_AND",
-          "description": "Move the keypad (1 up, 2 down, 4 left, 8 right, 16 space) into the AND trigger: RES = A AND the value, and the flags follow",
+          "description": "RES = A AND the keypad state (1 up, 2 down, 4 left, 8 right, 16 space), bit by bit; sets Z if the result is 0 and N from bit 15, clears C and V",
           "operands": 0,
           "steps": [
             {
@@ -2781,7 +2781,7 @@
         },
         {
           "mnemonic": "KEYS_TO_OR",
-          "description": "Move the keypad (1 up, 2 down, 4 left, 8 right, 16 space) into the OR trigger: RES = A OR the value, and the flags follow",
+          "description": "RES = A OR the keypad state (1 up, 2 down, 4 left, 8 right, 16 space), bit by bit; sets Z if the result is 0 and N from bit 15, clears C and V",
           "operands": 0,
           "steps": [
             {
@@ -2794,7 +2794,7 @@
         },
         {
           "mnemonic": "KEYS_TO_XOR",
-          "description": "Move the keypad (1 up, 2 down, 4 left, 8 right, 16 space) into the XOR trigger: RES = A XOR the value, and the flags follow",
+          "description": "RES = A XOR the keypad state (1 up, 2 down, 4 left, 8 right, 16 space), bit by bit; sets Z if the result is 0 and N from bit 15, clears C and V",
           "operands": 0,
           "steps": [
             {
@@ -2807,7 +2807,7 @@
         },
         {
           "mnemonic": "KEYS_TO_SHL",
-          "description": "Move the keypad (1 up, 2 down, 4 left, 8 right, 16 space) into the SHL trigger: RES = A SHL the value, and the flags follow",
+          "description": "RES = A shifted left by the low 4 bits of the keypad state (1 up, 2 down, 4 left, 8 right, 16 space); sets Z and N, C to the last bit shifted out, clears V",
           "operands": 0,
           "steps": [
             {
@@ -2820,7 +2820,7 @@
         },
         {
           "mnemonic": "KEYS_TO_SHR",
-          "description": "Move the keypad (1 up, 2 down, 4 left, 8 right, 16 space) into the SHR trigger: RES = A SHR the value, and the flags follow",
+          "description": "RES = A shifted right by the low 4 bits of the keypad state (1 up, 2 down, 4 left, 8 right, 16 space); sets Z and N, C to the last bit shifted out, clears V",
           "operands": 0,
           "steps": [
             {
@@ -2833,7 +2833,7 @@
         },
         {
           "mnemonic": "KEYS_TO_CMP",
-          "description": "Move the keypad (1 up, 2 down, 4 left, 8 right, 16 space) into the CMP trigger: sets the flags for A - the value, RES unchanged",
+          "description": "Set the flags for A - the keypad state (1 up, 2 down, 4 left, 8 right, 16 space) without changing RES: Z if equal, C if A \u003C the keypad state unsigned",
           "operands": 0,
           "steps": [
             {
@@ -2846,7 +2846,7 @@
         },
         {
           "mnemonic": "KEYS_TO_JZ",
-          "description": "Move the keypad (1 up, 2 down, 4 left, 8 right, 16 space) into the PC if the last result was zero",
+          "description": "Jump to the keypad state (1 up, 2 down, 4 left, 8 right, 16 space) if Z is set (the last ALU result was 0); otherwise go on with the next instruction",
           "operands": 0,
           "steps": [
             {
@@ -2861,7 +2861,7 @@
         },
         {
           "mnemonic": "KEYS_TO_JNZ",
-          "description": "Move the keypad (1 up, 2 down, 4 left, 8 right, 16 space) into the PC if the last result was not zero",
+          "description": "Jump to the keypad state (1 up, 2 down, 4 left, 8 right, 16 space) if Z is clear (the last ALU result was not 0); otherwise go on with the next instruction",
           "operands": 0,
           "steps": [
             {
@@ -2876,7 +2876,7 @@
         },
         {
           "mnemonic": "KEYS_TO_JN",
-          "description": "Move the keypad (1 up, 2 down, 4 left, 8 right, 16 space) into the PC if the last result was negative (N set)",
+          "description": "Jump to the keypad state (1 up, 2 down, 4 left, 8 right, 16 space) if N is set (the last ALU result was negative); otherwise go on with the next instruction",
           "operands": 0,
           "steps": [
             {
@@ -2891,7 +2891,7 @@
         },
         {
           "mnemonic": "KEYS_TO_JC",
-          "description": "Move the keypad (1 up, 2 down, 4 left, 8 right, 16 space) into the PC if the last result carried out (or a CMP/SUB borrowed)",
+          "description": "Jump to the keypad state (1 up, 2 down, 4 left, 8 right, 16 space) if C is set (carry out, borrow or last bit shifted out); otherwise go on with the next instruction",
           "operands": 0,
           "steps": [
             {
@@ -2906,7 +2906,7 @@
         },
         {
           "mnemonic": "KEYS_TO_CALL",
-          "description": "Move the keypad (1 up, 2 down, 4 left, 8 right, 16 space) into the CALL port: jumps there and puts the return address in R3",
+          "description": "Jump to the keypad state (1 up, 2 down, 4 left, 8 right, 16 space) and set R3 to the return address (the next instruction), overwriting TEMP; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -2922,7 +2922,7 @@
         },
         {
           "mnemonic": "KEYS_TO_CLEAR",
-          "description": "Move the keypad (1 up, 2 down, 4 left, 8 right, 16 space) into the LCD\u0027s CLEAR port: blanks the LCD",
+          "description": "Clear the LCD to spaces and move its cursor to the start; the keypad state (1 up, 2 down, 4 left, 8 right, 16 space) is ignored (not read)",
           "operands": 0,
           "steps": [
             {
@@ -2932,7 +2932,7 @@
         },
         {
           "mnemonic": "KEYS_TO_CLS",
-          "description": "Move the keypad (1 up, 2 down, 4 left, 8 right, 16 space) into the screen\u0027s CLS port: blanks the screen",
+          "description": "Clear the screen to black and move the screen cursor to 0,0; the keypad state (1 up, 2 down, 4 left, 8 right, 16 space) is ignored (not read)",
           "operands": 0,
           "steps": [
             {
@@ -2942,7 +2942,7 @@
         },
         {
           "mnemonic": "KEYS_TO_HALT",
-          "description": "Move the keypad (1 up, 2 down, 4 left, 8 right, 16 space) into the HALT port: stops the clock",
+          "description": "Stop the clock, halting the machine; the keypad state (1 up, 2 down, 4 left, 8 right, 16 space) is ignored (not read)",
           "operands": 0,
           "steps": [
             {

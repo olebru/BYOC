@@ -106,7 +106,7 @@
       "name": "COPRO-16 microcode",
       "fetch": {
         "mnemonic": "FETCH",
-        "description": "Load the opcode at the program counter and step past it",
+        "description": "Load the opcode at the address in PC into IR and step PC past it; no interrupt check",
         "steps": [
           {
             "signals": ["pc.output", "mem.loadmar"]
@@ -119,7 +119,7 @@
       "instructions": [
         {
           "mnemonic": "NOP",
-          "description": "Do nothing",
+          "description": "Do nothing; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -129,7 +129,7 @@
         },
         {
           "mnemonic": "HLT",
-          "description": "Halt the machine",
+          "description": "Stop the clock, halting the machine; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -139,7 +139,7 @@
         },
         {
           "mnemonic": "LDI",
-          "description": "A = value",
+          "description": "A = the value after the opcode; flags unchanged",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -153,7 +153,7 @@
         },
         {
           "mnemonic": "LBI",
-          "description": "B = value",
+          "description": "B = the value after the opcode; flags unchanged",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -167,7 +167,7 @@
         },
         {
           "mnemonic": "LBA",
-          "description": "B = the address of a label, to walk a table with LDX",
+          "description": "B = the address after the opcode, for walking a table with LDX; flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -181,7 +181,7 @@
         },
         {
           "mnemonic": "LDA",
-          "description": "A = the memory cell at the address",
+          "description": "A = the cell at the address after the opcode; flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -198,7 +198,7 @@
         },
         {
           "mnemonic": "STA",
-          "description": "Store A in memory at the address",
+          "description": "Store A in the cell at the address after the opcode; flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -215,7 +215,7 @@
         },
         {
           "mnemonic": "LDX",
-          "description": "A = the memory cell at the address in B",
+          "description": "A = the cell at the address in B; B and flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -228,7 +228,7 @@
         },
         {
           "mnemonic": "TAB",
-          "description": "B = A",
+          "description": "B = A; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -238,7 +238,7 @@
         },
         {
           "mnemonic": "TBA",
-          "description": "A = B",
+          "description": "A = B; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -248,7 +248,7 @@
         },
         {
           "mnemonic": "INA",
-          "description": "A = A \u002B 1, flags unchanged",
+          "description": "A = A + 1, wrapping from 0xFFFF to 0; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -258,7 +258,7 @@
         },
         {
           "mnemonic": "INB",
-          "description": "B = B \u002B 1, flags unchanged",
+          "description": "B = B + 1, wrapping from 0xFFFF to 0; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -268,7 +268,7 @@
         },
         {
           "mnemonic": "ADD",
-          "description": "A = A \u002B B",
+          "description": "A = A + B, with B copied through ALU OPERAND; sets Z, N, C (carry out) and V (signed overflow)",
           "operands": 0,
           "steps": [
             {
@@ -281,7 +281,7 @@
         },
         {
           "mnemonic": "SUB",
-          "description": "A = A - B",
+          "description": "A = A - B, with B copied through ALU OPERAND; sets Z, N, C (borrow: A < B unsigned) and V (signed overflow)",
           "operands": 0,
           "steps": [
             {
@@ -294,7 +294,7 @@
         },
         {
           "mnemonic": "AND",
-          "description": "A = A AND B",
+          "description": "A = A AND B, with B copied through ALU OPERAND; sets Z and N, clears C and V",
           "operands": 0,
           "steps": [
             {
@@ -307,7 +307,7 @@
         },
         {
           "mnemonic": "EOR",
-          "description": "A = A XOR B",
+          "description": "A = A XOR B, with B copied through ALU OPERAND; sets Z and N, clears C and V",
           "operands": 0,
           "steps": [
             {
@@ -320,7 +320,7 @@
         },
         {
           "mnemonic": "CMP",
-          "description": "Set the flags for A - B",
+          "description": "Set the flags for A - B without changing A: Z if equal, C if A < B unsigned, N and V as for SUB",
           "operands": 0,
           "steps": [
             {
@@ -333,7 +333,7 @@
         },
         {
           "mnemonic": "ADDI",
-          "description": "A = A \u002B value",
+          "description": "A = A + the value after the opcode; sets Z, N, C (carry out) and V (signed overflow)",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -350,7 +350,7 @@
         },
         {
           "mnemonic": "SUBI",
-          "description": "A = A - value",
+          "description": "A = A - the value after the opcode; sets Z, N, C (borrow: A < value unsigned) and V (signed overflow)",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -367,7 +367,7 @@
         },
         {
           "mnemonic": "ANDI",
-          "description": "A = A AND value",
+          "description": "A = A AND the value after the opcode; sets Z and N, clears C and V",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -384,7 +384,7 @@
         },
         {
           "mnemonic": "EORI",
-          "description": "A = A XOR value",
+          "description": "A = A XOR the value after the opcode; sets Z and N, clears C and V",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -401,7 +401,7 @@
         },
         {
           "mnemonic": "CMPI",
-          "description": "Set the flags for A - value",
+          "description": "Set the flags for A - the value after the opcode without changing A: Z if equal, C if A < value unsigned, N and V as for SUB",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -418,7 +418,7 @@
         },
         {
           "mnemonic": "JMP",
-          "description": "Jump to the address",
+          "description": "Jump to the address after the opcode; flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -432,7 +432,7 @@
         },
         {
           "mnemonic": "JEQ",
-          "description": "Jump if equal (Z set)",
+          "description": "Jump to the address after the opcode if Z is set (equal after CMP); otherwise go on with the next instruction",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -452,7 +452,7 @@
         },
         {
           "mnemonic": "JNE",
-          "description": "Jump if not equal (Z clear)",
+          "description": "Jump to the address after the opcode if Z is clear (not equal after CMP); otherwise go on with the next instruction",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -472,7 +472,7 @@
         },
         {
           "mnemonic": "JCS",
-          "description": "Jump if carry set, or a CMP borrowed (A lower)",
+          "description": "Jump to the address after the opcode if C is set (carry out after ADD, A < B unsigned after CMP); otherwise go on with the next instruction",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -492,7 +492,7 @@
         },
         {
           "mnemonic": "JCC",
-          "description": "Jump if carry clear (A higher or same)",
+          "description": "Jump to the address after the opcode if C is clear (no carry after ADD, A >= B unsigned after CMP); otherwise go on with the next instruction",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -512,7 +512,7 @@
         },
         {
           "mnemonic": "OUT",
-          "description": "Print the character in A on the LCD",
+          "description": "Print the low 8 bits of A as a Latin-1 character at the LCD cursor and move the cursor on (0x0A new line, 0x0D start of row, scrolls when full); flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -522,7 +522,7 @@
         },
         {
           "mnemonic": "CLT",
-          "description": "Clear the LCD",
+          "description": "Blank the LCD and move its cursor to the top left; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -532,7 +532,7 @@
         },
         {
           "mnemonic": "BX",
-          "description": "Give the blitter its left column from A",
+          "description": "Set the blitter's left column to A, taking effect at once even mid-fill; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -542,7 +542,7 @@
         },
         {
           "mnemonic": "BXI",
-          "description": "Give the blitter its left column",
+          "description": "Set the blitter's left column to the value after the opcode, taking effect at once even mid-fill; flags unchanged",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -556,7 +556,7 @@
         },
         {
           "mnemonic": "BY",
-          "description": "Give the blitter its top row from A",
+          "description": "Set the blitter's top row to A, taking effect at once even mid-fill; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -566,7 +566,7 @@
         },
         {
           "mnemonic": "BYI",
-          "description": "Give the blitter its top row",
+          "description": "Set the blitter's top row to the value after the opcode, taking effect at once even mid-fill; flags unchanged",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -580,7 +580,7 @@
         },
         {
           "mnemonic": "BW",
-          "description": "Give the blitter its width from A",
+          "description": "Set the blitter's rectangle width to A, taking effect at once even mid-fill; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -590,7 +590,7 @@
         },
         {
           "mnemonic": "BWI",
-          "description": "Give the blitter its width",
+          "description": "Set the blitter's rectangle width to the value after the opcode, taking effect at once even mid-fill; flags unchanged",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -604,7 +604,7 @@
         },
         {
           "mnemonic": "BH",
-          "description": "Give the blitter its height from A",
+          "description": "Set the blitter's rectangle height to A, taking effect at once even mid-fill; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -614,7 +614,7 @@
         },
         {
           "mnemonic": "BHI",
-          "description": "Give the blitter its height",
+          "description": "Set the blitter's rectangle height to the value after the opcode, taking effect at once even mid-fill; flags unchanged",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -628,7 +628,7 @@
         },
         {
           "mnemonic": "BC",
-          "description": "Give the blitter its RGB565 colour from A",
+          "description": "Set the blitter's fill colour (RGB565) to A, taking effect at once even mid-fill; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -638,7 +638,7 @@
         },
         {
           "mnemonic": "BCI",
-          "description": "Give the blitter its RGB565 colour",
+          "description": "Set the blitter's fill colour (RGB565) to the value after the opcode, taking effect at once even mid-fill; flags unchanged",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -652,7 +652,7 @@
         },
         {
           "mnemonic": "GO",
-          "description": "Start the blitter on its rectangle; it fills it by itself while the CPU carries on",
+          "description": "Start the blitter filling its rectangle on the screen, one pixel per tick while the CPU runs on; ignored if it is busy or width or height is 0",
           "operands": 0,
           "steps": [
             {
@@ -662,7 +662,7 @@
         },
         {
           "mnemonic": "BST",
-          "description": "A = the blitter\u0027s status: 1 while it is busy, 0 when it is idle",
+          "description": "A = the blitter's status: 1 while it is filling, 0 when idle; flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -672,7 +672,7 @@
         },
         {
           "mnemonic": "CLS",
-          "description": "Clear the screen (the framebuffer\u0027s clear line needs no bus)",
+          "description": "Clear every screen pixel to 0 (black) and move the framebuffer's cursor to 0, 0; flags unchanged",
           "operands": 0,
           "steps": [
             {

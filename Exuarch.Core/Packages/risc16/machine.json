@@ -129,7 +129,7 @@
       "name": "RISC-16 microcode",
       "fetch": {
         "mnemonic": "FETCH",
-        "description": "Load the opcode at the program counter into the micro step register",
+        "description": "Put the opcode at the address in PC into the micro step register, starting that instruction\u0027s steps; PC is not stepped here, each instruction steps it",
         "steps": [
           {
             "signals": ["pc.output", "mem.loadmar"]
@@ -142,7 +142,7 @@
       "instructions": [
         {
           "mnemonic": "MOV_R0_R1",
-          "description": "R0 = R1",
+          "description": "R0 = R1, copying R1 into R0; R1 keeps its value, flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -152,7 +152,7 @@
         },
         {
           "mnemonic": "MOV_R0_R2",
-          "description": "R0 = R2",
+          "description": "R0 = R2, copying R2 into R0; R2 keeps its value, flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -162,7 +162,7 @@
         },
         {
           "mnemonic": "MOV_R0_R3",
-          "description": "R0 = R3",
+          "description": "R0 = R3, copying R3 into R0; R3 keeps its value, flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -172,7 +172,7 @@
         },
         {
           "mnemonic": "MOV_R1_R0",
-          "description": "R1 = R0",
+          "description": "R1 = R0, copying R0 into R1; R0 keeps its value, flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -182,7 +182,7 @@
         },
         {
           "mnemonic": "MOV_R1_R2",
-          "description": "R1 = R2",
+          "description": "R1 = R2, copying R2 into R1; R2 keeps its value, flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -192,7 +192,7 @@
         },
         {
           "mnemonic": "MOV_R1_R3",
-          "description": "R1 = R3",
+          "description": "R1 = R3, copying R3 into R1; R3 keeps its value, flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -202,7 +202,7 @@
         },
         {
           "mnemonic": "MOV_R2_R0",
-          "description": "R2 = R0",
+          "description": "R2 = R0, copying R0 into R2; R0 keeps its value, flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -212,7 +212,7 @@
         },
         {
           "mnemonic": "MOV_R2_R1",
-          "description": "R2 = R1",
+          "description": "R2 = R1, copying R1 into R2; R1 keeps its value, flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -222,7 +222,7 @@
         },
         {
           "mnemonic": "MOV_R2_R3",
-          "description": "R2 = R3",
+          "description": "R2 = R3, copying R3 into R2; R3 keeps its value, flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -232,7 +232,7 @@
         },
         {
           "mnemonic": "MOV_R3_R0",
-          "description": "R3 = R0",
+          "description": "R3 = R0, copying R0 into R3; R0 keeps its value, flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -242,7 +242,7 @@
         },
         {
           "mnemonic": "MOV_R3_R1",
-          "description": "R3 = R1",
+          "description": "R3 = R1, copying R1 into R3; R1 keeps its value, flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -252,7 +252,7 @@
         },
         {
           "mnemonic": "MOV_R3_R2",
-          "description": "R3 = R2",
+          "description": "R3 = R2, copying R2 into R3; R2 keeps its value, flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -262,7 +262,7 @@
         },
         {
           "mnemonic": "MOVI_R0",
-          "description": "R0 = value",
+          "description": "R0 = the value after the opcode; PC steps past it, flags unchanged",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -279,7 +279,7 @@
         },
         {
           "mnemonic": "ADR_R0",
-          "description": "R0 = the address of a label",
+          "description": "R0 = the value after the opcode; PC steps past it, same steps as MOVI_R0, flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -296,7 +296,7 @@
         },
         {
           "mnemonic": "MOVI_R1",
-          "description": "R1 = value",
+          "description": "R1 = the value after the opcode; PC steps past it, flags unchanged",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -313,7 +313,7 @@
         },
         {
           "mnemonic": "ADR_R1",
-          "description": "R1 = the address of a label",
+          "description": "R1 = the value after the opcode; PC steps past it, same steps as MOVI_R1, flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -330,7 +330,7 @@
         },
         {
           "mnemonic": "MOVI_R2",
-          "description": "R2 = value",
+          "description": "R2 = the value after the opcode; PC steps past it, flags unchanged",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -347,7 +347,7 @@
         },
         {
           "mnemonic": "ADR_R2",
-          "description": "R2 = the address of a label",
+          "description": "R2 = the value after the opcode; PC steps past it, same steps as MOVI_R2, flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -364,7 +364,7 @@
         },
         {
           "mnemonic": "MOVI_R3",
-          "description": "R3 = value",
+          "description": "R3 = the value after the opcode; PC steps past it, flags unchanged",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -381,7 +381,7 @@
         },
         {
           "mnemonic": "ADR_R3",
-          "description": "R3 = the address of a label",
+          "description": "R3 = the value after the opcode; PC steps past it, same steps as MOVI_R3, flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -398,7 +398,7 @@
         },
         {
           "mnemonic": "ADD_R0",
-          "description": "R0 = R0 \u002B R0; C on carry out, V on signed overflow",
+          "description": "R0 = R0 \u002B R0, doubling R0; sets Z, N, C and V (C on carry out, V on signed overflow)",
           "operands": 0,
           "steps": [
             {
@@ -411,7 +411,7 @@
         },
         {
           "mnemonic": "ADD_R1",
-          "description": "R0 = R0 \u002B R1; C on carry out, V on signed overflow",
+          "description": "R0 = R0 \u002B R1; sets Z, N, C and V (C on carry out, V on signed overflow)",
           "operands": 0,
           "steps": [
             {
@@ -424,7 +424,7 @@
         },
         {
           "mnemonic": "ADD_R2",
-          "description": "R0 = R0 \u002B R2; C on carry out, V on signed overflow",
+          "description": "R0 = R0 \u002B R2; sets Z, N, C and V (C on carry out, V on signed overflow)",
           "operands": 0,
           "steps": [
             {
@@ -437,7 +437,7 @@
         },
         {
           "mnemonic": "ADD_R3",
-          "description": "R0 = R0 \u002B R3; C on carry out, V on signed overflow",
+          "description": "R0 = R0 \u002B R3; sets Z, N, C and V (C on carry out, V on signed overflow)",
           "operands": 0,
           "steps": [
             {
@@ -450,7 +450,7 @@
         },
         {
           "mnemonic": "ADDI",
-          "description": "R0 = R0 \u002B value; C on carry out, V on signed overflow",
+          "description": "R0 = R0 \u002B the value after the opcode; sets Z, N, C and V (C on carry out, V on signed overflow)",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -470,7 +470,7 @@
         },
         {
           "mnemonic": "SUB_R0",
-          "description": "R0 = R0 - R0; C when R0 \u003C R0 unsigned (borrow), N from the sign of the result",
+          "description": "R0 = R0 - R0, which always clears R0 to 0; sets Z, clears N, C and V",
           "operands": 0,
           "steps": [
             {
@@ -483,7 +483,7 @@
         },
         {
           "mnemonic": "SUB_R1",
-          "description": "R0 = R0 - R1; C when R0 \u003C R1 unsigned (borrow), N from the sign of the result",
+          "description": "R0 = R0 - R1; sets Z, N, C and V (C when R0 \u003C R1 unsigned, a borrow; V on signed overflow)",
           "operands": 0,
           "steps": [
             {
@@ -496,7 +496,7 @@
         },
         {
           "mnemonic": "SUB_R2",
-          "description": "R0 = R0 - R2; C when R0 \u003C R2 unsigned (borrow), N from the sign of the result",
+          "description": "R0 = R0 - R2; sets Z, N, C and V (C when R0 \u003C R2 unsigned, a borrow; V on signed overflow)",
           "operands": 0,
           "steps": [
             {
@@ -509,7 +509,7 @@
         },
         {
           "mnemonic": "SUB_R3",
-          "description": "R0 = R0 - R3; C when R0 \u003C R3 unsigned (borrow), N from the sign of the result",
+          "description": "R0 = R0 - R3; sets Z, N, C and V (C when R0 \u003C R3 unsigned, a borrow; V on signed overflow)",
           "operands": 0,
           "steps": [
             {
@@ -522,7 +522,7 @@
         },
         {
           "mnemonic": "SUBI",
-          "description": "R0 = R0 - value; C when R0 \u003C value unsigned (borrow), N from the sign of the result",
+          "description": "R0 = R0 - the value after the opcode; sets Z, N, C and V (C when R0 \u003C the value unsigned, a borrow; V on signed overflow)",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -542,7 +542,7 @@
         },
         {
           "mnemonic": "AND_R0",
-          "description": "R0 = R0 AND R0",
+          "description": "R0 AND R0 leaves R0 as it is; sets Z and N from R0, clears C and V",
           "operands": 0,
           "steps": [
             {
@@ -555,7 +555,7 @@
         },
         {
           "mnemonic": "AND_R1",
-          "description": "R0 = R0 AND R1",
+          "description": "R0 = R0 AND R1, bit by bit, R1 unchanged; sets Z and N, clears C and V",
           "operands": 0,
           "steps": [
             {
@@ -568,7 +568,7 @@
         },
         {
           "mnemonic": "AND_R2",
-          "description": "R0 = R0 AND R2",
+          "description": "R0 = R0 AND R2, bit by bit, R2 unchanged; sets Z and N, clears C and V",
           "operands": 0,
           "steps": [
             {
@@ -581,7 +581,7 @@
         },
         {
           "mnemonic": "AND_R3",
-          "description": "R0 = R0 AND R3",
+          "description": "R0 = R0 AND R3, bit by bit, R3 unchanged; sets Z and N, clears C and V",
           "operands": 0,
           "steps": [
             {
@@ -594,7 +594,7 @@
         },
         {
           "mnemonic": "ANDI",
-          "description": "R0 = R0 AND value",
+          "description": "R0 = R0 AND the value after the opcode; sets Z and N, clears C and V",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -614,7 +614,7 @@
         },
         {
           "mnemonic": "ORR_R0",
-          "description": "R0 = R0 OR R0",
+          "description": "R0 OR R0 leaves R0 as it is; sets Z and N from R0, clears C and V",
           "operands": 0,
           "steps": [
             {
@@ -627,7 +627,7 @@
         },
         {
           "mnemonic": "ORR_R1",
-          "description": "R0 = R0 OR R1",
+          "description": "R0 = R0 OR R1, bit by bit, R1 unchanged; sets Z and N, clears C and V",
           "operands": 0,
           "steps": [
             {
@@ -640,7 +640,7 @@
         },
         {
           "mnemonic": "ORR_R2",
-          "description": "R0 = R0 OR R2",
+          "description": "R0 = R0 OR R2, bit by bit, R2 unchanged; sets Z and N, clears C and V",
           "operands": 0,
           "steps": [
             {
@@ -653,7 +653,7 @@
         },
         {
           "mnemonic": "ORR_R3",
-          "description": "R0 = R0 OR R3",
+          "description": "R0 = R0 OR R3, bit by bit, R3 unchanged; sets Z and N, clears C and V",
           "operands": 0,
           "steps": [
             {
@@ -666,7 +666,7 @@
         },
         {
           "mnemonic": "EOR_R0",
-          "description": "R0 = R0 XOR R0",
+          "description": "R0 = R0 XOR R0, which always clears R0 to 0; sets Z, clears N, C and V",
           "operands": 0,
           "steps": [
             {
@@ -679,7 +679,7 @@
         },
         {
           "mnemonic": "EOR_R1",
-          "description": "R0 = R0 XOR R1",
+          "description": "R0 = R0 XOR R1, bit by bit, R1 unchanged; sets Z and N, clears C and V",
           "operands": 0,
           "steps": [
             {
@@ -692,7 +692,7 @@
         },
         {
           "mnemonic": "EOR_R2",
-          "description": "R0 = R0 XOR R2",
+          "description": "R0 = R0 XOR R2, bit by bit, R2 unchanged; sets Z and N, clears C and V",
           "operands": 0,
           "steps": [
             {
@@ -705,7 +705,7 @@
         },
         {
           "mnemonic": "EOR_R3",
-          "description": "R0 = R0 XOR R3",
+          "description": "R0 = R0 XOR R3, bit by bit, R3 unchanged; sets Z and N, clears C and V",
           "operands": 0,
           "steps": [
             {
@@ -718,7 +718,7 @@
         },
         {
           "mnemonic": "LSL_R0",
-          "description": "R0 = R0 shifted left by R0; C is the last bit out",
+          "description": "R0 = R0 shifted left by its own low 4 bits; sets Z and N, C to the last bit shifted out (clear for 0), clears V",
           "operands": 0,
           "steps": [
             {
@@ -731,7 +731,7 @@
         },
         {
           "mnemonic": "LSL_R1",
-          "description": "R0 = R0 shifted left by R1; C is the last bit out",
+          "description": "R0 = R0 shifted left by the low 4 bits of R1; sets Z and N, C to the last bit shifted out (clear for 0), clears V",
           "operands": 0,
           "steps": [
             {
@@ -744,7 +744,7 @@
         },
         {
           "mnemonic": "LSL_R2",
-          "description": "R0 = R0 shifted left by R2; C is the last bit out",
+          "description": "R0 = R0 shifted left by the low 4 bits of R2; sets Z and N, C to the last bit shifted out (clear for 0), clears V",
           "operands": 0,
           "steps": [
             {
@@ -757,7 +757,7 @@
         },
         {
           "mnemonic": "LSL_R3",
-          "description": "R0 = R0 shifted left by R3; C is the last bit out",
+          "description": "R0 = R0 shifted left by the low 4 bits of R3; sets Z and N, C to the last bit shifted out (clear for 0), clears V",
           "operands": 0,
           "steps": [
             {
@@ -770,7 +770,7 @@
         },
         {
           "mnemonic": "LSR_R0",
-          "description": "R0 = R0 shifted right by R0; C is the last bit out",
+          "description": "R0 = R0 shifted right by its own low 4 bits; sets Z and N, C to the last bit shifted out (clear for 0), clears V",
           "operands": 0,
           "steps": [
             {
@@ -783,7 +783,7 @@
         },
         {
           "mnemonic": "LSR_R1",
-          "description": "R0 = R0 shifted right by R1; C is the last bit out",
+          "description": "R0 = R0 shifted right by the low 4 bits of R1; sets Z and N, C to the last bit shifted out (clear for 0), clears V",
           "operands": 0,
           "steps": [
             {
@@ -796,7 +796,7 @@
         },
         {
           "mnemonic": "LSR_R2",
-          "description": "R0 = R0 shifted right by R2; C is the last bit out",
+          "description": "R0 = R0 shifted right by the low 4 bits of R2; sets Z and N, C to the last bit shifted out (clear for 0), clears V",
           "operands": 0,
           "steps": [
             {
@@ -809,7 +809,7 @@
         },
         {
           "mnemonic": "LSR_R3",
-          "description": "R0 = R0 shifted right by R3; C is the last bit out",
+          "description": "R0 = R0 shifted right by the low 4 bits of R3; sets Z and N, C to the last bit shifted out (clear for 0), clears V",
           "operands": 0,
           "steps": [
             {
@@ -822,7 +822,7 @@
         },
         {
           "mnemonic": "CMP_R0",
-          "description": "Set the flags for R0 - R0",
+          "description": "Set the flags for R0 - R0 without changing R0: always sets Z, clears N, C and V",
           "operands": 0,
           "steps": [
             {
@@ -835,7 +835,7 @@
         },
         {
           "mnemonic": "CMP_R1",
-          "description": "Set the flags for R0 - R1",
+          "description": "Set the flags for R0 - R1 without changing R0: Z if equal, C if R0 \u003C R1 unsigned; sets Z, N, C and V",
           "operands": 0,
           "steps": [
             {
@@ -848,7 +848,7 @@
         },
         {
           "mnemonic": "CMP_R2",
-          "description": "Set the flags for R0 - R2",
+          "description": "Set the flags for R0 - R2 without changing R0: Z if equal, C if R0 \u003C R2 unsigned; sets Z, N, C and V",
           "operands": 0,
           "steps": [
             {
@@ -861,7 +861,7 @@
         },
         {
           "mnemonic": "CMP_R3",
-          "description": "Set the flags for R0 - R3",
+          "description": "Set the flags for R0 - R3 without changing R0: Z if equal, C if R0 \u003C R3 unsigned; sets Z, N, C and V",
           "operands": 0,
           "steps": [
             {
@@ -874,7 +874,7 @@
         },
         {
           "mnemonic": "CMPI",
-          "description": "Set the flags for R0 - value",
+          "description": "Set the flags for R0 - the value after the opcode without changing R0: Z if equal, C if R0 \u003C the value unsigned; sets Z, N, C and V",
           "operands": 1,
           "operandTypes": ["value"],
           "steps": [
@@ -894,7 +894,7 @@
         },
         {
           "mnemonic": "INC_R0",
-          "description": "R0 = R0 \u002B 1, flags unchanged",
+          "description": "R0 = R0 \u002B 1 without the ALU, wrapping from FFFF to 0, flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -904,7 +904,7 @@
         },
         {
           "mnemonic": "DEC_R0",
-          "description": "R0 = R0 - 1, flags unchanged",
+          "description": "R0 = R0 - 1 without the ALU, wrapping from 0 to FFFF, flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -914,7 +914,7 @@
         },
         {
           "mnemonic": "INC_R1",
-          "description": "R1 = R1 \u002B 1, flags unchanged",
+          "description": "R1 = R1 \u002B 1 without the ALU, wrapping from FFFF to 0, flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -924,7 +924,7 @@
         },
         {
           "mnemonic": "DEC_R1",
-          "description": "R1 = R1 - 1, flags unchanged",
+          "description": "R1 = R1 - 1 without the ALU, wrapping from 0 to FFFF, flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -934,7 +934,7 @@
         },
         {
           "mnemonic": "INC_R2",
-          "description": "R2 = R2 \u002B 1, flags unchanged",
+          "description": "R2 = R2 \u002B 1 without the ALU, wrapping from FFFF to 0, flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -944,7 +944,7 @@
         },
         {
           "mnemonic": "DEC_R2",
-          "description": "R2 = R2 - 1, flags unchanged",
+          "description": "R2 = R2 - 1 without the ALU, wrapping from 0 to FFFF, flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -954,7 +954,7 @@
         },
         {
           "mnemonic": "INC_R3",
-          "description": "R3 = R3 \u002B 1, flags unchanged",
+          "description": "R3 = R3 \u002B 1 without the ALU, wrapping from FFFF to 0, flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -964,7 +964,7 @@
         },
         {
           "mnemonic": "DEC_R3",
-          "description": "R3 = R3 - 1, flags unchanged",
+          "description": "R3 = R3 - 1 without the ALU, wrapping from 0 to FFFF, flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -974,7 +974,7 @@
         },
         {
           "mnemonic": "LDR_R0",
-          "description": "R0 = the memory cell at the address in R0",
+          "description": "R0 = the cell at the address in R0, replacing the address, flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -987,7 +987,7 @@
         },
         {
           "mnemonic": "STR_R0",
-          "description": "Store R0 at the address in R0",
+          "description": "Store R0 in the cell at the address in R0, so the cell gets its own address, flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -1000,7 +1000,7 @@
         },
         {
           "mnemonic": "LDR_R1",
-          "description": "R0 = the memory cell at the address in R1",
+          "description": "R0 = the cell at the address in R1, R1 unchanged, flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -1013,7 +1013,7 @@
         },
         {
           "mnemonic": "STR_R1",
-          "description": "Store R0 at the address in R1",
+          "description": "Store R0 in the cell at the address in R1; R0 and R1 keep their values, flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -1026,7 +1026,7 @@
         },
         {
           "mnemonic": "LDR_R2",
-          "description": "R0 = the memory cell at the address in R2",
+          "description": "R0 = the cell at the address in R2, R2 unchanged, flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -1039,7 +1039,7 @@
         },
         {
           "mnemonic": "STR_R2",
-          "description": "Store R0 at the address in R2",
+          "description": "Store R0 in the cell at the address in R2; R0 and R2 keep their values, flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -1052,7 +1052,7 @@
         },
         {
           "mnemonic": "LDR_R3",
-          "description": "R0 = the memory cell at the address in R3",
+          "description": "R0 = the cell at the address in R3, R3 unchanged, flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -1065,7 +1065,7 @@
         },
         {
           "mnemonic": "STR_R3",
-          "description": "Store R0 at the address in R3",
+          "description": "Store R0 in the cell at the address in R3; R0 and R3 keep their values, flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -1078,7 +1078,7 @@
         },
         {
           "mnemonic": "PUSH_R0",
-          "description": "Push R0 on the full descending stack",
+          "description": "SP = SP - 1, then store R0 in the cell at the address in SP (full descending stack), flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -1094,7 +1094,7 @@
         },
         {
           "mnemonic": "POP_R0",
-          "description": "Pop the top of the stack into R0",
+          "description": "R0 = the cell at the address in SP, then SP = SP \u002B 1 (full descending stack), flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -1107,7 +1107,7 @@
         },
         {
           "mnemonic": "PUSH_R1",
-          "description": "Push R1 on the full descending stack",
+          "description": "SP = SP - 1, then store R1 in the cell at the address in SP (full descending stack), flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -1123,7 +1123,7 @@
         },
         {
           "mnemonic": "POP_R1",
-          "description": "Pop the top of the stack into R1",
+          "description": "R1 = the cell at the address in SP, then SP = SP \u002B 1 (full descending stack), flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -1136,7 +1136,7 @@
         },
         {
           "mnemonic": "PUSH_R2",
-          "description": "Push R2 on the full descending stack",
+          "description": "SP = SP - 1, then store R2 in the cell at the address in SP (full descending stack), flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -1152,7 +1152,7 @@
         },
         {
           "mnemonic": "POP_R2",
-          "description": "Pop the top of the stack into R2",
+          "description": "R2 = the cell at the address in SP, then SP = SP \u002B 1 (full descending stack), flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -1165,7 +1165,7 @@
         },
         {
           "mnemonic": "PUSH_R3",
-          "description": "Push R3 on the full descending stack",
+          "description": "SP = SP - 1, then store R3 in the cell at the address in SP (full descending stack), flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -1181,7 +1181,7 @@
         },
         {
           "mnemonic": "POP_R3",
-          "description": "Pop the top of the stack into R3",
+          "description": "R3 = the cell at the address in SP, then SP = SP \u002B 1 (full descending stack), flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -1194,7 +1194,7 @@
         },
         {
           "mnemonic": "B",
-          "description": "Branch to the address",
+          "description": "PC = the value after the opcode, branching there, flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -1211,7 +1211,7 @@
         },
         {
           "mnemonic": "BEQ",
-          "description": "Branch if equal (Z set)",
+          "description": "If Z is set (R0 equal after a CMP), PC = the value after the opcode; otherwise go on with the next instruction",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -1234,7 +1234,7 @@
         },
         {
           "mnemonic": "BNE",
-          "description": "Branch if not equal (Z clear)",
+          "description": "If Z is clear (R0 not equal after a CMP), PC = the value after the opcode; otherwise go on with the next instruction",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -1257,7 +1257,7 @@
         },
         {
           "mnemonic": "BCS",
-          "description": "Branch if carry set: an ADD carried out, or a CMP/SUB borrowed (R0 lower)",
+          "description": "If C is set (R0 lower, unsigned, after a CMP; a carry out after an ADD), PC = the value after the opcode; otherwise go on with the next instruction",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -1280,7 +1280,7 @@
         },
         {
           "mnemonic": "BCC",
-          "description": "Branch if carry clear: no carry out, or no borrow (R0 higher or same)",
+          "description": "If C is clear (R0 higher or same, unsigned, after a CMP), PC = the value after the opcode; otherwise go on with the next instruction",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -1303,7 +1303,7 @@
         },
         {
           "mnemonic": "BMI",
-          "description": "Branch if negative (N set)",
+          "description": "If N is set (bit 15 of the last ALU result is 1), PC = the value after the opcode; otherwise go on with the next instruction",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -1326,7 +1326,7 @@
         },
         {
           "mnemonic": "BPL",
-          "description": "Branch if positive or zero (N clear)",
+          "description": "If N is clear (bit 15 of the last ALU result is 0), PC = the value after the opcode; otherwise go on with the next instruction",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -1349,7 +1349,7 @@
         },
         {
           "mnemonic": "BL",
-          "description": "Branch with link: LR = the next instruction, then branch",
+          "description": "LR = the address of the next instruction, then PC = the value after the opcode, flags unchanged",
           "operands": 1,
           "operandTypes": ["address"],
           "steps": [
@@ -1369,7 +1369,7 @@
         },
         {
           "mnemonic": "RET",
-          "description": "Return from a subroutine: branch to LR (BX LR)",
+          "description": "PC = LR, returning to the instruction after the last BL; LR and flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -1379,7 +1379,7 @@
         },
         {
           "mnemonic": "OUT",
-          "description": "Print the character in R0 on the LCD",
+          "description": "Print the low 8 bits of R0 as a Latin-1 character at the LCD cursor and move the cursor right (10 starts a new row, 13 goes to the row start)",
           "operands": 0,
           "steps": [
             {
@@ -1389,7 +1389,7 @@
         },
         {
           "mnemonic": "CLT",
-          "description": "Clear the LCD",
+          "description": "Clear the LCD and move its cursor to the first cell, flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -1399,7 +1399,7 @@
         },
         {
           "mnemonic": "CLS",
-          "description": "Clear the screen and move its cursor to 0, 0",
+          "description": "Clear the screen to 0 (black) and move its cursor to 0, 0, flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -1409,7 +1409,7 @@
         },
         {
           "mnemonic": "PX",
-          "description": "Move the screen cursor to column R0",
+          "description": "Move the screen cursor to column R0 modulo 640, row unchanged, flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -1419,7 +1419,7 @@
         },
         {
           "mnemonic": "PY",
-          "description": "Move the screen cursor to row R0",
+          "description": "Move the screen cursor to row R0 modulo 480, column unchanged, flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -1429,7 +1429,7 @@
         },
         {
           "mnemonic": "PLOT",
-          "description": "Plot the RGB565 colour in R0 at the screen cursor and move right",
+          "description": "Plot the RGB565 colour in R0 at the screen cursor and move the cursor right, wrapping to the next row, flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -1439,7 +1439,7 @@
         },
         {
           "mnemonic": "IN",
-          "description": "R0 = the keys: 1 up, 2 down, 4 left, 8 right, 16 space",
+          "description": "R0 = the keypad bits, held or pressed since the last read: 1 up, 2 down, 4 left, 8 right, 16 space, flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -1449,7 +1449,7 @@
         },
         {
           "mnemonic": "NOP",
-          "description": "Do nothing",
+          "description": "Do nothing but step PC on to the next instruction, flags unchanged",
           "operands": 0,
           "steps": [
             {
@@ -1459,7 +1459,7 @@
         },
         {
           "mnemonic": "HLT",
-          "description": "Halt the machine",
+          "description": "Stop the clock, halting the machine; PC stays on the HLT and the flags are unchanged",
           "operands": 0,
           "steps": [
             {
