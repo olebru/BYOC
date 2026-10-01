@@ -90,6 +90,43 @@
             border-color: #6b6f78;
         }
 
+/* The build, along the bottom. */
+.footbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: var(--footer-height);
+    padding: 0 24px;
+    background: var(--bar);
+    color: #7d828c;
+    border-top: 1px solid var(--bar-line);
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.06em;
+}
+
+    .footbar .name {
+        color: #9a9ea6;
+        letter-spacing: 0.14em;
+    }
+
+    .footbar .version {
+        color: var(--bar-ink);
+    }
+
+    .footbar .spacer {
+        flex: 1;
+    }
+
+    .footbar a {
+        color: #9a9ea6;
+        text-decoration: none;
+    }
+
+        .footbar a:hover {
+            color: var(--bar-ink);
+        }
+
 @media (max-width: 720px) {
     .topbar .tagline, .topbar .spec {
         display: none;

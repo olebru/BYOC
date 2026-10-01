@@ -9,7 +9,7 @@
     box-shadow: var(--shadow);
     user-select: none;
     color: var(--ink);
-    height: calc(100vh - 150px);
+    height: calc(100vh - 150px - var(--footer-height));
     min-height: 520px;
 }
 

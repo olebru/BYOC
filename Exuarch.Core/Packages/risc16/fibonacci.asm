@@ -1,58 +1,44 @@
-; Fibonacci on the LCD, RISC-16 style
-; R1 and R2 hold the last two numbers. print_number is a subroutine that prints R0 in decimal.
+; Fibonacci on the LCD
+; ADD R0, R1, R2 makes a + b in a third register and leaves both where they are. print_number is called with
+; BL R7 and returns with BX R7; it keeps to R0 and R3 to R5, so a and b in R1 and R2 survive the call.
               CLT
-              MOVI_R1    0           ; a
-              MOVI_R2    1           ; b
-next:         MOV_R0_R2
-              BL         print_number
-              MOVI_R0    ' '
-              OUT
-              MOV_R0_R1
-              ADD_R2                 ; R0 = a + b
-              BCS        done        ; carry: it does not fit in 16 bits
-              MOV_R1_R2
-              MOV_R2_R0
-              B          next
+              MOVI   R1, 0       ; a
+              MOVI   R2, 1       ; b
+next:         MOV    R0, R2
+              BL     R7, print_number
+              MOVI   R0, ' '
+              OUT    R0
+              ADD    R0, R1, R2  ; R0 = a + b
+              BCS    done        ; carry: it does not fit in 16 bits
+              MOV    R1, R2
+              MOV    R2, R0
+              B      next
 done:         HLT
 
-; print_number: prints R0 in decimal without leading zeros, keeping R1 to R3.
-; There is no divide: each digit counts how often its place value can be subtracted.
-print_number: PUSH_R1
-              PUSH_R2
-              PUSH_R3
-              MOV_R1_R0              ; R1 = what is left of the number
-              ADR_R3     places      ; R3 walks the table of place values
-skip:         LDR_R3                 ; R0 = the place value
-              CMPI       1
-              BEQ        digits      ; the units digit is always printed
-              CMP_R1
-              BCS        digits      ; place < number: the first digit
-              BEQ        digits      ; place = number: also the first digit
-              INC_R3                 ; a leading zero, try the next place
-              B          skip
-digits:       LDR_R3
-              MOV_R2_R0              ; R2 = the place value
-              PUSH_R3                ; free R3 to count the digit
-              MOVI_R3    '0'
-count:        MOV_R0_R1
-              CMP_R2
-              BCS        show        ; borrow: less than the place value is left
-              SUB_R2
-              MOV_R1_R0
-              INC_R3
-              B          count
-show:         MOV_R0_R3
-              OUT
-              POP_R3
-              MOV_R0_R2
-              CMPI       1
-              BEQ        return      ; that was the units digit
-              INC_R3
-              B          digits
-return:       POP_R3
-              POP_R2
-              POP_R1
-              RET
+; print_number: prints R0 in decimal without leading zeros. Uses R0 and R3 to R5.
+; There is no divide: each place counts how often its value can be subtracted.
+print_number: MOV    R4, R0      ; R4 = what is left of the number
+              ADR    R5, places  ; R5 walks the table of place values
+skip:         LDR    R0, R5      ; R0 = the place value
+              CMPI   R0, 1
+              BEQ    places_on   ; the units are always printed
+              CMP    R0, R4
+              BCS    places_on   ; place < number: the first one to print
+              BEQ    places_on   ; place = number: also the first
+              ADDI   R5, R5, 1   ; a leading zero, try the next place
+              B      skip
+places_on:    LDR    R0, R5      ; R0 = the place value
+              MOVI   R3, '0'     ; R3 counts up the character to print
+count:        CMP    R4, R0
+              BCS    show        ; borrow: less than the place value is left
+              SUB    R4, R4, R0
+              ADDI   R3, R3, 1
+              B      count
+show:         OUT    R3
+              CMPI   R0, 1
+              BEQ    return      ; those were the units
+              ADDI   R5, R5, 1
+              B      places_on
+return:       BX     R7
 
-places:       .DATA      10000, 1000, 100, 10, 1
-
+places:       .DATA  10000, 1000, 100, 10, 1

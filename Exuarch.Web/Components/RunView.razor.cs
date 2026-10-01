@@ -478,7 +478,14 @@ namespace Exuarch.Web.Components
         private void GoToMar(MemoryModule module) { memoryPage = module.memoryAddress / PageSize; }
         private static int AddressDigits(MemoryModule module) => Math.Max(2, ((int)Math.Ceiling(Math.Log2(Math.Max(2, module.Size))) + 3) / 4);
         // Widest listing line, in cells, to size the listing's cell column.
-        private int ListingCellColumns { get { return Math.Min(4, Machine.Assembler.Listing.Select(l => l.Cells.Length).DefaultIfEmpty(1).Max()); } }
+        // The label column is as wide as the longest label and its colon, so the code after it lines up.
+        private int ListingLabelChars { get { return Machine.Assembler.Listing.Select(l => (l.Label?.Length ?? 0) + 1).DefaultIfEmpty(1).Max(); } }
+        // What the line assembled to, shown on hover so the code has the width.
+        private string CellsTitle(ListingLine line)
+        {
+            if (line.Cells.Length == 0) return null;
+            return $"{Hex(line.Address)}: {string.Join(" ", line.Cells.Select(b => Hex(b)))}";
+        }
         // The program counter is whichever register the fetch routine puts on the bus to address program memory:
         // any register can be one, its role comes from the microcode.
         private IEnumerable<int> ProgramCounterValues

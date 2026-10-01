@@ -6,7 +6,7 @@
     background: var(--surface);
     box-shadow: var(--shadow);
     overflow: hidden;
-    height: calc(100vh - 205px);
+    height: calc(100vh - 205px - var(--footer-height));
     min-height: 420px;
 }
 

@@ -17,6 +17,7 @@ Each tutorial starts where the last one stopped, beginning from **New…** and t
 7. [Loops and flags](exuarch:guide/loops-and-flags): a conditional jump built from steps that only run for one value of a flag, and a countdown.
 8. [Subroutines and the stack](exuarch:guide/subroutines-and-the-stack): a stack pointer, `CALL` and `RET`.
 9. [Reading the keypad](exuarch:guide/reading-the-keypad): input, and a program that echoes the keys you press.
+10. [A stack machine](exuarch:guide/stack-machine): a new machine whose values live on a data stack in memory, with PUSH, ADD and OUT that work on its top.
 
 ## The tabs
 
@@ -44,11 +45,11 @@ The built in machines each take a different direction. Load one from **Machines*
 
 - [TINY-16](exuarch:package/TINY-16): the one to start with, one register and seven instructions.
 - [BYOC-16](exuarch:package/BYOC-16): a classic accumulator machine on one bus.
-- [RISC-16](exuarch:package/RISC-16): load/store with four registers, inspired by ARM.
+- [STACK-16](exuarch:package/STACK-16): a stack machine, where every instruction works on the top of a data stack, and calls have a return stack of their own.
 
 **Advanced**: more buses, other ways to build a CPU, and devices that work on their own.
 
-- [RF-16](exuarch:package/RF-16): RISC-16 with a register file, so registers are operands: `ADD R0, R2`.
+- [RISC-16](exuarch:package/RISC-16): a load/store machine with a register file and three register instructions: `ADD R0, R1, R2`.
 - [HARVARD-16](exuarch:package/HARVARD-16): three buses, with separate program and data memory.
 - [MOVE-16](exuarch:package/MOVE-16): no instruction set, only moves between ports.
 - [COPRO-16](exuarch:package/COPRO-16): a CPU that hands work to a blitter on its own bus.

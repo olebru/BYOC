@@ -88,11 +88,11 @@ public class KeypadTests
         while (!byoc.IsHalted) byoc.SingleStep();
         Assert.Equal(8, byoc.Device<Register>("rega").Data);
 
-        var risc = new Machine(BuiltInPackages.Get("RISC-16").Machine, "IN\nHLT") { RecordHistory = false };
+        var risc = new Machine(BuiltInPackages.Get("RISC-16").Machine, "IN R0\nHLT") { RecordHistory = false };
         risc.Device<Keypad>("keys").Press(Keypad.Keys.Down);
         risc.Device<Keypad>("keys").Press(Keypad.Keys.Space);
         while (!risc.IsHalted) risc.SingleStep();
-        Assert.Equal(2 | 16, risc.Device<Register>("r0").Data);
+        Assert.Equal(2 | 16, risc.Device<RegisterFile>("rf")[0]);
     }
 
     [Fact]
@@ -101,13 +101,13 @@ public class KeypadTests
         var c = new Machine(BuiltInPackages.Get("RISC-16").Machine, BuiltInPackages.Get("RISC-16").Program("Sketch with the arrow keys").Source) { RecordHistory = false };
         var keypad = c.Device<Keypad>("keys");
         for (int i = 0; i < 20000; i++) c.SingleStep();
-        Assert.Equal((320, 240), (c.Device<Register>("r1").Data, c.Device<Register>("r2").Data));
+        Assert.Equal((320, 240), (c.Device<RegisterFile>("rf")[1], c.Device<RegisterFile>("rf")[2]));
 
         keypad.Press(Keypad.Keys.Right);
         keypad.Press(Keypad.Keys.Up);
         for (int i = 0; i < 100000; i++) c.SingleStep();
         keypad.ReleaseAll();
-        var (x, y) = (c.Device<Register>("r1").Data, c.Device<Register>("r2").Data);
+        var (x, y) = (c.Device<RegisterFile>("rf")[1], c.Device<RegisterFile>("rf")[2]);
         Assert.True(x > 320 && y < 240, $"pen at {x}, {y}");
         Assert.Equal(x - 320, 240 - y);
         Assert.Equal(0xFFE0, c.Device<Framebuffer>("fb").Pixels[(y + 1) * Framebuffer.Width + x - 1]);
