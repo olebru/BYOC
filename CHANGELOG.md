@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.3.0](https://github.com/olebru/exuarch/compare/v1.2.0...v1.3.0) (2026-10-02)
+
+
+### Features
+
+* introduce ExµArch to phone visitors and point them to a computer ([#27](https://github.com/olebru/exuarch/issues/27)) ([68b17d8](https://github.com/olebru/exuarch/commit/68b17d8399beb1120d3bfd38ed5521993a2d8292))
+
+
+### Documentation
+
+* explain how ExµArch relates to real hardware ([#26](https://github.com/olebru/exuarch/issues/26)) ([d659aaf](https://github.com/olebru/exuarch/commit/d659aaf247820ab149cc3dc31fa27f119ac45d6d))
+
 ## [1.2.0](https://github.com/olebru/exuarch/compare/v1.1.0...v1.2.0) (2026-10-02)
 
 
