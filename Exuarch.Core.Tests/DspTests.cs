@@ -12,13 +12,13 @@ public class DspTests
     private static Machine Start(string source) => new Machine(Dsp.Machine, source) { RecordHistory = false };
     private static int R(Machine c, int n) => c.Device<RegisterFile>("rf").Values[n];
 
-    // MUL works in 8.8 fixed point: the 32 bit product of two signed words, shifted right by 8 and clamped.
+    // MUL works in 4.12 fixed point: the 32 bit product of two signed words, shifted right by 12 and clamped.
     [Theory]
-    [InlineData(512, 384, 768)]        // 2.0 x 1.5 = 3.0
-    [InlineData(-512, 384, -768)]      // -2.0 x 1.5 = -3.0
-    [InlineData(64, 64, 16)]           // 0.25 x 0.25 = 0.0625
-    [InlineData(12, 3072, 144)]        // a whole number times 256 x a step: 12 x 12
-    [InlineData(32767, 32767, 32767)]  // too big for 16 bits: clamped
+    [InlineData(8192, 6144, 12288)]      // 2.0 x 1.5 = 3.0
+    [InlineData(-8192, 6144, -12288)]    // -2.0 x 1.5 = -3.0
+    [InlineData(1024, 1024, 256)]        // 0.25 x 0.25 = 0.0625
+    [InlineData(1, 1, 0)]                // 1/4096 squared is too small to show
+    [InlineData(32767, 32767, 32767)]    // too big for 16 bits: clamped
     public void MulMultipliesFixedPoint(int a, int b, int product)
     {
         var c = Start($"MOVI R1, {a}\nMOVI R2, {b}\nMUL R0, R1, R2\nHLT");
@@ -27,16 +27,15 @@ public class DspTests
         Assert.Equal(a & 0xFFFF, R(c, 1));
     }
 
-    // The same sums the program does, in C#, word for word: what every point's colour has to be.
-    private static int Mul(int a, int b) => (int)Math.Clamp(((long)(short)a * (short)b) >> 8, short.MinValue, short.MaxValue) & 0xFFFF;
-    private static int Colour(int column, int row, int step, int steps, Func<int, int> palette)
+    // The same sums the programs do, in C#, word for word: what every point's colour has to be.
+    private static int Mul(int a, int b) => (int)Math.Clamp(((long)(short)a * (short)b) >> 12, short.MinValue, short.MaxValue) & 0xFFFF;
+    private static int Colour(int cx, int cy, int steps, Func<int, int> palette)
     {
-        int cx = (Mul(column, step) - 640) & 0xFFFF, cy = (Mul(row, step) - 360) & 0xFFFF;
         int x = cx, y = cy;
         for (int left = steps; left > 0; left--)
         {
             int x2 = Mul(x, x), y2 = Mul(y, y);
-            if ((((x2 + y2) - 1025) & 0x8000) == 0) return palette(left);
+            if (((x2 + y2) & 0xFFFF) >= 16385) return palette((left - 1) & 31);
             int xy = Mul(x, y);
             y = (xy + xy + cy) & 0xFFFF;
             x = (x2 - y2 + cx) & 0xFFFF;
@@ -44,22 +43,33 @@ public class DspTests
         return 0;
     }
 
-    private static void AssertDrawn(Machine c, int width, int block, int rows)
+    private record Picture(string Name, int Width, int Block, int Left, int Top, int Step, int Steps);
+    private static readonly Picture[] Pictures =
+    {
+        new("Mandelbrot, 80 x 60", 80, 8, -10240, -5760, 192, 32),
+        new("Mandelbrot, 160 x 120", 160, 4, -10240, -5760, 96, 32),
+        new("Mandelbrot, 640 x 480", 640, 1, -10240, -5760, 24, 32),
+        new("Lightning at the top of the set", 640, 1, -734, 3677, 1, 128),
+    };
+
+    private static void AssertDrawn(Machine c, Picture picture, int rows)
     {
         var mem = c.Device<RamModule>("mem");
         int palette = c.Assembler.labelLUT["palette"];
         var fb = c.Device<Framebuffer>("fb");
-        int step = 960 * 256 / width;
         for (int row = 0; row < rows; row++)
         {
-            for (int column = 0; column < width; column++)
+            int cy = (picture.Top + row * picture.Step) & 0xFFFF;
+            for (int column = 0; column < picture.Width; column++)
             {
-                int expected = Colour(column, row, step, 32, left => mem.ValueAt(palette + left));
-                for (int dy = 0; dy < block; dy++)
+                int cx = (picture.Left + column * picture.Step) & 0xFFFF;
+                int expected = Colour(cx, cy, picture.Steps, k => mem.ValueAt(palette + k));
+                for (int dy = 0; dy < picture.Block; dy++)
                 {
-                    for (int dx = 0; dx < block; dx++)
+                    for (int dx = 0; dx < picture.Block; dx++)
                     {
-                        Assert.True(expected == fb.Pixels[(row * block + dy) * Framebuffer.Width + column * block + dx], $"point {column}, {row}");
+                        int pixel = fb.Pixels[(row * picture.Block + dy) * Framebuffer.Width + column * picture.Block + dx];
+                        Assert.True(expected == pixel, $"{picture.Name}: point {column}, {row} is {pixel:X4}, not {expected:X4}");
                     }
                 }
             }
@@ -69,46 +79,51 @@ public class DspTests
     [Fact]
     public void TheCoarsePictureIsTheMandelbrotSet()
     {
-        var c = Start(Dsp.Program("Mandelbrot, 80 x 60").Source);
+        var picture = Pictures[0];
+        var c = Start(Dsp.Program(picture.Name).Source);
         long ticks = 0;
         while (!c.IsHalted) { c.SingleStep(); ticks++; }
         Assert.Empty(c.MicrocodeWarnings);
-        AssertDrawn(c, 80, 8, 60);
-        Assert.Equal(8_141_020, ticks);
-        Assert.Contains("8,141,020 ticks", Dsp.Readme);
+        AssertDrawn(c, picture, 60);
+        Assert.Equal(CoarseTicks, ticks);
         // On the real axis from -2 to 0.25 every point is in the set: black.
         var fb = c.Device<Framebuffer>("fb");
         Assert.Equal(0, fb.Pixels[240 * Framebuffer.Width + 100]);
         Assert.Equal(0, fb.Pixels[240 * Framebuffer.Width + 400]);
         Assert.NotEqual(0, fb.Pixels[0]);
     }
+    private const long CoarseTicks = 8_239_344;
 
     // The finer pictures take far longer; their first rows are checked the same way.
     [Theory]
-    [InlineData("Mandelbrot, 160 x 120", 160, 4, 2)]
-    [InlineData("Mandelbrot, 640 x 480", 640, 1, 3)]
-    public void TheFinerPicturesDrawTheSamePoints(string name, int width, int block, int rows)
+    [InlineData(1, 2)]
+    [InlineData(2, 3)]
+    [InlineData(3, 3)]
+    public void TheFinerPicturesDrawTheirFirstRows(int index, int rows)
     {
-        var c = Start(Dsp.Program(name).Source);
+        var picture = Pictures[index];
+        var c = Start(Dsp.Program(picture.Name).Source);
         var fb = c.Device<Framebuffer>("fb");
-        while (fb.Y < rows * block) c.SingleStep();
+        while (fb.Y < rows * picture.Block) c.SingleStep();
         Assert.Empty(c.MicrocodeWarnings);
-        AssertDrawn(c, width, block, rows);
+        AssertDrawn(c, picture, rows);
     }
 
+    // The ticks every picture takes, measured once for the long ones, are in the README.
     [Fact]
     public void TheReadmeGivesTheTicksOfEveryPicture()
     {
-        foreach (var text in new[] { "8,141,020 ticks", "25,140,404 ticks", "345,850,782 ticks" }) Assert.Contains(text, Dsp.Readme);
+        foreach (var ticks in AllTicks) Assert.Contains($"{ticks:N0} ticks", Dsp.Readme);
     }
+    private static readonly long[] AllTicks = { CoarseTicks, 25_605_802, 353_232_756, 583_757_144 };
 
-    // The three programs are the same but for their sizes.
+    // The programs are the same but for their numbers.
     [Fact]
-    public void TheThreeProgramsDifferOnlyInTheirSizes()
+    public void ThePicturesDifferOnlyInTheirNumbers()
     {
         string Shape(string source) => System.Text.RegularExpressions.Regex.Replace(
-            string.Join("\n", source.Split('\n').Select(l => l.Split(';')[0].TrimEnd()).Where(l => l.Length > 0 && !l.Contains("PLOT"))), @"\b\d+\b", "#");
-        var shapes = Dsp.Programs.Select(p => Shape(p.Source)).Distinct().ToList();
-        Assert.Single(shapes);
+            string.Join("\n", source.Split('\n').Select(l => l.Split(';')[0].TrimEnd()).Where(l => l.Length > 0 && !l.Contains("PLOT"))), @"-?\b(0x)?[0-9A-F]+\b", "#");
+        Assert.Equal(4, Dsp.Programs.Count);
+        Assert.Single(Dsp.Programs.Select(p => Shape(p.Source)).Distinct());
     }
 }
