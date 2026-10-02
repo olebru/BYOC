@@ -7,6 +7,7 @@
   "programs": [
     { "name": "Sum a table", "description": "Immediate, absolute and post-increment operands: ADD_RP R0, R1 adds the next cell and steps on", "file": "sum.asm" },
     { "name": "Copy a string", "description": "MOV_PP R2, R1 copies a character memory to memory and steps both pointers: a loop body in one instruction", "file": "copy.asm" },
-    { "name": "Recursive Fibonacci", "description": "fib(n) calls itself twice; ENTER, LEAVE and an indexed local keep every call's values in its own stack frame", "file": "fibonacci.asm" }
+    { "name": "Recursive Fibonacci", "description": "fib(n) calls itself twice; ENTER, LEAVE and an indexed local keep every call's values in its own stack frame", "file": "fibonacci.asm" },
+    { "name": "Code is data", "description": "The program rewrites its own instructions: ADD_XI R1, 1, 1 changes the letter OUT_I prints, and MOV_AA copies a HLT over the first instruction", "file": "code-is-data.asm" }
   ]
 }

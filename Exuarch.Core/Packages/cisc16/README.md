@@ -48,8 +48,9 @@ After the call returns, [FREE](exuarch:instruction/FREE) `1` drops the argument.
 1. [Sum a table](<exuarch:program/Sum a table>) adds the table with `ADD_RP R0, R1`, one instruction per value, prints `150`, and stores the sum at `total` with an absolute destination.
 2. [Copy a string](<exuarch:program/Copy a string>) copies with `MOV_PP R2, R1`, checks the character it just copied with `CMP_XI R2, -1, 0`, and prints the copy, `Copied by MOV_PP`, with `OUT_P R1`.
 3. Step [Recursive Fibonacci](<exuarch:program/Recursive Fibonacci>) with the **Memory** tab on the last page and watch the frames stack up. It prints `0 1 1 2 3 5 8 13 21 34 55` in 49,831 ticks, and while working out fib(10) the stack reaches 40 cells deep: ten frames of four.
-4. Write the sum on RISC-16, and count the instructions and the ticks.
-5. Add an `M` mode, pre-decrement, `[Rn]` after Rn steps back by one, and use it to fill a table backwards.
+4. [Code is data](<exuarch:program/Code is data>) shows what makes this a von Neumann machine: the program and its data share one memory and one bus, so an instruction is just cells that other instructions can change. `OUT_I 'A'` prints its own operand, and `ADD_XI R1, 1, 1` adds one to that operand, so the same instruction prints `ABCDEFGHIJKLMNOPQRSTUVWXYZ`. Then `MOV_AA start, stop` copies a whole `HLT` over the program's first instruction, and the jump back stops on it, after 838 ticks. Watch the **Memory** panel: the operand cell counts up while the **Program** listing still says `'A'`, because the listing is the source and memory is what runs. [HARVARD-16](exuarch:package/HARVARD-16) can not do this, since its data instructions only reach its data memory. It is also why bugs that write over code are possible here, and why modern systems mark code read only.
+5. Write the sum on RISC-16, and count the instructions and the ticks.
+6. Add an `M` mode, pre-decrement, `[Rn]` after Rn steps back by one, and use it to fill a table backwards.
 
 ## Read more
 

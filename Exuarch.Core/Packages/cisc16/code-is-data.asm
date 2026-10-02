@@ -1,0 +1,15 @@
+; Code is data
+; A von Neumann machine keeps its program and its data in the same memory, so an instruction is just a few cells that
+; any other instruction can read and write. This program prints the alphabet without ever holding a letter in a
+; register: OUT_I prints its own operand, the cell right after its opcode, and ADD_XI adds one to that cell, so the
+; next time round OUT_I prints the next letter. Then it stops on a HLT it copied over its own first instruction.
+start:  CLT                  ; overwritten with HLT at the end
+        LEA     R1, letter   ; R1 points at the OUT_I below: its opcode, then its operand at R1 + 1
+        MOV_RI  R2, 26
+letter: OUT_I   'A'          ; print the operand, which is only 'A' the first time
+        ADD_XI  R1, 1, 1     ; [R1 + 1] = [R1 + 1] + 1: rewrite that operand to the next letter
+        SUB_RI  R2, 1
+        JNE     letter
+        MOV_AA  start, stop  ; copy a whole instruction, as data, over the first one
+        JMP     start        ; and run it
+stop:   HLT                  ; never reached here: it runs at start instead
