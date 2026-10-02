@@ -147,4 +147,51 @@ public class BusDeviceTests
         Assert.Equal(0, pc.Data);
         Assert.DoesNotContain("count", pc.SignalLines());
     }
+
+    // More than one of a register's writes in one step all happen, in the order load, reset, inc, dec, where a real
+    // counter chip would pick one. The handbook's page on real hardware relies on these results.
+    [Theory]
+    [InlineData(new[] { "load", "inc" }, 43)]
+    [InlineData(new[] { "inc", "dec" }, 7)]
+    [InlineData(new[] { "load", "reset" }, 0)]
+    [InlineData(new[] { "reset", "inc" }, 1)]
+    public void ARegisterDoesEveryWriteItIsGivenInOneTick(string[] lines, int expected)
+    {
+        var bus = new Bus();
+        var source = new Register("SRC", "src", bus) { Data = 42 };
+        var x = new Register("X", "x", bus) { Data = 7 };
+        bus.devices.Add(source);
+        bus.devices.Add(x);
+
+        source.Enable("output");
+        foreach (var line in lines) x.Enable(line);
+        bus.Clk();
+
+        Assert.Equal(expected, x.Data);
+    }
+
+    // A stack pointer that was never set: it starts at 0, its first decrement wraps to FFFF, and the memory takes
+    // that modulo its size, the last cell for a power of two and somewhere in the middle otherwise.
+    [Theory]
+    [InlineData(4096, 4095)]
+    [InlineData(64, 63)]
+    [InlineData(3000, 2535)]
+    public void AStackPointerFromZeroAddressesTheTopOfAPowerOfTwoMemory(int size, int firstCell)
+    {
+        var bus = new Bus();
+        var sp = new Register("SP", "sp", bus);
+        var ram = new RamModule("RAM", "mem", bus, size);
+        bus.devices.Add(sp);
+        bus.devices.Add(ram);
+        Assert.Equal(0, sp.Data);
+
+        sp.Enable("dec");
+        bus.Clk();
+        Assert.Equal(0xFFFF, sp.Data);
+
+        sp.Enable("output");
+        ram.Enable("loadmar");
+        bus.Clk();
+        Assert.Equal(firstCell, ram.memoryAddress);
+    }
 }

@@ -37,6 +37,8 @@ Programs are written in [assembly](exuarch:guide/assembly): mnemonics, labels, `
 
 Beyond one bus and one CPU: [bridges](exuarch:guide/bridges) move values between buses, [bus masters](exuarch:guide/bus-masters) such as the blitter work on a bus of their own, and [interrupts](exuarch:guide/interrupts) let devices stop the program to be served. A whole machine, with its note and programs, is saved as a [package](exuarch:guide/packages). And [the graphics pipeline](exuarch:guide/graphics-pipeline) puts several of these together into a small 3D GPU.
 
+Everything you build here works the way real hardware does at the level of registers and control lines, with a few simplifications that keep the focus on the architecture. [ExµArch and real hardware](exuarch:guide/real-hardware) lists them, and what a real build would add.
+
 ## The examples
 
 The built in machines each take a different direction. Load one from **Machines** in this drawer, take it apart, and start your own from a copy with **New…**. Everything you change is kept in the browser; **Export** saves a machine as a file. They come in three levels, and the drawer folds away the two harder ones until you open them.

@@ -10,7 +10,7 @@ Every memory cell holds one 16 bit word, like every bus and register in the mach
 
 A [`ram`](exuarch:reference/ram) device has a **size** parameter, the number of cells, from 1 to 65536 (4096 if you leave it out), and four control lines:
 
-- `loadmar` takes an address from the bus into the memory address register, the MAR. The address wraps at the size, so in a 4096 cell memory, 4100 addresses cell 4, and 65535 addresses cell 4095. That is why a stack pointer can start at 0 like every register: its first decrement wraps to 65535, the top of memory.
+- `loadmar` takes an address from the bus into the memory address register, the MAR. The address wraps at the size, so in a 4096 cell memory, 4100 addresses cell 4, and 65535 addresses cell 4095. That is why a stack pointer can start at 0 like every register: its first decrement wraps to 65535, the top of memory. *Why a stack needs no setup*, below, explains how much of that is real hardware.
 - `output` puts the cell at the MAR on the bus.
 - `load` stores the bus value in the cell at the MAR.
 - `outputmar` puts the MAR itself on the bus.
@@ -29,6 +29,42 @@ So a memory access takes two steps: set the address, then read or write. The fet
 ```
 
 If you put `loadmar` and `load` in the same step, the value goes to the old address.
+
+## Why a stack needs no setup
+
+STACK-16 and the machine in [Subroutines and the stack](exuarch:guide/subroutines-and-the-stack) never set their stack pointer, and still their first push lands on the last cell of memory. Nothing is hidden here; three plain behaviours add up to it:
+
+1. Every register starts at 0, when the machine is built and every time you press Reset in Run.
+2. A register is 16 bits wide, so `dec` from 0 wraps round to 65535 (`FFFF`).
+3. `loadmar` wraps the address at the memory's size, so 65535 in a 4096 cell memory is cell 4095.
+
+A push uses all three by moving the stack pointer down *before* it writes: `sp.dec`, then `sp.output` `mem.loadmar`, then the value with `mem.load`. Each later push goes one cell lower, so the stack grows down from the top while the program sits at the bottom. A pop reads and then moves it up again with `sp.inc`.
+
+### How much of this is real hardware
+
+Most of it is how real electronics behave:
+
+- **The wrap of the register.** A 16 bit counter, say four 4 bit up/down counter chips chained together, has no 17th bit to borrow from. Counting down from `0000` gives `FFFF`, exactly as here.
+- **The wrap of the address.** 4096 is 2¹², so a 4096 word memory chip has 12 address pins. On a 16 bit address bus the top 4 lines are simply not connected, and the chip never sees them: `FFFF` and `0FFF` are the same cell to it. The memory shows up again and again across the address space, which is called mirroring. For a size that is a power of two, taking the address modulo the size is the same as dropping the high bits, so ExµArch does what the wires would do.
+- **Moving down before writing, from 0.** Real processors such as the Z80, the 8080 and x86 decrement their stack pointer before a push, and setting it to 0 is a known way to put the stack at the very top of memory without working out where that is.
+
+### Where ExµArch is kinder than hardware
+
+Two things are simplified, and it helps to know which:
+
+- **Registers starting at 0.** Real flip-flops come up in an unpredictable state when the power comes on. A real machine either has a reset circuit that pulls the clear pin of its registers, which is what the `reset` control line stands for here, or its program loads the stack pointer before the first push. ExµArch builds every machine as if its reset button had just been pressed.
+- **Sizes that are not a power of two.** A ram can have any size from 1 to 65536, and its address always wraps at that size, so no address is ever out of range. Wrapping at, say, 3000 would take a divider in the address path, which no real memory has; real hardware would leave the addresses past the end unconnected or put other devices there. It also stops the stack from starting at the top: in a 3000 cell memory, 65535 is cell 2535, and the 464 cells above it are only reached once the stack has wrapped down through cell 0. Use a power of two for a stack that starts at the top. Every built in machine does.
+
+### What nothing guards against
+
+Nothing stops the stack from running into the program. Push often enough and it writes over the code at the bottom of memory. Pop more than was pushed and the stack pointer climbs past 0, so the pops read the program's first cells as if they were data. A real processor without memory protection behaves the same way, crash included.
+
+### Try it
+
+- Give a ram 3000 cells and watch where the first push goes in the **Memory** panel.
+- Add an instruction that loads the stack pointer from its operand, and put the stack wherever you like.
+- Make the stack grow upwards: write first, then `sp.inc`, and pop with `sp.dec` before reading.
+- Guard the stack: compare the stack pointer with a limit in the ALU and branch on the flag, see [flags and conditions](exuarch:guide/flags-and-conditions).
 
 ## Program memory
 
@@ -64,5 +100,6 @@ Cells are marked for the program counter, the MAR, the instruction that is runni
 
 - [Buses and the two-phase tick](exuarch:guide/buses-and-ticks)
 - [Subroutines and the stack](exuarch:guide/subroutines-and-the-stack)
+- [ExµArch and real hardware](exuarch:guide/real-hardware), every place the simulator simplifies
 - [ram reference](exuarch:reference/ram) and [mmu reference](exuarch:reference/mmu)
 - [BYOC-16](exuarch:package/BYOC-16) and [HARVARD-16](exuarch:package/HARVARD-16)

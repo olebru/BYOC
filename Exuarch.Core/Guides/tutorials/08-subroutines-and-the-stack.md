@@ -7,7 +7,7 @@ A subroutine is code a program can call from several places and that returns to 
 1. Open [Hardware design](<exuarch:tab/Hardware design>) and drag two more **register** devices onto the bus.
 2. Set their IDs to `sp` and `tmp`.
 
-`sp` points at the top of the stack. Like every register it starts at 0, and the stack grows downwards from there: a push first moves `sp` down one cell and then writes there. Moving down from 0 wraps round to 65535, and because the memory holds 4096 cells it takes an address modulo 4096, so 65535 is cell 4095, the last one. The stack starts at the top of memory and grows away from the program at the bottom, without anything to set up. `tmp` is a scratch register that holds a value for a few ticks.
+`sp` points at the top of the stack. Like every register it starts at 0, and the stack grows downwards from there: a push first moves `sp` down one cell and then writes there. Moving down from 0 wraps round to 65535, and because the memory holds 4096 cells it takes an address modulo 4096, so 65535 is cell 4095, the last one. The stack starts at the top of memory and grows away from the program at the bottom, without anything to set up. [Memory and banks](exuarch:guide/memory-and-banks) explains why that matches real hardware, where ExµArch makes it easier, and when it stops working. `tmp` is a scratch register that holds a value for a few ticks.
 
 ## Write CALL
 
