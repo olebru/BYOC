@@ -18,7 +18,7 @@ namespace Exuarch.Core
         public const double ToBus = 56;
         public const double BetweenRows = 70;
 
-        private static readonly Lazy<DeviceRegistry> registry = new Lazy<DeviceRegistry>(DeviceRegistry.CreateDefault);
+        private static readonly Lazy<DeviceRegistry> registry = new Lazy<DeviceRegistry>(() => DeviceRegistry.CreateDefault());
 
         private static double Height(DeviceDefinition device)
         {

@@ -240,7 +240,8 @@ public class MicrocodeTests
         machine.Devices.Add(new DeviceDefinition { Id = "pages", Type = "doubleFramebuffer", Bus = "io" });
         machine.Devices.Add(new DeviceDefinition { Id = "blit", Type = "blitter", Buses = { ["host"] = "main", ["video"] = "io" }, Connections = { ["screen"] = "screen" } });
         machine.Devices.Add(new DeviceDefinition { Id = "tick", Type = "timer", Bus = "main" });
-        machine.Devices.Add(new DeviceDefinition { Id = "pic", Type = "interruptController", Bus = "main", Connections = { ["irq0"] = "tick", ["irq1"] = "blit" } });
+        machine.Devices.Add(new DeviceDefinition { Id = "clock", Type = "rtc", Bus = "main" });
+        machine.Devices.Add(new DeviceDefinition { Id = "pic", Type = "interruptController", Bus = "main", Connections = { ["irq0"] = "tick", ["irq1"] = "blit", ["irq2"] = "clock" } });
         machine.Buses.Add(new BusDefinition { Id = "lb" });
         machine.Devices.Add(new DeviceDefinition { Id = "lmem", Type = "ram", Bus = "lb" });
         machine.Devices.Add(new DeviceDefinition { Id = "zb", Type = "depthBuffer", Bus = "io" });

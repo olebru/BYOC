@@ -8,7 +8,7 @@ namespace Exuarch.Core
     // always matches the devices the app has.
     public static class DeviceReference
     {
-        private static readonly Lazy<DeviceRegistry> registry = new Lazy<DeviceRegistry>(DeviceRegistry.CreateDefault);
+        private static readonly Lazy<DeviceRegistry> registry = new Lazy<DeviceRegistry>(() => DeviceRegistry.CreateDefault());
 
         // The handbook pages that explain what a device type is for, besides the general one on devices.
         private static readonly Dictionary<string, string[]> Concepts = new Dictionary<string, string[]>
@@ -28,6 +28,7 @@ namespace Exuarch.Core
             ["blitter"] = new[] { "bus-masters", "interrupts" },
             ["interruptController"] = new[] { "interrupts" },
             ["timer"] = new[] { "interrupts" },
+            ["rtc"] = new[] { "interrupts" },
             ["keypad"] = new[] { "reading-the-keypad", "interrupts" },
             ["rasterizer"] = new[] { "graphics-pipeline", "bus-masters", "interrupts" },
             ["depthBuffer"] = new[] { "graphics-pipeline" },
@@ -38,6 +39,14 @@ namespace Exuarch.Core
 
         // Registration order, grouped by category the way the palette groups them.
         public static IEnumerable<IGrouping<string, DeviceTypeInfo>> ByCategory { get { return Types.GroupBy(t => t.Category); } }
+
+        // What a device type is, in a few words for a list: its description up to the first full stop, colon or comma.
+        public static string Summary(DeviceTypeInfo info)
+        {
+            var text = info.Description ?? "";
+            int end = new[] { ". ", ": ", ", " }.Select(mark => text.IndexOf(mark, StringComparison.Ordinal)).Where(i => i > 0).DefaultIfEmpty(text.Length).Min();
+            return text.Substring(0, end).TrimEnd('.');
+        }
 
         public static bool Exists(string type)
         {

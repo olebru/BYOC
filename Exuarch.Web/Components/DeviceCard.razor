@@ -20,7 +20,7 @@
     }
     else if (Built != null)
     {
-        <div class="dev-body @(Built is MemoryModule || Built is MMU || Built is Clock || Built is ALU || Built is CharacterDisplay || Built is Framebuffer || Built is Blitter || Built is InterruptController || Built is TickTimer || Built is Rasterizer || Built is DepthBuffer || Built is MultiplyAccumulate || Built is RegisterFile ? "stacked" : "") @(Changed ? "changed" : "")" @key="(Changed ? ChangeKey : 0)">
+        <div class="dev-body @(Built is MemoryModule || Built is MMU || Built is Clock || Built is ALU || Built is CharacterDisplay || Built is Framebuffer || Built is Blitter || Built is InterruptController || Built is TickTimer || Built is RealTimeClock || Built is Rasterizer || Built is DepthBuffer || Built is MultiplyAccumulate || Built is RegisterFile ? "stacked" : "") @(Changed ? "changed" : "")" @key="(Changed ? ChangeKey : 0)">
             @switch (Built)
             {
                 case StatusRegister status:
@@ -83,6 +83,10 @@
                 case TickTimer timer:
                     <span class="mem">@(timer.Running ? $"{timer.Count} / {timer.Period}" : "stopped")</span>
                     <span class="sub">@timer.Expired expired</span>
+                    break;
+                case RealTimeClock rtc:
+                    <span class="mem">@(rtc.Running ? $"{rtc.Elapsed:0} / {rtc.Interval} ms" : $"stopped · {rtc.Interval} ms")</span>
+                    <span class="sub">@rtc.Expired expired</span>
                     break;
                 case Blitter blitter:
                     <span class="mem" title="@($"{blitter.JobsDone} jobs done, {blitter.PixelsDrawn} pixels")">@(blitter.Busy ? $"busy {blitter.Row + 1}/{blitter.Height}" : "idle")</span>

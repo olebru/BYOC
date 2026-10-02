@@ -28,7 +28,8 @@ namespace Exuarch.Web.Components
         private bool running;
         private string runtimeError;
         // Speed settings last for the session, so they survive switching tabs.
-        private static int speedSlider = 40;
+        // The speed slider's position, 0 to SliderSteps; it starts at 16 Hz.
+        private static int speedSlider = 211;
         // Ignore the slider and run as many ticks as the browser allows.
         private static bool maxSpeed;
         // Measured clock speed while running: (seconds of running time, ticks per second).
@@ -171,7 +172,26 @@ namespace Exuarch.Web.Components
 
         // ---- Controls ----
 
-        private int Hz { get { return (int)Math.Round(Math.Pow(10, speedSlider / 100.0 * 3)); } }
+        // The slider runs from 1 Hz to SliderMaxHz on a log scale, so each step is the same factor faster and the
+        // speeds from 1 to 500 Hz have as much room on it as those from 1 to 500 kHz. Speeds are rounded to two
+        // significant figures, so they read as 140 Hz or 12 kHz.
+        private const int SliderSteps = 1000;
+        private const double SliderMaxHz = 500_000;
+        private int Hz
+        {
+            get
+            {
+                double hz = Math.Pow(SliderMaxHz, speedSlider / (double)SliderSteps);
+                if (hz < 100) return (int)Math.Round(hz);
+                double unit = Math.Pow(10, Math.Floor(Math.Log10(hz)) - 1);
+                return (int)(Math.Round(hz / unit) * unit);
+            }
+        }
+        // A speed in a few characters for the slider: 16 Hz, 1.2 kHz, 500 kHz.
+        private static string ShortHz(int hz)
+        {
+            return hz < 1000 ? $"{hz} Hz" : $"{hz / 1000.0:0.#} kHz";
+        }
         private string State
         {
             get

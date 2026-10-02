@@ -21,7 +21,7 @@ Every register, and every memory cell, holds 0 when the machine is built and eve
 
 ### Nothing takes time
 
-The ALU's result is on the bus in the same half tick its operands are read, and a memory puts out the cell at its address at once. Real logic has propagation delays, memories have access times, and registers need their input steady for a moment before and after the clock edge. Those delays set the fastest clock a real circuit can run at, and slow memories need extra wait states. ExµArch has no fastest clock: the speed you set and see in Run is how fast the simulator steps, not a property of your circuit. What carries over is the number of ticks, which is the honest measure of a design here.
+The ALU's result is on the bus in the same half tick its operands are read, and a memory puts out the cell at its address at once. Real logic has propagation delays, memories have access times, and registers need their input steady for a moment before and after the clock edge. Those delays set the fastest clock a real circuit can run at, and slow memories need extra wait states. ExµArch has no fastest clock: the speed you set and see in Run is how fast the simulator steps, not a property of your circuit. What carries over is the number of ticks, which is the honest measure of a design here. The one device that looks at real time is the [`rtc`](exuarch:reference/rtc), a real time clock: a program that waits for it takes as long in seconds whatever the speed, and as many more ticks as the simulator runs faster.
 
 ### A bus nobody drives reads 0
 

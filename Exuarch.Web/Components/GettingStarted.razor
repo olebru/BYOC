@@ -56,13 +56,18 @@
                     <div class="toc-section silk">@Handbook.ReferenceSection</div>
                     @foreach (var category in DeviceReference.ByCategory)
                     {
-                        <div class="toc-category">
-                            <span class="toc-category-name">@category.Key</span>
+                        <div class="toc-group">@category.Key</div>
+                        <ul class="toc devices">
                             @foreach (var type in category)
                             {
-                                <button class="toc-device" title="@type.Description" @onclick="@(() => Open(("reference", type.Type)))">@type.Type</button>
+                                <li>
+                                    <button class="toc-device" title="@type.Description" @onclick="@(() => Open(("reference", type.Type)))">
+                                        <span class="toc-device-name">@type.Type</span>
+                                        <span class="toc-device-what">@DeviceReference.Summary(type)</span>
+                                    </button>
+                                </li>
                             }
-                        </div>
+                        </ul>
                     }
                 }
             }
