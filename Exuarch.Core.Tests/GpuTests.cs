@@ -560,6 +560,67 @@ public class GpuTests
         Assert.Empty(c.MicrocodeWarnings);
     }
 
+    // A clock moved by hand, in milliseconds, for FRAME CLOCK.
+    private sealed class ManualTime : TimeProvider
+    {
+        public long Milliseconds;
+        public override long GetTimestamp() => Milliseconds;
+        public override long TimestampFrequency => 1000;
+    }
+
+    // The milliseconds of each SWAP of a FLIP-16 program run at 2 MHz on a clock moved by hand.
+    private static long[] SwapTimes(string program, int swaps)
+    {
+        var time = new ManualTime();
+        var package = BuiltInPackages.Get("FLIP-16");
+        var c = new Machine(package.Machine, package.Program(program).Source, DeviceRegistry.CreateDefault(time)) { RecordHistory = false };
+        var fb = c.Device<DoubleFramebuffer>("fb");
+        var times = new System.Collections.Generic.List<long>();
+        long seen = 0;
+        while (times.Count < swaps && time.Milliseconds < 60_000)
+        {
+            for (int i = 0; i < 2000; i++)
+            {
+                c.SingleStep();
+                if (fb.Swaps != seen) { seen = fb.Swaps; times.Add(time.Milliseconds); }
+            }
+            time.Milliseconds++;
+        }
+        Assert.Empty(c.MicrocodeWarnings);
+        return times.ToArray();
+    }
+
+    // Shown as soon as they are drawn, the cube's frames come at different times; on FRAME CLOCK's beat they come
+    // every 100 ms exactly, while drawing one takes less than that.
+    [Fact]
+    public void TheSteadyCubeSwapsOnTheBeat()
+    {
+        var gaps = (long[] times) => times.Zip(times.Skip(1), (a, b) => b - a).Skip(1).ToArray();
+        var plain = gaps(SwapTimes("A spinning cube", 20));
+        Assert.True(plain.Max() - plain.Min() >= 5, $"the plain cube's frames took {string.Join(", ", plain)} ms");
+        Assert.All(plain, gap => Assert.InRange(gap, 55, 85));
+        var steady = gaps(SwapTimes("A steady spinning cube", 20));
+        // To the millisecond: the test clock moves in whole ones, and FRAME CLOCK looks every quarter of one.
+        Assert.All(steady, gap => Assert.InRange(gap, 99, 101));
+        Assert.Equal(100.0, steady.Average(), 1);
+    }
+
+    // The wireframe draws the 12 edges as 24 thin triangles: lines of the edges' colours, and black everywhere else.
+    [Fact]
+    public void TheWireframeCubeDrawsColouredEdges()
+    {
+        var package = BuiltInPackages.Get("FLIP-16");
+        var c = new Machine(package.Machine, package.Program("A spinning wireframe cube").Source) { RecordHistory = false };
+        var fb = c.Device<DoubleFramebuffer>("fb");
+        while (fb.Swaps < 3) c.SingleStep();
+        Assert.Equal(24, c.Device<Rasterizer>("rast").Count);
+        var colours = fb.Shown.Where(p => p != 0).Distinct().ToList();
+        int lit = fb.Shown.Count(p => p != 0);
+        Assert.InRange(colours.Count, 8, 12);
+        Assert.InRange(lit, 1000, 20_000); // lines, not filled faces
+        Assert.Empty(c.MicrocodeWarnings);
+    }
+
     [Fact]
     public void FlipIsGpuWithADoubleBufferedScreenAndSwap()
     {
@@ -568,7 +629,8 @@ public class GpuTests
         Assert.Equal("framebuffer", gpu.FindDevice("fb").Type);
         Assert.Equal("doubleFramebuffer", flip.FindDevice("fb").Type);
         var gpuOps = gpu.Decoder.Microcode.Instructions.Select(i => i.Mnemonic).ToList();
-        Assert.Equal(gpuOps.Append("SWAP"), flip.Decoder.Microcode.Instructions.Select(i => i.Mnemonic));
+        // SWAP, then the frame clock's three, all after GPU-16's, so those keep their opcodes.
+        Assert.Equal(gpuOps.Concat(new[] { "SWAP", "TIMI", "TST", "TACK" }), flip.Decoder.Microcode.Instructions.Select(i => i.Mnemonic));
         var gpuRom = new DecoderRom(gpu.Decoder.Microcode);
         var flipRom = new DecoderRom(flip.Decoder.Microcode);
         Assert.All(gpuOps, op => Assert.Equal(gpuRom.FetchByteCodeFromMnemonic(op), flipRom.FetchByteCodeFromMnemonic(op)));

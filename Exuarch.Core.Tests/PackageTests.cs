@@ -48,7 +48,7 @@ public class PackageTests
     }
 
     // These loop for ever on purpose: the long running demo and the interactive programs.
-    private static readonly string[] LoopingPrograms = { "Sketch with the arrow keys", "Paddle game", "Three things at once", "A spinning cube" };
+    private static readonly string[] LoopingPrograms = { "Sketch with the arrow keys", "Paddle game", "Three things at once", "A spinning cube", "A steady spinning cube", "A spinning wireframe cube" };
     // These halt, but take far longer than a test can wait; DspTests checks what they draw.
     private static readonly string[] SlowPrograms = { "Mandelbrot, 80 x 60", "Mandelbrot, 160 x 120", "Mandelbrot, 640 x 480", "Lightning at the top of the set" };
 

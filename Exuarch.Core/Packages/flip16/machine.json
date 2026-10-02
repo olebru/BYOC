@@ -137,6 +137,22 @@
       "name": "DEPTH",
       "bus": "video",
       "layout": { "x": 450, "y": 848 }
+    },
+    {
+      "id": "rtc",
+      "type": "rtc",
+      "name": "FRAME CLOCK",
+      "bus": "main",
+      "parameters": { "interval": 100 },
+      "layout": { "x": 1500, "y": 278 }
+    },
+    {
+      "id": "pic",
+      "type": "interruptController",
+      "name": "BEATS",
+      "bus": "main",
+      "connections": { "irq0": "rtc" },
+      "layout": { "x": 1710, "y": 278 }
     }
   ],
   "decoder": {
@@ -892,6 +908,40 @@
           "steps": [
             {
               "signals": ["fb.swap", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "TIMI",
+          "description": "Start FRAME CLOCK, the real time clock, beating every value milliseconds of real time; flags unchanged",
+          "operands": 1,
+          "operandTypes": ["value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "rtc.loadinterval", "rtc.start", "pc.inc", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "TST",
+          "description": "A = 1 when FRAME CLOCK has beaten since the last TACK, 0 when it has not; flags unchanged, so follow with CMPI 0",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": ["pic.output", "a.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "TACK",
+          "description": "Take the beat TST saw: clear the beats set in A, so TST waits for the next one; flags unchanged",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": ["a.output", "pic.ack", "ir.reset"]
             }
           ]
         }
