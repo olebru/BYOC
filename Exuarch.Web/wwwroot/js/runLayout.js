@@ -1,7 +1,7 @@
 // Resizing the Run view's two columns and the panels below them. A handle is any element with data-resize="left",
-// "right" or "bottom". While it is dragged only a CSS variable on the Run view changes, so nothing is re-rendered
-// however fast the machine is running; when it is let go, the size is handed to .NET to keep. A double-click on a
-// handle puts its size back to the default.
+// "right", "bottom" or "split". While it is dragged only a CSS variable changes, so nothing is re-rendered however
+// fast the machine is running; when it is let go, the size is handed to .NET to keep. A double-click on a handle puts
+// its size back to the default.
 window.exuarchRunLayout = {
     // Tells .NET when the drawing's panel changes width, once per frame at most, so it can fit the machine again.
     observe: function (element, dotnet) {
@@ -29,14 +29,34 @@ window.exuarchRunLayout = {
             return { min: 120, max: Math.max(120, run.getBoundingClientRect().height - 260) };
         }
 
+        // The CSS variable a handle sets: the split's share of the width below, or a column's width or the bottom's height.
+        function cssProperty(kind) {
+            if (kind === 'split') return '--bottom-split';
+            if (kind === 'bottom') return '--bottom-height';
+            return '--' + kind + '-width';
+        }
+
+        // The size the pointer gives: in pixels from the edge the handle's area grows from, or for the split in percent.
+        function measure(kind, target, ev) {
+            var main = run.querySelector('.main').getBoundingClientRect();
+            if (kind === 'left') return ev.clientX - main.left;
+            if (kind === 'right') return main.right - ev.clientX;
+            if (kind === 'split') {
+                var below = target.getBoundingClientRect();
+                return (ev.clientX - below.left) / below.width * 100;
+            }
+            return run.getBoundingClientRect().bottom - ev.clientY;
+        }
+
         run.addEventListener('pointerdown', function (e) {
-            var handle = e.target.closest && e.target.closest('[data-resize]');
+            var handle = e.target.closest?.('[data-resize]');
             if (!handle || !run.contains(handle) || e.button !== 0) return;
             e.preventDefault();
-            var kind = handle.getAttribute('data-resize');
-            var property = kind === 'split' ? '--bottom-split' : '--' + kind + (kind === 'bottom' ? '-height' : '-width');
-            // The split is a share of the width below, in percent, and set on the panels below rather than the view.
+            var kind = handle.dataset.resize;
+            var property = cssProperty(kind);
+            // The split is set on the panels below rather than the view.
             var target = kind === 'split' ? handle.parentElement : run;
+            var unit = kind === 'split' ? '%' : 'px';
             var range = limits(kind);
             var size = null;
             try { handle.setPointerCapture(e.pointerId); } catch (err) { }
@@ -44,15 +64,9 @@ window.exuarchRunLayout = {
             run.classList.add('resizing');
 
             function move(ev) {
-                var main = run.querySelector('.main').getBoundingClientRect();
-                var below = target.getBoundingClientRect();
-                var value = kind === 'left' ? ev.clientX - main.left
-                    : kind === 'right' ? main.right - ev.clientX
-                    : kind === 'split' ? (ev.clientX - below.left) / below.width * 100
-                    : run.getBoundingClientRect().bottom - ev.clientY;
-                value = Math.min(range.max, Math.max(range.min, value));
+                var value = Math.min(range.max, Math.max(range.min, measure(kind, target, ev)));
                 size = kind === 'split' ? Math.round(value * 10) / 10 : Math.round(value);
-                target.style.setProperty(property, size + (kind === 'split' ? '%' : 'px'));
+                target.style.setProperty(property, size + unit);
             }
             function up() {
                 handle.removeEventListener('pointermove', move);
@@ -68,11 +82,17 @@ window.exuarchRunLayout = {
         });
 
         run.addEventListener('dblclick', function (e) {
-            var handle = e.target.closest && e.target.closest('[data-resize]');
-            if (handle && run.contains(handle)) dotnet.invokeMethodAsync('LayoutResized', handle.getAttribute('data-resize'), -1);
+            var handle = e.target.closest?.('[data-resize]');
+            if (handle && run.contains(handle)) dotnet.invokeMethodAsync('LayoutResized', handle.dataset.resize, -1);
         });
     }
 };
+
+// The padding on the left and the right of an element.
+function exuarchPadding(element) {
+    var style = getComputedStyle(element);
+    return { left: Number.parseFloat(style.paddingLeft), right: Number.parseFloat(style.paddingRight) };
+}
 
 // Shows an element at its actual size when there is room for it, and otherwise first takes the padding of the panel
 // around it and then zooms it out as far as it takes to fit, so it never needs a scroll bar. The element is the
@@ -82,9 +102,12 @@ window.exuarchFit = {
         if (!wrapper || wrapper.__exuarchFit || typeof ResizeObserver === 'undefined') return;
         wrapper.__exuarchFit = true;
         var content = wrapper.firstElementChild;
-        var padding = function (e) { var s = getComputedStyle(e); return parseFloat(s.paddingLeft) + parseFloat(s.paddingRight); };
         var host = wrapper.parentElement;
-        while (host && host.parentElement && padding(host) === 0) host = host.parentElement;
+        while (host?.parentElement) {
+            var around = exuarchPadding(host);
+            if (around.left + around.right > 0) break;
+            host = host.parentElement;
+        }
         if (!content || !host) return;
 
         function fit() {
@@ -94,12 +117,11 @@ window.exuarchFit = {
             var natural = content.getBoundingClientRect().width;
             var room = wrapper.clientWidth;
             if (natural === 0 || natural <= room) return;
-            var style = getComputedStyle(host);
-            var left = parseFloat(style.paddingLeft), right = parseFloat(style.paddingRight);
-            wrapper.style.marginLeft = -left + 'px';
-            wrapper.style.marginRight = -right + 'px';
+            var padding = exuarchPadding(host);
+            wrapper.style.marginLeft = -padding.left + 'px';
+            wrapper.style.marginRight = -padding.right + 'px';
             // A pixel to spare for the rounding of the zoomed borders.
-            var scale = (room + left + right - 1) / natural;
+            var scale = (room + padding.left + padding.right - 1) / natural;
             if (scale < 1) content.style.zoom = Math.floor(scale * 1000) / 1000;
         }
 
@@ -109,7 +131,8 @@ window.exuarchFit = {
             pending = true;
             requestAnimationFrame(function () { pending = false; fit(); });
         }).observe(host);
-        if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
+        // Measured again once the fonts are in, as the width of the characters changes with them.
+        document.fonts?.ready.then(fit).catch(function () { /* without fonts, the first measure stands */ });
         fit();
     }
 };
