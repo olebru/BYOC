@@ -32,6 +32,8 @@ dotnet run --project Exuarch.Web     # the app, on the URL it prints
 dotnet test Exuarch.Core.Tests       # the tests
 ```
 
+Release builds, `dotnet publish Exuarch.Web -c Release`, compile the app ahead of time to WebAssembly, so the simulator runs about four times as fast as it would in .NET's interpreter. That takes the WebAssembly build tools, once: `dotnet workload install wasm-tools`. `dotnet run` builds Debug and does without them.
+
 ## The code
 
 - `Exuarch.Core`: the simulator. Devices and their metadata (`DeviceRegistry.cs`), the machine and its two-phase clock (`Machine.cs`, `Clocking.cs`), the decoder ROM, the microcode validator, the assembler and editor support, the built in packages (`Packages/`) and the handbook pages (`Guides/`).

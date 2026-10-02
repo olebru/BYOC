@@ -46,6 +46,10 @@ jobs:
       - name: Test
         run: dotnet test Exuarch.Core.Tests
 
+      # Release builds are compiled ahead of time to WebAssembly, which takes the wasm-tools workload of the SDK above.
+      - name: Install the WebAssembly build tools
+        run: dotnet workload install wasm-tools
+
       # A preview is the last release's version marked with its pull request, such as 1.1.0-pr.22.
       - name: Version
         run: echo "VERSION=$(jq -r '."."' .release-please-manifest.json)-pr.${{ github.event.pull_request.number }}" >> "$GITHUB_ENV"

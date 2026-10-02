@@ -243,10 +243,16 @@ namespace Exuarch.Web.Components
             long startCycles = Machine.Cycles;
             bool startedAtMax = maxSpeed;
             var frame = new Stopwatch();
+            // At max speed a frame runs ticks for budget milliseconds and then draws. Drawing and handing the browser
+            // its turn take the same time however long the frame ran, so the budget grows to keep them to about a
+            // tenth of the time: the screen updates less often, but the machine runs faster.
+            var between = new Stopwatch();
+            double budget = MaxSpeedFrameMilliseconds;
             double owed = 0, lastFrameAt = 0, sampleAt = 0;
             int sampleCycles = Machine.Cycles;
             while (!stopRequested && ReferenceEquals(machine, Machine))
             {
+                if (between.IsRunning) budget = Math.Clamp(between.Elapsed.TotalMilliseconds * OverheadShare, MaxSpeedFrameMilliseconds, MaxSpeedLongestFrameMilliseconds);
                 frame.Restart();
                 double now = clock.Elapsed.TotalSeconds;
                 bool keepGoing = true;
@@ -255,7 +261,7 @@ namespace Exuarch.Web.Components
                 Machine.RecordHistory = recordEvery;
                 if (maxSpeed)
                 {
-                    while (keepGoing && frame.ElapsedMilliseconds < MaxSpeedFrameMilliseconds)
+                    while (keepGoing && frame.Elapsed.TotalMilliseconds < budget)
                     {
                         for (int i = 0; i < 256 && keepGoing; i++) keepGoing = Tick();
                     }
@@ -283,6 +289,7 @@ namespace Exuarch.Web.Components
                     sampleAt = now;
                     sampleCycles = Machine.Cycles;
                 }
+                between.Restart();
                 StateHasChanged();
                 if (!keepGoing) break;
                 int delay = maxSpeed ? 1 : Math.Max(1, Math.Min(16, (int)(1000 / Math.Max(1, Hz)) - (int)frame.ElapsedMilliseconds));
@@ -300,6 +307,10 @@ namespace Exuarch.Web.Components
             StateHasChanged();
         }
         private const int MaxSpeedFrameMilliseconds = 30;
+        // The longest a max speed frame runs before it draws, which is also how long Pause can take to answer.
+        private const int MaxSpeedLongestFrameMilliseconds = 250;
+        // Ticks run for this many times as long as drawing and the browser's turn took, about a tenth for the drawing.
+        private const double OverheadShare = 9;
         // At or below this speed every tick is recorded, so the trace is complete.
         private const int FullRecordingHz = 200;
 
