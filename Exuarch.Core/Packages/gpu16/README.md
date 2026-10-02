@@ -45,7 +45,7 @@ For 3D, the CPU first turns each corner with [MA](exuarch:instruction/MA), [MB](
 2. [A shaded triangle](<exuarch:program/A shaded triangle>): three corner colours blended across it.
 3. [Two triangles through each other](<exuarch:program/Two triangles through each other>): each is nearer on one side, so the depth buffer cuts them along a line neither triangle has. Show the depth buffer next to the screen in the Run view.
 4. [A pinwheel from one list](<exuarch:program/A pinwheel from one list>): sixteen triangles and one `GO`, and the CPU prints dots on the LCD all the while.
-5. [A spinning cube](<exuarch:program/A spinning cube>): the whole pipeline. Run it at full speed with **⚡ Max**; while the rasterizer draws one frame, the CPU is already turning the corners for the next. A frame is about 150,000 ticks, almost all of them pixels, so in the browser it takes a few seconds: you see each frame being drawn.
+5. [A spinning cube](<exuarch:program/A spinning cube>): the whole pipeline. Run it at full speed with **⚡ Max**; while the rasterizer draws one frame, the CPU is already turning the corners for the next. A frame is about 150,000 ticks, almost all of them pixels: under a tenth of a second at full speed in a desktop browser. Turn the speed down to watch each frame being drawn.
 6. Make the cube faster with **back-face culling**. A face turned away from the camera has its corners in the opposite turning order on the screen to a face turned towards it, so it can be left out of the list. Two multiplications per triangle on the CPU save the rasterizer every pixel of the back faces.
 
 ## Read more
