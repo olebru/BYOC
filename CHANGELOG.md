@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.2](https://github.com/olebru/exuarch/compare/v1.6.1...v1.6.2) (2026-10-02)
+
+
+### Bug fixes
+
+* give the times the pictures take at today's speed ([#40](https://github.com/olebru/exuarch/issues/40)) ([942dbcd](https://github.com/olebru/exuarch/commit/942dbcd649cd349842d2071d00c7214fbd919a85))
+
 ## [1.6.1](https://github.com/olebru/exuarch/compare/v1.6.0...v1.6.1) (2026-10-02)
 
 
