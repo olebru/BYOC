@@ -57,6 +57,20 @@ public class HandbookTests
         foreach (var package in BuiltInPackages.All) Assert.Contains($"exuarch:package/{package.Name})", start);
     }
 
+    // The contents list every device with a few words on what it is: the start of its description.
+    [Fact]
+    public void EveryDeviceTypeHasAShortSummaryForTheContents()
+    {
+        foreach (var type in DeviceReference.Types)
+        {
+            var summary = DeviceReference.Summary(type);
+            Assert.False(string.IsNullOrWhiteSpace(summary), type.Type);
+            Assert.StartsWith(summary, type.Description);
+            Assert.True(summary.Length <= 100, $"{type.Type}: {summary}");
+        }
+        Assert.Equal("Holds one 16 bit value between ticks", DeviceReference.Summary(DeviceReference.Types.First(t => t.Type == "register")));
+    }
+
     [Fact]
     public void EveryDeviceTypeHasAReferencePageWithAllItsLines()
     {

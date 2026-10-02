@@ -4,9 +4,10 @@ Without interrupts, a program finds out about the world by asking. It reads the 
 
 ## Where requests come from
 
-Four device types can raise an interrupt request:
+Five device types can raise an interrupt request:
 
 - a [`timer`](exuarch:reference/timer), every period ticks while it runs;
+- an [`rtc`](exuarch:reference/rtc), a real time clock, every interval milliseconds of real time while it runs;
 - a [`keypad`](exuarch:reference/keypad), when a key goes down (holding it, or key repeat, does not ask again);
 - a [`blitter`](exuarch:reference/blitter), when it finishes a job;
 - a [`rasterizer`](exuarch:reference/rasterizer), when it finishes its list of triangles.
@@ -15,7 +16,7 @@ A request is an event, not a level. Each one is picked up once by the interrupt 
 
 ## The interrupt controller
 
-An [`interruptController`](exuarch:reference/interruptController) has four sources, connected as `irq0` to `irq3`. Each must name a timer, keypad, blitter or rasterizer. Each source has a pending bit, bit 0 for `irq0` and so on. When a source raises a request, its bit is set and stays set until the program clears it.
+An [`interruptController`](exuarch:reference/interruptController) has four sources, connected as `irq0` to `irq3`. Each must name a timer, real time clock, keypad, blitter or rasterizer. Each source has a pending bit, bit 0 for `irq0` and so on. When a source raises a request, its bit is set and stays set until the program clears it.
 
 Its control lines are:
 
@@ -84,10 +85,25 @@ A timer's **period** parameter is the number of ticks between requests, from 0 t
 
 A timer starts stopped. While it runs it counts every tick, and when the count reaches the period it raises a request and starts again from 0. A period of 0 never fires. IRQ-16 connects a timer with a period of 20000 to `irq0`, the keypad to `irq1` and the blitter to `irq2`, so its main program never has to poll any of them.
 
+## The real time clock
+
+A timer counts ticks, so how often it fires in seconds depends on how fast the machine runs: 1000 ticks is a minute at 16 Hz and half a millisecond at full speed. An [`rtc`](exuarch:reference/rtc) keeps to the wall clock instead. Its **interval** parameter is the number of milliseconds between requests, from 0 to 65535 (1000, a second, if you leave it out). Its lines:
+
+- `loadinterval` takes a new interval, in milliseconds, from the bus.
+- `start` starts timing an interval from now.
+- `stop` stops timing.
+- `output` puts the interval on the bus.
+
+A real time clock starts stopped. While it runs, it looks at the time in every tick, and once the interval has passed it raises a request and starts the next interval where the last one ended, so its requests keep in step with the clock however fast the machine ticks. An interval of 0 never fires.
+
+It can only ask in a tick. While the machine is paused, or between ticks at a low speed, time goes on without it: the first tick after an interval has passed raises one request, however many intervals went by, and the next interval is counted from that tick. A program that counts the requests therefore counts the intervals it was running for, not the time that went past while it was paused.
+
+Because it keeps to real time, a program that waits for a real time clock takes as long in seconds at any speed, and as many more ticks as the machine runs faster: the one thing in ExµArch that ties the simulation to the time outside it.
+
 ## See also
 
 - [Flags and conditions](exuarch:guide/flags-and-conditions)
 - [Fetch and the instruction register](exuarch:guide/fetch-and-the-instruction-register)
 - [Subroutines and the stack](exuarch:guide/subroutines-and-the-stack)
-- [interruptController reference](exuarch:reference/interruptController) and [timer reference](exuarch:reference/timer)
+- [interruptController reference](exuarch:reference/interruptController), [timer reference](exuarch:reference/timer) and [rtc reference](exuarch:reference/rtc)
 - [IRQ-16](exuarch:package/IRQ-16)

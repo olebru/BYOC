@@ -360,6 +360,7 @@ namespace Exuarch.Core
                         values[device.ID() + ".enabled"] = controller.Enabled ? 1 : 0;
                         break;
                     case TickTimer timer: values[device.ID() + ".count"] = timer.Count; break;
+                    case RealTimeClock rtc: values[device.ID() + ".expired"] = (int)rtc.Expired; break;
                     case RegisterFile file:
                         values[device.ID() + ".select"] = file.Selected;
                         for (int i = 0; i < file.Count; i++) values[$"{device.ID()}.r{i}"] = file[i];

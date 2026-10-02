@@ -56,7 +56,8 @@ namespace Exuarch.Core
         private readonly Dictionary<string, DeviceFactory> factories = new Dictionary<string, DeviceFactory>();
         private readonly Dictionary<string, DeviceTypeInfo> infos = new Dictionary<string, DeviceTypeInfo>();
 
-        public static DeviceRegistry CreateDefault()
+        // time is where the rtc reads the time, the system's clock unless a test gives it one of its own.
+        public static DeviceRegistry CreateDefault(TimeProvider time = null)
         {
             var size = new ParameterInfo { Name = "size", Description = "Number of 16 bit cells", Min = 1, Max = 65536, Default = MemoryModule.DefaultSize };
             List<ControlLineInfo> RegisterLines() => new List<ControlLineInfo>
@@ -305,7 +306,7 @@ namespace Exuarch.Core
                     Description = "Collects interrupt requests from up to four devices (irq0 to irq3) into pending bits. Name it as decoder.interrupts and microcode can test the I condition: 1 when interrupts are enabled and an unmasked request is pending",
                     Connections =
                     {
-                        new ConnectionInfo { Name = "irq0", Description = "Interrupt source for pending bit 0 (a timer, keypad, blitter or rasterizer)" },
+                        new ConnectionInfo { Name = "irq0", Description = "Interrupt source for pending bit 0 (a timer, real time clock, keypad, blitter or rasterizer)" },
                         new ConnectionInfo { Name = "irq1", Description = "Interrupt source for pending bit 1" },
                         new ConnectionInfo { Name = "irq2", Description = "Interrupt source for pending bit 2" },
                         new ConnectionInfo { Name = "irq3", Description = "Interrupt source for pending bit 3" },
@@ -331,6 +332,20 @@ namespace Exuarch.Core
                         ControlLineInfo.Internal("start", "Start counting from 0"),
                         ControlLineInfo.Internal("stop", "Stop counting"),
                         ControlLineInfo.Output("output", "Put the current count on the bus"),
+                    }
+                });
+            registry.Register("rtc", c => new RealTimeClock(c.Name, c.Id, c.Bus(), c.IntParameter("interval", 1000, 0, 65535), time),
+                new DeviceTypeInfo
+                {
+                    Category = "I/O",
+                    Description = "Raises an interrupt request every interval milliseconds of real time while it runs, however fast or slowly the machine ticks: a real time clock. Where a timer counts ticks, this one keeps to the wall clock. The first tick after an interval has passed asks, once, even when the machine was paused for several. Connect it to an interrupt controller",
+                    Parameters = { new ParameterInfo { Name = "interval", Description = "Milliseconds between interrupt requests", Min = 0, Max = 65535, Default = 1000 } },
+                    ControlLines =
+                    {
+                        ControlLineInfo.Input("loadinterval", "Take the interval, in milliseconds, from the bus"),
+                        ControlLineInfo.Internal("start", "Start timing an interval from now"),
+                        ControlLineInfo.Internal("stop", "Stop timing"),
+                        ControlLineInfo.Output("output", "Put the interval, in milliseconds, on the bus"),
                     }
                 });
             registry.Register("keypad", c => new Keypad(c.Name, c.Id, c.Bus()),
@@ -416,7 +431,7 @@ namespace Exuarch.Core
         {
             if (!definition.Connections.TryGetValue(name, out var targetId)) return null;
             var target = resolveDevice(targetId);
-            return target as IInterruptSource ?? throw Error($"connection '{name}' must be a device that raises interrupts (a timer, keypad, blitter or rasterizer), but '{targetId}' is a {target.GetType().Name}");
+            return target as IInterruptSource ?? throw Error($"connection '{name}' must be a device that raises interrupts (a timer, real time clock, keypad, blitter or rasterizer), but '{targetId}' is a {target.GetType().Name}");
         }
         public int IntParameter(string name, int defaultValue, int min, int max)
         {

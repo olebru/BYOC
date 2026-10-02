@@ -196,33 +196,55 @@
         text-decoration: underline;
     }
 
-.toc-category {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: 4px;
-    margin: 6px 20px;
+.toc-group {
+    margin: 12px 20px 2px;
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-4);
 }
 
-.toc-category-name {
-    width: 88px;
-    font-size: 0.75rem;
-    color: var(--ink-3);
+/* The device reference: one row a device, its name in a column of its own and what it is after it, cut to fit. */
+.toc.devices {
+    list-style: none;
+    padding-left: 0;
 }
 
 .toc-device {
-    border: 1px solid var(--line);
-    border-radius: var(--radius-sm);
-    background: var(--surface);
-    padding: 1px 7px;
+    display: grid;
+    grid-template-columns: 10.5rem minmax(0, 1fr);
+    align-items: baseline;
+    gap: 10px;
+    width: 100%;
+    border: none;
+    background: none;
+    padding: 2px 0;
+    text-align: left;
+}
+
+.toc-device-name {
     font-family: var(--font-mono);
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     color: var(--ink);
 }
 
-    .toc-device:hover {
-        border-color: var(--signal);
+.toc-device-what {
+    font-family: var(--font-sans);
+    font-size: 0.8rem;
+    color: var(--ink-3);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+    .toc-device:hover .toc-device-name {
         color: var(--signal-ink);
+        text-decoration: underline;
+    }
+
+    .toc-device:hover .toc-device-what {
+        color: var(--ink-2);
     }
 
 .hits {

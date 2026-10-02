@@ -17,8 +17,8 @@
         <button class="ctl" title="Reload the program and reset every device (R)" @onclick="Restart">⟲ Reset</button>
         <span class="sep"></span>
         <label class="speed @(maxSpeed ? "off" : "")" title="Clock speed while running">
-            <input type="range" min="0" max="100" disabled="@maxSpeed" @bind="speedSlider" @bind:event="oninput" />
-            <span>@(maxSpeed ? "max" : $"{Hz} Hz")</span>
+            <input type="range" min="0" max="@SliderSteps" disabled="@maxSpeed" @bind="speedSlider" @bind:event="oninput" />
+            <span>@(maxSpeed ? "max" : ShortHz(Hz))</span>
         </label>
         <button class="ctl @(maxSpeed ? "on" : "")" title="Run as fast as the browser allows, ignoring the slider (M)" @onclick="() => maxSpeed = !maxSpeed">⚡ Max</button>
         <span class="sep"></span>
