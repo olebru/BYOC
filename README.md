@@ -45,6 +45,8 @@ Commits follow [Conventional Commits](https://www.conventionalcommits.org): `fea
 
 Production, [www.exuarch.com](https://www.exuarch.com) on Azure Static Web Apps, is only deployed from a release tag (`.github/workflows/deploy.yml`): straight after release-please tags one, when a `v*` tag is pushed, or by hand for an existing tag. The app's footer shows the release it runs. Each pull request still gets a preview site of its own (`.github/workflows/pr.yml`), linked from the pull request and removed when it closes.
 
+The workflows pin every action to a commit, and [Dependabot](https://docs.github.com/code-security/dependabot) (`.github/dependabot.yml`) opens a pull request each week to move the pins, and the NuGet packages, to their latest releases.
+
 ## History
 
 - **Before 2019: the .NET Framework original.** The simulator started as a .NET Framework program, from before Ole was on GitHub.
