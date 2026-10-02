@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.6.0](https://github.com/olebru/exuarch/compare/v1.5.0...v1.6.0) (2026-10-02)
+
+
+### Features
+
+* a loading splash with a 16 bit register counting in binary ([4fc1875](https://github.com/olebru/exuarch/commit/4fc18754216c927337a6b47b4e55e80822d5a1b6))
+* **dsp:** close in on the top of the Mandelbrot set, in 4.12 fixed point ([4fc1875](https://github.com/olebru/exuarch/commit/4fc18754216c927337a6b47b4e55e80822d5a1b6))
+
 ## [1.5.0](https://github.com/olebru/exuarch/compare/v1.4.0...v1.5.0) (2026-10-02)
 
 
