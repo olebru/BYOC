@@ -1,0 +1,2877 @@
+{
+  "name": "WORM-16",
+  "buses": [
+    {
+      "id": "main"
+    }
+  ],
+  "devices": [
+    {
+      "id": "head",
+      "type": "register",
+      "name": "HEAD",
+      "bus": "main"
+    },
+    {
+      "id": "tail",
+      "type": "register",
+      "name": "TAIL",
+      "bus": "main"
+    },
+    {
+      "id": "ir",
+      "type": "instructionRegister",
+      "name": "IR",
+      "bus": "main"
+    },
+    {
+      "id": "mem",
+      "type": "ram",
+      "name": "THE RING",
+      "bus": "main",
+      "parameters": {
+        "size": 4096
+      }
+    },
+    {
+      "id": "t",
+      "type": "register",
+      "name": "OPCODE",
+      "bus": "main"
+    },
+    {
+      "id": "y",
+      "type": "register",
+      "name": "OPERAND",
+      "bus": "main"
+    },
+    {
+      "id": "a",
+      "type": "register",
+      "name": "A",
+      "bus": "main"
+    },
+    {
+      "id": "b",
+      "type": "register",
+      "name": "B",
+      "bus": "main"
+    },
+    {
+      "id": "alu",
+      "type": "alu",
+      "name": "ALU",
+      "bus": "main",
+      "connections": {
+        "a": "a",
+        "b": "y",
+        "status": "flags"
+      }
+    },
+    {
+      "id": "flags",
+      "type": "statusRegister",
+      "name": "FLAGS",
+      "bus": "main"
+    },
+    {
+      "id": "d",
+      "type": "register",
+      "name": "TENS",
+      "bus": "main"
+    },
+    {
+      "id": "z",
+      "type": "register",
+      "name": "ZERO",
+      "bus": "main"
+    },
+    {
+      "id": "j",
+      "type": "register",
+      "name": "HATCH LOOP",
+      "bus": "main"
+    },
+    {
+      "id": "k",
+      "type": "register",
+      "name": "SAVED A",
+      "bus": "main"
+    },
+    {
+      "id": "s",
+      "type": "register",
+      "name": "SAVED FLAGS",
+      "bus": "main"
+    },
+    {
+      "id": "lcd",
+      "type": "display",
+      "name": "LCD",
+      "bus": "main",
+      "parameters": {
+        "columns": 16,
+        "rows": 2
+      }
+    },
+    {
+      "id": "clk",
+      "type": "clock",
+      "name": "CLOCK"
+    }
+  ],
+  "decoder": {
+    "status": "flags",
+    "instructionRegister": "ir",
+    "microcode": {
+      "name": "WORM-16",
+      "fetch": {
+        "mnemonic": "FETCH",
+        "description": "Read the opcode at the head into the instruction register, keep a copy in OPCODE, and move the head on",
+        "steps": [
+          {
+            "signals": [
+              "head.output",
+              "mem.loadmar"
+            ]
+          },
+          {
+            "signals": [
+              "mem.output",
+              "ir.load",
+              "t.load",
+              "head.inc"
+            ]
+          }
+        ]
+      },
+      "instructions": [
+        {
+          "mnemonic": "TAIL",
+          "description": "Set the tail, where kept instructions are written, to the address. Its fate: kept: it runs again every lap",
+          "operands": 1,
+          "operandTypes": [
+            "address"
+          ],
+          "steps": [
+            {
+              "signals": [
+                "head.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "mem.output",
+                "y.load",
+                "head.inc"
+              ]
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "t.output",
+                "mem.load",
+                "tail.inc"
+              ]
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "y.output",
+                "mem.load",
+                "tail.inc"
+              ]
+            },
+            {
+              "signals": [
+                "y.output",
+                "tail.load",
+                "ir.reset"
+              ]
+            }
+          ]
+        },
+        {
+          "mnemonic": "TAIL_D",
+          "description": "Set the tail, where kept instructions are written, to the address. Its fate: dies: it runs once and is not kept",
+          "operands": 1,
+          "operandTypes": [
+            "address"
+          ],
+          "steps": [
+            {
+              "signals": [
+                "head.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "mem.output",
+                "y.load",
+                "head.inc"
+              ]
+            },
+            {
+              "signals": [
+                "y.output",
+                "tail.load",
+                "ir.reset"
+              ]
+            }
+          ]
+        },
+        {
+          "mnemonic": "TAIL_P",
+          "description": "Set the tail, where kept instructions are written, to the address. Its fate: lives while N is clear: then it runs and is kept; once N is set it is skipped and dropped",
+          "operands": 1,
+          "operandTypes": [
+            "address"
+          ],
+          "steps": [
+            {
+              "when": {
+                "N": true
+              },
+              "signals": [
+                "head.inc",
+                "ir.reset"
+              ]
+            },
+            {
+              "signals": [
+                "head.output",
+                "mem.loadmar"
+              ],
+              "when": {
+                "N": false
+              }
+            },
+            {
+              "signals": [
+                "mem.output",
+                "y.load",
+                "head.inc"
+              ],
+              "when": {
+                "N": false
+              }
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ],
+              "when": {
+                "N": false
+              }
+            },
+            {
+              "signals": [
+                "t.output",
+                "mem.load",
+                "tail.inc"
+              ],
+              "when": {
+                "N": false
+              }
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ],
+              "when": {
+                "N": false
+              }
+            },
+            {
+              "signals": [
+                "y.output",
+                "mem.load",
+                "tail.inc"
+              ],
+              "when": {
+                "N": false
+              }
+            },
+            {
+              "signals": [
+                "y.output",
+                "tail.load",
+                "ir.reset"
+              ],
+              "when": {
+                "N": false
+              }
+            }
+          ]
+        },
+        {
+          "mnemonic": "TAIL_2",
+          "description": "Set the tail, where kept instructions are written, to the address. Its fate: divides: it runs, and two copies of it are kept",
+          "operands": 1,
+          "operandTypes": [
+            "address"
+          ],
+          "steps": [
+            {
+              "signals": [
+                "head.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "mem.output",
+                "y.load",
+                "head.inc"
+              ]
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "t.output",
+                "mem.load",
+                "tail.inc"
+              ]
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "y.output",
+                "mem.load",
+                "tail.inc"
+              ]
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "t.output",
+                "mem.load",
+                "tail.inc"
+              ]
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "y.output",
+                "mem.load",
+                "tail.inc"
+              ]
+            },
+            {
+              "signals": [
+                "y.output",
+                "tail.load",
+                "ir.reset"
+              ]
+            }
+          ]
+        },
+        {
+          "mnemonic": "LDA",
+          "description": "A = value; sets the flags from it. Its fate: kept: it runs again every lap",
+          "operands": 1,
+          "operandTypes": [
+            "value"
+          ],
+          "steps": [
+            {
+              "signals": [
+                "head.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "mem.output",
+                "y.load",
+                "head.inc"
+              ]
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "t.output",
+                "mem.load",
+                "tail.inc"
+              ]
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "y.output",
+                "mem.load",
+                "tail.inc"
+              ]
+            },
+            {
+              "signals": [
+                "a.reset"
+              ]
+            },
+            {
+              "signals": [
+                "alu.add",
+                "a.load",
+                "ir.reset"
+              ]
+            }
+          ]
+        },
+        {
+          "mnemonic": "LDA_D",
+          "description": "A = value; sets the flags from it. Its fate: dies: it runs once and is not kept",
+          "operands": 1,
+          "operandTypes": [
+            "value"
+          ],
+          "steps": [
+            {
+              "signals": [
+                "head.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "mem.output",
+                "y.load",
+                "head.inc"
+              ]
+            },
+            {
+              "signals": [
+                "a.reset"
+              ]
+            },
+            {
+              "signals": [
+                "alu.add",
+                "a.load",
+                "ir.reset"
+              ]
+            }
+          ]
+        },
+        {
+          "mnemonic": "LDA_P",
+          "description": "A = value; sets the flags from it. Its fate: lives while N is clear: then it runs and is kept; once N is set it is skipped and dropped",
+          "operands": 1,
+          "operandTypes": [
+            "value"
+          ],
+          "steps": [
+            {
+              "when": {
+                "N": true
+              },
+              "signals": [
+                "head.inc",
+                "ir.reset"
+              ]
+            },
+            {
+              "signals": [
+                "head.output",
+                "mem.loadmar"
+              ],
+              "when": {
+                "N": false
+              }
+            },
+            {
+              "signals": [
+                "mem.output",
+                "y.load",
+                "head.inc"
+              ],
+              "when": {
+                "N": false
+              }
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ],
+              "when": {
+                "N": false
+              }
+            },
+            {
+              "signals": [
+                "t.output",
+                "mem.load",
+                "tail.inc"
+              ],
+              "when": {
+                "N": false
+              }
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ],
+              "when": {
+                "N": false
+              }
+            },
+            {
+              "signals": [
+                "y.output",
+                "mem.load",
+                "tail.inc"
+              ],
+              "when": {
+                "N": false
+              }
+            },
+            {
+              "signals": [
+                "a.reset"
+              ],
+              "when": {
+                "N": false
+              }
+            },
+            {
+              "signals": [
+                "alu.add",
+                "a.load",
+                "ir.reset"
+              ],
+              "when": {
+                "N": false
+              }
+            }
+          ]
+        },
+        {
+          "mnemonic": "LDA_2",
+          "description": "A = value; sets the flags from it. Its fate: divides: it runs, and two copies of it are kept",
+          "operands": 1,
+          "operandTypes": [
+            "value"
+          ],
+          "steps": [
+            {
+              "signals": [
+                "head.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "mem.output",
+                "y.load",
+                "head.inc"
+              ]
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "t.output",
+                "mem.load",
+                "tail.inc"
+              ]
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "y.output",
+                "mem.load",
+                "tail.inc"
+              ]
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "t.output",
+                "mem.load",
+                "tail.inc"
+              ]
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "y.output",
+                "mem.load",
+                "tail.inc"
+              ]
+            },
+            {
+              "signals": [
+                "a.reset"
+              ]
+            },
+            {
+              "signals": [
+                "alu.add",
+                "a.load",
+                "ir.reset"
+              ]
+            }
+          ]
+        },
+        {
+          "mnemonic": "LDB",
+          "description": "B = value; flags unchanged. Its fate: kept: it runs again every lap",
+          "operands": 1,
+          "operandTypes": [
+            "value"
+          ],
+          "steps": [
+            {
+              "signals": [
+                "head.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "mem.output",
+                "y.load",
+                "head.inc"
+              ]
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "t.output",
+                "mem.load",
+                "tail.inc"
+              ]
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "y.output",
+                "mem.load",
+                "tail.inc"
+              ]
+            },
+            {
+              "signals": [
+                "y.output",
+                "b.load",
+                "ir.reset"
+              ]
+            }
+          ]
+        },
+        {
+          "mnemonic": "LDB_D",
+          "description": "B = value; flags unchanged. Its fate: dies: it runs once and is not kept",
+          "operands": 1,
+          "operandTypes": [
+            "value"
+          ],
+          "steps": [
+            {
+              "signals": [
+                "head.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "mem.output",
+                "y.load",
+                "head.inc"
+              ]
+            },
+            {
+              "signals": [
+                "y.output",
+                "b.load",
+                "ir.reset"
+              ]
+            }
+          ]
+        },
+        {
+          "mnemonic": "LDB_P",
+          "description": "B = value; flags unchanged. Its fate: lives while N is clear: then it runs and is kept; once N is set it is skipped and dropped",
+          "operands": 1,
+          "operandTypes": [
+            "value"
+          ],
+          "steps": [
+            {
+              "when": {
+                "N": true
+              },
+              "signals": [
+                "head.inc",
+                "ir.reset"
+              ]
+            },
+            {
+              "signals": [
+                "head.output",
+                "mem.loadmar"
+              ],
+              "when": {
+                "N": false
+              }
+            },
+            {
+              "signals": [
+                "mem.output",
+                "y.load",
+                "head.inc"
+              ],
+              "when": {
+                "N": false
+              }
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ],
+              "when": {
+                "N": false
+              }
+            },
+            {
+              "signals": [
+                "t.output",
+                "mem.load",
+                "tail.inc"
+              ],
+              "when": {
+                "N": false
+              }
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ],
+              "when": {
+                "N": false
+              }
+            },
+            {
+              "signals": [
+                "y.output",
+                "mem.load",
+                "tail.inc"
+              ],
+              "when": {
+                "N": false
+              }
+            },
+            {
+              "signals": [
+                "y.output",
+                "b.load",
+                "ir.reset"
+              ],
+              "when": {
+                "N": false
+              }
+            }
+          ]
+        },
+        {
+          "mnemonic": "LDB_2",
+          "description": "B = value; flags unchanged. Its fate: divides: it runs, and two copies of it are kept",
+          "operands": 1,
+          "operandTypes": [
+            "value"
+          ],
+          "steps": [
+            {
+              "signals": [
+                "head.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "mem.output",
+                "y.load",
+                "head.inc"
+              ]
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "t.output",
+                "mem.load",
+                "tail.inc"
+              ]
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "y.output",
+                "mem.load",
+                "tail.inc"
+              ]
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "t.output",
+                "mem.load",
+                "tail.inc"
+              ]
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "y.output",
+                "mem.load",
+                "tail.inc"
+              ]
+            },
+            {
+              "signals": [
+                "y.output",
+                "b.load",
+                "ir.reset"
+              ]
+            }
+          ]
+        },
+        {
+          "mnemonic": "ADD",
+          "description": "A = A + value; sets the flags. Its fate: kept: it runs again every lap",
+          "operands": 1,
+          "operandTypes": [
+            "value"
+          ],
+          "steps": [
+            {
+              "signals": [
+                "head.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "mem.output",
+                "y.load",
+                "head.inc"
+              ]
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "t.output",
+                "mem.load",
+                "tail.inc"
+              ]
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "y.output",
+                "mem.load",
+                "tail.inc"
+              ]
+            },
+            {
+              "signals": [
+                "alu.add",
+                "a.load",
+                "ir.reset"
+              ]
+            }
+          ]
+        },
+        {
+          "mnemonic": "ADD_D",
+          "description": "A = A + value; sets the flags. Its fate: dies: it runs once and is not kept",
+          "operands": 1,
+          "operandTypes": [
+            "value"
+          ],
+          "steps": [
+            {
+              "signals": [
+                "head.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "mem.output",
+                "y.load",
+                "head.inc"
+              ]
+            },
+            {
+              "signals": [
+                "alu.add",
+                "a.load",
+                "ir.reset"
+              ]
+            }
+          ]
+        },
+        {
+          "mnemonic": "ADD_P",
+          "description": "A = A + value; sets the flags. Its fate: lives while N is clear: then it runs and is kept; once N is set it is skipped and dropped",
+          "operands": 1,
+          "operandTypes": [
+            "value"
+          ],
+          "steps": [
+            {
+              "when": {
+                "N": true
+              },
+              "signals": [
+                "head.inc",
+                "ir.reset"
+              ]
+            },
+            {
+              "signals": [
+                "head.output",
+                "mem.loadmar"
+              ],
+              "when": {
+                "N": false
+              }
+            },
+            {
+              "signals": [
+                "mem.output",
+                "y.load",
+                "head.inc"
+              ],
+              "when": {
+                "N": false
+              }
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ],
+              "when": {
+                "N": false
+              }
+            },
+            {
+              "signals": [
+                "t.output",
+                "mem.load",
+                "tail.inc"
+              ],
+              "when": {
+                "N": false
+              }
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ],
+              "when": {
+                "N": false
+              }
+            },
+            {
+              "signals": [
+                "y.output",
+                "mem.load",
+                "tail.inc"
+              ],
+              "when": {
+                "N": false
+              }
+            },
+            {
+              "signals": [
+                "alu.add",
+                "a.load",
+                "ir.reset"
+              ],
+              "when": {
+                "N": false
+              }
+            }
+          ]
+        },
+        {
+          "mnemonic": "ADD_2",
+          "description": "A = A + value; sets the flags. Its fate: divides: it runs, and two copies of it are kept",
+          "operands": 1,
+          "operandTypes": [
+            "value"
+          ],
+          "steps": [
+            {
+              "signals": [
+                "head.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "mem.output",
+                "y.load",
+                "head.inc"
+              ]
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "t.output",
+                "mem.load",
+                "tail.inc"
+              ]
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "y.output",
+                "mem.load",
+                "tail.inc"
+              ]
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "t.output",
+                "mem.load",
+                "tail.inc"
+              ]
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "y.output",
+                "mem.load",
+                "tail.inc"
+              ]
+            },
+            {
+              "signals": [
+                "alu.add",
+                "a.load",
+                "ir.reset"
+              ]
+            }
+          ]
+        },
+        {
+          "mnemonic": "SUB",
+          "description": "A = A - value; sets the flags. Its fate: kept: it runs again every lap",
+          "operands": 1,
+          "operandTypes": [
+            "value"
+          ],
+          "steps": [
+            {
+              "signals": [
+                "head.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "mem.output",
+                "y.load",
+                "head.inc"
+              ]
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "t.output",
+                "mem.load",
+                "tail.inc"
+              ]
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "y.output",
+                "mem.load",
+                "tail.inc"
+              ]
+            },
+            {
+              "signals": [
+                "alu.sub",
+                "a.load",
+                "ir.reset"
+              ]
+            }
+          ]
+        },
+        {
+          "mnemonic": "SUB_D",
+          "description": "A = A - value; sets the flags. Its fate: dies: it runs once and is not kept",
+          "operands": 1,
+          "operandTypes": [
+            "value"
+          ],
+          "steps": [
+            {
+              "signals": [
+                "head.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "mem.output",
+                "y.load",
+                "head.inc"
+              ]
+            },
+            {
+              "signals": [
+                "alu.sub",
+                "a.load",
+                "ir.reset"
+              ]
+            }
+          ]
+        },
+        {
+          "mnemonic": "SUB_P",
+          "description": "A = A - value; sets the flags. Its fate: lives while N is clear: then it runs and is kept; once N is set it is skipped and dropped",
+          "operands": 1,
+          "operandTypes": [
+            "value"
+          ],
+          "steps": [
+            {
+              "when": {
+                "N": true
+              },
+              "signals": [
+                "head.inc",
+                "ir.reset"
+              ]
+            },
+            {
+              "signals": [
+                "head.output",
+                "mem.loadmar"
+              ],
+              "when": {
+                "N": false
+              }
+            },
+            {
+              "signals": [
+                "mem.output",
+                "y.load",
+                "head.inc"
+              ],
+              "when": {
+                "N": false
+              }
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ],
+              "when": {
+                "N": false
+              }
+            },
+            {
+              "signals": [
+                "t.output",
+                "mem.load",
+                "tail.inc"
+              ],
+              "when": {
+                "N": false
+              }
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ],
+              "when": {
+                "N": false
+              }
+            },
+            {
+              "signals": [
+                "y.output",
+                "mem.load",
+                "tail.inc"
+              ],
+              "when": {
+                "N": false
+              }
+            },
+            {
+              "signals": [
+                "alu.sub",
+                "a.load",
+                "ir.reset"
+              ],
+              "when": {
+                "N": false
+              }
+            }
+          ]
+        },
+        {
+          "mnemonic": "SUB_2",
+          "description": "A = A - value; sets the flags. Its fate: divides: it runs, and two copies of it are kept",
+          "operands": 1,
+          "operandTypes": [
+            "value"
+          ],
+          "steps": [
+            {
+              "signals": [
+                "head.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "mem.output",
+                "y.load",
+                "head.inc"
+              ]
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "t.output",
+                "mem.load",
+                "tail.inc"
+              ]
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "y.output",
+                "mem.load",
+                "tail.inc"
+              ]
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "t.output",
+                "mem.load",
+                "tail.inc"
+              ]
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "y.output",
+                "mem.load",
+                "tail.inc"
+              ]
+            },
+            {
+              "signals": [
+                "alu.sub",
+                "a.load",
+                "ir.reset"
+              ]
+            }
+          ]
+        },
+        {
+          "mnemonic": "ADDB",
+          "description": "A = A + B; sets the flags. Its fate: kept: it runs again every lap",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "t.output",
+                "mem.load",
+                "tail.inc"
+              ]
+            },
+            {
+              "signals": [
+                "b.output",
+                "y.load"
+              ]
+            },
+            {
+              "signals": [
+                "alu.add",
+                "a.load",
+                "ir.reset"
+              ]
+            }
+          ]
+        },
+        {
+          "mnemonic": "ADDB_D",
+          "description": "A = A + B; sets the flags. Its fate: dies: it runs once and is not kept",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": [
+                "b.output",
+                "y.load"
+              ]
+            },
+            {
+              "signals": [
+                "alu.add",
+                "a.load",
+                "ir.reset"
+              ]
+            }
+          ]
+        },
+        {
+          "mnemonic": "ADDB_P",
+          "description": "A = A + B; sets the flags. Its fate: lives while N is clear: then it runs and is kept; once N is set it is skipped and dropped",
+          "operands": 0,
+          "steps": [
+            {
+              "when": {
+                "N": true
+              },
+              "signals": [
+                "ir.reset"
+              ]
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ],
+              "when": {
+                "N": false
+              }
+            },
+            {
+              "signals": [
+                "t.output",
+                "mem.load",
+                "tail.inc"
+              ],
+              "when": {
+                "N": false
+              }
+            },
+            {
+              "signals": [
+                "b.output",
+                "y.load"
+              ],
+              "when": {
+                "N": false
+              }
+            },
+            {
+              "signals": [
+                "alu.add",
+                "a.load",
+                "ir.reset"
+              ],
+              "when": {
+                "N": false
+              }
+            }
+          ]
+        },
+        {
+          "mnemonic": "ADDB_2",
+          "description": "A = A + B; sets the flags. Its fate: divides: it runs, and two copies of it are kept",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "t.output",
+                "mem.load",
+                "tail.inc"
+              ]
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "t.output",
+                "mem.load",
+                "tail.inc"
+              ]
+            },
+            {
+              "signals": [
+                "b.output",
+                "y.load"
+              ]
+            },
+            {
+              "signals": [
+                "alu.add",
+                "a.load",
+                "ir.reset"
+              ]
+            }
+          ]
+        },
+        {
+          "mnemonic": "SWAP",
+          "description": "Swap A and B; flags unchanged. Its fate: kept: it runs again every lap",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "t.output",
+                "mem.load",
+                "tail.inc"
+              ]
+            },
+            {
+              "signals": [
+                "a.output",
+                "y.load"
+              ]
+            },
+            {
+              "signals": [
+                "b.output",
+                "a.load"
+              ]
+            },
+            {
+              "signals": [
+                "y.output",
+                "b.load",
+                "ir.reset"
+              ]
+            }
+          ]
+        },
+        {
+          "mnemonic": "SWAP_D",
+          "description": "Swap A and B; flags unchanged. Its fate: dies: it runs once and is not kept",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": [
+                "a.output",
+                "y.load"
+              ]
+            },
+            {
+              "signals": [
+                "b.output",
+                "a.load"
+              ]
+            },
+            {
+              "signals": [
+                "y.output",
+                "b.load",
+                "ir.reset"
+              ]
+            }
+          ]
+        },
+        {
+          "mnemonic": "SWAP_P",
+          "description": "Swap A and B; flags unchanged. Its fate: lives while N is clear: then it runs and is kept; once N is set it is skipped and dropped",
+          "operands": 0,
+          "steps": [
+            {
+              "when": {
+                "N": true
+              },
+              "signals": [
+                "ir.reset"
+              ]
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ],
+              "when": {
+                "N": false
+              }
+            },
+            {
+              "signals": [
+                "t.output",
+                "mem.load",
+                "tail.inc"
+              ],
+              "when": {
+                "N": false
+              }
+            },
+            {
+              "signals": [
+                "a.output",
+                "y.load"
+              ],
+              "when": {
+                "N": false
+              }
+            },
+            {
+              "signals": [
+                "b.output",
+                "a.load"
+              ],
+              "when": {
+                "N": false
+              }
+            },
+            {
+              "signals": [
+                "y.output",
+                "b.load",
+                "ir.reset"
+              ],
+              "when": {
+                "N": false
+              }
+            }
+          ]
+        },
+        {
+          "mnemonic": "SWAP_2",
+          "description": "Swap A and B; flags unchanged. Its fate: divides: it runs, and two copies of it are kept",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "t.output",
+                "mem.load",
+                "tail.inc"
+              ]
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "t.output",
+                "mem.load",
+                "tail.inc"
+              ]
+            },
+            {
+              "signals": [
+                "a.output",
+                "y.load"
+              ]
+            },
+            {
+              "signals": [
+                "b.output",
+                "a.load"
+              ]
+            },
+            {
+              "signals": [
+                "y.output",
+                "b.load",
+                "ir.reset"
+              ]
+            }
+          ]
+        },
+        {
+          "mnemonic": "OUT",
+          "description": "Print A on the LCD as a character. Its fate: kept: it runs again every lap",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "t.output",
+                "mem.load",
+                "tail.inc"
+              ]
+            },
+            {
+              "signals": [
+                "a.output",
+                "lcd.load",
+                "ir.reset"
+              ]
+            }
+          ]
+        },
+        {
+          "mnemonic": "OUT_D",
+          "description": "Print A on the LCD as a character. Its fate: dies: it runs once and is not kept",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": [
+                "a.output",
+                "lcd.load",
+                "ir.reset"
+              ]
+            }
+          ]
+        },
+        {
+          "mnemonic": "OUT_P",
+          "description": "Print A on the LCD as a character. Its fate: lives while N is clear: then it runs and is kept; once N is set it is skipped and dropped",
+          "operands": 0,
+          "steps": [
+            {
+              "when": {
+                "N": true
+              },
+              "signals": [
+                "ir.reset"
+              ]
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ],
+              "when": {
+                "N": false
+              }
+            },
+            {
+              "signals": [
+                "t.output",
+                "mem.load",
+                "tail.inc"
+              ],
+              "when": {
+                "N": false
+              }
+            },
+            {
+              "signals": [
+                "a.output",
+                "lcd.load",
+                "ir.reset"
+              ],
+              "when": {
+                "N": false
+              }
+            }
+          ]
+        },
+        {
+          "mnemonic": "OUT_2",
+          "description": "Print A on the LCD as a character. Its fate: divides: it runs, and two copies of it are kept",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "t.output",
+                "mem.load",
+                "tail.inc"
+              ]
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "t.output",
+                "mem.load",
+                "tail.inc"
+              ]
+            },
+            {
+              "signals": [
+                "a.output",
+                "lcd.load",
+                "ir.reset"
+              ]
+            }
+          ]
+        },
+        {
+          "mnemonic": "OUTC",
+          "description": "Print the character on the LCD. Its fate: kept: it runs again every lap",
+          "operands": 1,
+          "operandTypes": [
+            "value"
+          ],
+          "steps": [
+            {
+              "signals": [
+                "head.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "mem.output",
+                "y.load",
+                "head.inc"
+              ]
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "t.output",
+                "mem.load",
+                "tail.inc"
+              ]
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "y.output",
+                "mem.load",
+                "tail.inc"
+              ]
+            },
+            {
+              "signals": [
+                "y.output",
+                "lcd.load",
+                "ir.reset"
+              ]
+            }
+          ]
+        },
+        {
+          "mnemonic": "OUTC_D",
+          "description": "Print the character on the LCD. Its fate: dies: it runs once and is not kept",
+          "operands": 1,
+          "operandTypes": [
+            "value"
+          ],
+          "steps": [
+            {
+              "signals": [
+                "head.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "mem.output",
+                "y.load",
+                "head.inc"
+              ]
+            },
+            {
+              "signals": [
+                "y.output",
+                "lcd.load",
+                "ir.reset"
+              ]
+            }
+          ]
+        },
+        {
+          "mnemonic": "OUTC_P",
+          "description": "Print the character on the LCD. Its fate: lives while N is clear: then it runs and is kept; once N is set it is skipped and dropped",
+          "operands": 1,
+          "operandTypes": [
+            "value"
+          ],
+          "steps": [
+            {
+              "when": {
+                "N": true
+              },
+              "signals": [
+                "head.inc",
+                "ir.reset"
+              ]
+            },
+            {
+              "signals": [
+                "head.output",
+                "mem.loadmar"
+              ],
+              "when": {
+                "N": false
+              }
+            },
+            {
+              "signals": [
+                "mem.output",
+                "y.load",
+                "head.inc"
+              ],
+              "when": {
+                "N": false
+              }
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ],
+              "when": {
+                "N": false
+              }
+            },
+            {
+              "signals": [
+                "t.output",
+                "mem.load",
+                "tail.inc"
+              ],
+              "when": {
+                "N": false
+              }
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ],
+              "when": {
+                "N": false
+              }
+            },
+            {
+              "signals": [
+                "y.output",
+                "mem.load",
+                "tail.inc"
+              ],
+              "when": {
+                "N": false
+              }
+            },
+            {
+              "signals": [
+                "y.output",
+                "lcd.load",
+                "ir.reset"
+              ],
+              "when": {
+                "N": false
+              }
+            }
+          ]
+        },
+        {
+          "mnemonic": "OUTC_2",
+          "description": "Print the character on the LCD. Its fate: divides: it runs, and two copies of it are kept",
+          "operands": 1,
+          "operandTypes": [
+            "value"
+          ],
+          "steps": [
+            {
+              "signals": [
+                "head.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "mem.output",
+                "y.load",
+                "head.inc"
+              ]
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "t.output",
+                "mem.load",
+                "tail.inc"
+              ]
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "y.output",
+                "mem.load",
+                "tail.inc"
+              ]
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "t.output",
+                "mem.load",
+                "tail.inc"
+              ]
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "y.output",
+                "mem.load",
+                "tail.inc"
+              ]
+            },
+            {
+              "signals": [
+                "y.output",
+                "lcd.load",
+                "ir.reset"
+              ]
+            }
+          ]
+        },
+        {
+          "mnemonic": "GATE",
+          "description": "Compare A with the value: while A >= value the gate is open, N is clear and it is kept; when A < value it closes, sets N and is not kept, so the _P instructions after it fall away",
+          "operands": 1,
+          "operandTypes": [
+            "value"
+          ],
+          "steps": [
+            {
+              "signals": [
+                "head.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "mem.output",
+                "y.load",
+                "head.inc"
+              ]
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "t.output",
+                "mem.load",
+                "tail.inc"
+              ]
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "y.output",
+                "mem.load",
+                "tail.inc"
+              ]
+            },
+            {
+              "signals": [
+                "alu.cmp"
+              ]
+            },
+            {
+              "when": {
+                "N": false
+              },
+              "signals": [
+                "ir.reset"
+              ]
+            },
+            {
+              "when": {
+                "N": true
+              },
+              "signals": [
+                "tail.dec"
+              ]
+            },
+            {
+              "when": {
+                "N": true
+              },
+              "signals": [
+                "tail.dec",
+                "ir.reset"
+              ]
+            }
+          ]
+        },
+        {
+          "mnemonic": "UPTO",
+          "description": "A gate that counts up: while A <= value it is open, N is clear and it is kept; when A > value it closes, sets N and is not kept, so the _P instructions after it fall away. A is left as it was",
+          "operands": 1,
+          "operandTypes": [
+            "value"
+          ],
+          "steps": [
+            {
+              "signals": [
+                "a.output",
+                "k.load"
+              ]
+            },
+            {
+              "signals": [
+                "head.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "mem.output",
+                "y.load",
+                "head.inc"
+              ]
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "t.output",
+                "mem.load",
+                "tail.inc"
+              ]
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "y.output",
+                "mem.load",
+                "tail.inc",
+                "a.load"
+              ]
+            },
+            {
+              "signals": [
+                "k.output",
+                "y.load"
+              ]
+            },
+            {
+              "signals": [
+                "alu.cmp"
+              ]
+            },
+            {
+              "when": {
+                "N": false
+              },
+              "signals": [
+                "k.output",
+                "a.load",
+                "ir.reset"
+              ]
+            },
+            {
+              "when": {
+                "N": true
+              },
+              "signals": [
+                "k.output",
+                "a.load",
+                "tail.dec"
+              ]
+            },
+            {
+              "when": {
+                "N": true
+              },
+              "signals": [
+                "tail.dec",
+                "ir.reset"
+              ]
+            }
+          ]
+        },
+        {
+          "mnemonic": "OUT2",
+          "description": "Print A, from 0 to base x base - 1, as one or two digits, with the character zero for 0: OUT2 10, '0' prints it in decimal. A and the flags are left as they were. Always kept",
+          "operands": 2,
+          "operandTypes": [
+            "value",
+            "value"
+          ],
+          "steps": [
+            {
+              "signals": [
+                "head.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "mem.output",
+                "y.load",
+                "head.inc"
+              ]
+            },
+            {
+              "signals": [
+                "head.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "mem.output",
+                "z.load",
+                "d.load",
+                "head.inc"
+              ]
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "t.output",
+                "mem.load",
+                "tail.inc"
+              ]
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "y.output",
+                "mem.load",
+                "tail.inc"
+              ]
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ]
+            },
+            {
+              "signals": [
+                "z.output",
+                "mem.load",
+                "tail.inc"
+              ]
+            },
+            {
+              "signals": [
+                "flags.output",
+                "s.load"
+              ]
+            },
+            {
+              "signals": [
+                "a.output",
+                "k.load"
+              ]
+            },
+            {
+              "signals": [
+                "alu.cmp"
+              ]
+            },
+            {
+              "when": {
+                "C": false
+              },
+              "signals": [
+                "alu.sub",
+                "a.load",
+                "d.inc"
+              ]
+            },
+            {
+              "when": {
+                "C": true
+              },
+              "signals": []
+            },
+            {
+              "signals": [
+                "alu.cmp"
+              ]
+            },
+            {
+              "when": {
+                "C": false
+              },
+              "signals": [
+                "alu.sub",
+                "a.load",
+                "d.inc"
+              ]
+            },
+            {
+              "when": {
+                "C": true
+              },
+              "signals": []
+            },
+            {
+              "signals": [
+                "alu.cmp"
+              ]
+            },
+            {
+              "when": {
+                "C": false
+              },
+              "signals": [
+                "alu.sub",
+                "a.load",
+                "d.inc"
+              ]
+            },
+            {
+              "when": {
+                "C": true
+              },
+              "signals": []
+            },
+            {
+              "signals": [
+                "alu.cmp"
+              ]
+            },
+            {
+              "when": {
+                "C": false
+              },
+              "signals": [
+                "alu.sub",
+                "a.load",
+                "d.inc"
+              ]
+            },
+            {
+              "when": {
+                "C": true
+              },
+              "signals": []
+            },
+            {
+              "signals": [
+                "alu.cmp"
+              ]
+            },
+            {
+              "when": {
+                "C": false
+              },
+              "signals": [
+                "alu.sub",
+                "a.load",
+                "d.inc"
+              ]
+            },
+            {
+              "when": {
+                "C": true
+              },
+              "signals": []
+            },
+            {
+              "signals": [
+                "alu.cmp"
+              ]
+            },
+            {
+              "when": {
+                "C": false
+              },
+              "signals": [
+                "alu.sub",
+                "a.load",
+                "d.inc"
+              ]
+            },
+            {
+              "when": {
+                "C": true
+              },
+              "signals": []
+            },
+            {
+              "signals": [
+                "alu.cmp"
+              ]
+            },
+            {
+              "when": {
+                "C": false
+              },
+              "signals": [
+                "alu.sub",
+                "a.load",
+                "d.inc"
+              ]
+            },
+            {
+              "when": {
+                "C": true
+              },
+              "signals": []
+            },
+            {
+              "signals": [
+                "alu.cmp"
+              ]
+            },
+            {
+              "when": {
+                "C": false
+              },
+              "signals": [
+                "alu.sub",
+                "a.load",
+                "d.inc"
+              ]
+            },
+            {
+              "when": {
+                "C": true
+              },
+              "signals": []
+            },
+            {
+              "signals": [
+                "alu.cmp"
+              ]
+            },
+            {
+              "when": {
+                "C": false
+              },
+              "signals": [
+                "alu.sub",
+                "a.load",
+                "d.inc"
+              ]
+            },
+            {
+              "when": {
+                "C": true
+              },
+              "signals": []
+            },
+            {
+              "signals": [
+                "a.output",
+                "t.load"
+              ]
+            },
+            {
+              "signals": [
+                "k.output",
+                "a.load"
+              ]
+            },
+            {
+              "signals": [
+                "alu.cmp"
+              ]
+            },
+            {
+              "when": {
+                "C": false
+              },
+              "signals": [
+                "d.output",
+                "lcd.load"
+              ]
+            },
+            {
+              "when": {
+                "C": true
+              },
+              "signals": []
+            },
+            {
+              "signals": [
+                "t.output",
+                "a.load"
+              ]
+            },
+            {
+              "signals": [
+                "z.output",
+                "y.load"
+              ]
+            },
+            {
+              "signals": [
+                "alu.add",
+                "lcd.load"
+              ]
+            },
+            {
+              "signals": [
+                "k.output",
+                "a.load"
+              ]
+            },
+            {
+              "signals": [
+                "s.output",
+                "flags.load",
+                "ir.reset"
+              ]
+            }
+          ]
+        },
+        {
+          "mnemonic": "HATCH",
+          "description": "While N is clear, carry the next n cells along to the tail without running them, and keep HATCH; when N is set, hatch them: run on into them, and HATCH is not kept. Flags and A are left as they were. n must be at least 1",
+          "operands": 1,
+          "operandTypes": [
+            "value"
+          ],
+          "steps": [
+            {
+              "when": {
+                "N": true
+              },
+              "signals": [
+                "head.inc",
+                "ir.reset"
+              ]
+            },
+            {
+              "signals": [
+                "t.output",
+                "j.load",
+                "j.inc"
+              ],
+              "when": {
+                "N": false
+              }
+            },
+            {
+              "signals": [
+                "flags.output",
+                "s.load",
+                "j.inc"
+              ],
+              "when": {
+                "N": false
+              }
+            },
+            {
+              "signals": [
+                "a.output",
+                "k.load",
+                "j.inc"
+              ],
+              "when": {
+                "N": false
+              }
+            },
+            {
+              "signals": [
+                "head.output",
+                "mem.loadmar",
+                "j.inc"
+              ],
+              "when": {
+                "N": false
+              }
+            },
+            {
+              "signals": [
+                "mem.output",
+                "a.load",
+                "head.inc",
+                "j.inc"
+              ],
+              "when": {
+                "N": false
+              }
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar",
+                "j.inc"
+              ],
+              "when": {
+                "N": false
+              }
+            },
+            {
+              "signals": [
+                "t.output",
+                "mem.load",
+                "tail.inc",
+                "j.inc"
+              ],
+              "when": {
+                "N": false
+              }
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar",
+                "y.reset",
+                "y.inc",
+                "j.inc"
+              ],
+              "when": {
+                "N": false
+              }
+            },
+            {
+              "signals": [
+                "a.output",
+                "mem.load",
+                "tail.inc",
+                "j.inc"
+              ],
+              "when": {
+                "N": false
+              }
+            },
+            {
+              "signals": [
+                "head.output",
+                "mem.loadmar",
+                "head.inc"
+              ],
+              "when": {
+                "N": false
+              }
+            },
+            {
+              "signals": [
+                "mem.output",
+                "t.load"
+              ],
+              "when": {
+                "N": false
+              }
+            },
+            {
+              "signals": [
+                "tail.output",
+                "mem.loadmar"
+              ],
+              "when": {
+                "N": false
+              }
+            },
+            {
+              "signals": [
+                "t.output",
+                "mem.load",
+                "tail.inc"
+              ],
+              "when": {
+                "N": false
+              }
+            },
+            {
+              "signals": [
+                "alu.sub",
+                "a.load"
+              ],
+              "when": {
+                "N": false
+              }
+            },
+            {
+              "when": {
+                "N": false,
+                "Z": true
+              },
+              "signals": [
+                "k.output",
+                "a.load"
+              ]
+            },
+            {
+              "when": {
+                "N": false,
+                "Z": true
+              },
+              "signals": [
+                "s.output",
+                "flags.load",
+                "ir.reset"
+              ]
+            },
+            {
+              "when": {
+                "N": false,
+                "Z": false
+              },
+              "signals": [
+                "j.output",
+                "ir.load"
+              ]
+            }
+          ]
+        },
+        {
+          "mnemonic": "HLT",
+          "description": "Stop the clock",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": [
+                "clk.disable"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "halt": "clk",
+  "programMemory": "mem"
+}

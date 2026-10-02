@@ -441,9 +441,10 @@ namespace Exuarch.Web.Components
         private const int Digits = 4;
         private static string Hex(int value) => value.ToString("X4");
 
+        // What runs there now, which on a machine that rewrites or moves its program is not always what was assembled.
         private ListingLine ListingAt(int? address)
         {
-            return address == null ? null : Machine.Assembler.Listing.FirstOrDefault(l => l.IsInstruction && l.Address == address);
+            return address == null ? null : Machine.InstructionAt(address.Value);
         }
         private static string SourceText(ListingLine line)
         {
