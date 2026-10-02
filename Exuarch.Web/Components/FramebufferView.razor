@@ -1,5 +1,6 @@
 @using Exuarch.Core
 @inject IJSRuntime JS
+@implements IDisposable
 
 @if (Screen != null)
 {
@@ -33,6 +34,26 @@
         if (e.Key == "Escape") large = false;
     }
 
+    // The screens on the page, so a run at max speed can show a finished frame the moment it is swapped in, without
+    // drawing the whole Run view again.
+    private static readonly HashSet<FramebufferView> onPage = new HashSet<FramebufferView>();
+    protected override void OnInitialized() { onPage.Add(this); }
+    public void Dispose() { onPage.Remove(this); }
+
+    public static async Task ShowChanges()
+    {
+        foreach (var view in onPage.ToList()) await view.SendChanges();
+    }
+
+    private async Task SendChanges()
+    {
+        if (Screen == null || !ReferenceEquals(drawn, Screen)) return;
+        if (Screen.TakeDirtyRegion() is var (x, y, width, height))
+        {
+            await JS.InvokeVoidAsync("exuarchScreen.draw", canvasId, x, y, width, height, Screen.WordBytes(x, y, width, height), Screen.IsDepth);
+        }
+    }
+
     // Sends only what changed since the last render; a new screen, or a new canvas, gets the whole picture.
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -50,9 +71,6 @@
             await JS.InvokeVoidAsync("exuarchScreen.draw", canvasId, 0, 0, Framebuffer.Width, Framebuffer.Height, Screen.WordBytes(0, 0, Framebuffer.Width, Framebuffer.Height), Screen.IsDepth);
             return;
         }
-        if (Screen.TakeDirtyRegion() is var (x, y, width, height))
-        {
-            await JS.InvokeVoidAsync("exuarchScreen.draw", canvasId, x, y, width, height, Screen.WordBytes(x, y, width, height), Screen.IsDepth);
-        }
+        await SendChanges();
     }
 }

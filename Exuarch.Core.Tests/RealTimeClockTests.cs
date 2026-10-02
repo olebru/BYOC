@@ -111,6 +111,36 @@ public class RealTimeClockTests
         Assert.True(rtc.TakeInterruptRequest());
     }
 
+    // A clock in microseconds that counts how often it is read.
+    private sealed class CountingTime : TimeProvider
+    {
+        public long Microseconds, Reads;
+        public override long GetTimestamp() { Reads++; return Microseconds; }
+        public override long TimestampFrequency => 1_000_000;
+    }
+
+    // Reading the time costs more than a tick, so a fast machine reads it about every quarter of a millisecond, not
+    // every tick, and still asks once an interval.
+    [Fact]
+    public void AFastMachineReadsTheTimeOnlyAboutEveryQuarterMillisecond()
+    {
+        var time = new CountingTime();
+        var bus = new Bus();
+        var rtc = new RealTimeClock("RTC", "rtc", bus, 10, time);
+        rtc.Enable("start");
+        Clocking.Tick(new[] { bus }, new IBusDevice[] { rtc });
+        time.Reads = 0;
+        int requests = 0;
+        for (int tick = 0; tick < 100_500; tick++) // a million ticks a second: 100.5 ms, as a look may be 0.25 ms late
+        {
+            time.Microseconds++;
+            Clocking.Tick(new[] { bus }, new IBusDevice[] { rtc });
+            if (rtc.TakeInterruptRequest()) requests++;
+        }
+        Assert.Equal(10, requests);
+        Assert.InRange(time.Reads, 300, 500);
+    }
+
     [Fact]
     public void AnIntervalOfZeroNeverAsks()
     {

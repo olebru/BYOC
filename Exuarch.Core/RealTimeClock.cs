@@ -22,6 +22,12 @@ namespace Exuarch.Core
         private readonly string deviceName;
         private readonly TimeProvider time;
         private long since;
+        // Reading the time costs more than a tick does, so the clock looks about every quarter of a millisecond of
+        // real time: from how long the ticks since the last look took, it works out how many ticks that is. At 16 Hz
+        // that is every tick; at 2 MHz, every few hundred.
+        private const int MostTicksBetweenLooks = 65536;
+        private long lastLook;
+        private int ticksBetweenLooks = 1, ticksToLook = 1;
         private bool loadInterval, start, stop, output, request;
 
         public RealTimeClock(string DeviceName, string DeviceID, Bus bus, int interval, TimeProvider time = null)
@@ -51,11 +57,22 @@ namespace Exuarch.Core
         public void Latch()
         {
             if (loadInterval) Interval = bus.Data;
-            if (start) { Running = true; since = time.GetTimestamp(); }
+            if (start)
+            {
+                Running = true;
+                since = lastLook = time.GetTimestamp();
+                ticksBetweenLooks = ticksToLook = 1;
+            }
             if (stop) Running = false;
-            else if (Running && !start && Interval > 0)
+            else if (Running && !start && Interval > 0 && --ticksToLook <= 0)
             {
                 long now = time.GetTimestamp();
+                long quarter = Math.Max(1, time.TimestampFrequency / 4000), took = now - lastLook;
+                ticksBetweenLooks = took <= 0
+                    ? Math.Min(ticksBetweenLooks * 2, MostTicksBetweenLooks)
+                    : (int)Math.Clamp(ticksBetweenLooks * quarter / took, 1, MostTicksBetweenLooks);
+                ticksToLook = ticksBetweenLooks;
+                lastLook = now;
                 long interval = Interval * time.TimestampFrequency / 1000;
                 if (now - since >= interval)
                 {
