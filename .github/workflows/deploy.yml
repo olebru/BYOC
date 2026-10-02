@@ -49,6 +49,10 @@ jobs:
       - name: Test
         run: dotnet test Exuarch.Core.Tests
 
+      # Release builds are compiled ahead of time to WebAssembly, which takes the wasm-tools workload of the SDK above.
+      - name: Install the WebAssembly build tools
+        run: dotnet workload install wasm-tools
+
       # The build carries the release's version, shown in the app's footer.
       - name: Publish
         run: dotnet publish Exuarch.Web -c Release -o publish -p:Version="${TAG#v}"
