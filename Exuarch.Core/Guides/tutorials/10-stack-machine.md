@@ -17,7 +17,7 @@ It has a program counter `pc`, a memory `mem` of 4096 cells, the instruction reg
 
 `sp`, the stack pointer, holds the address of the value on top of the stack. The stack lives in `mem` with the program, so it grows down from the top of memory while the program sits at the bottom. A push first counts `sp` down with `sp.dec` and then writes at the new address; a pop reads and then counts it up with `sp.inc`.
 
-`sp` starts at 0 like every register, so the first push counts it down to 65535. The memory takes an address modulo its size, so 65535 is its last cell, 4095.
+`sp` starts at 0 like every register, so the first push counts it down to 65535. The memory takes an address modulo its size, so 65535 is its last cell, 4095. How much of this a real machine does too is in [Memory and banks](exuarch:guide/memory-and-banks), under *Why a stack needs no setup*.
 
 ## 3. Add the ALU and its two inputs
 
