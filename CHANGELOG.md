@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.8.0](https://github.com/olebru/exuarch/compare/v1.7.0...v1.8.0) (2026-10-02)
+
+
+### Features
+
+* **flip:** a spinning wireframe cube in colour ([73ff7a7](https://github.com/olebru/exuarch/commit/73ff7a7291c2fbc5a829a08e7a6b29f4381219b0))
+* **flip:** a steady spinning cube that swaps on a real time clock's beat ([73ff7a7](https://github.com/olebru/exuarch/commit/73ff7a7291c2fbc5a829a08e7a6b29f4381219b0))
+
+
+### Bug fixes
+
+* **run:** show every frame a double buffered screen swaps in at max speed ([73ff7a7](https://github.com/olebru/exuarch/commit/73ff7a7291c2fbc5a829a08e7a6b29f4381219b0))
+
+
+### Performance
+
+* let the real time clock read the time only every quarter of a millisecond ([73ff7a7](https://github.com/olebru/exuarch/commit/73ff7a7291c2fbc5a829a08e7a6b29f4381219b0))
+
 ## [1.7.0](https://github.com/olebru/exuarch/compare/v1.6.2...v1.7.0) (2026-10-02)
 
 
