@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.5.0](https://github.com/olebru/exuarch/compare/v1.4.0...v1.5.0) (2026-10-02)
+
+
+### Features
+
+* add DSP-16, RISC-16 with a multiplier, drawing the Mandelbrot set ([#35](https://github.com/olebru/exuarch/issues/35)) ([a5722ef](https://github.com/olebru/exuarch/commit/a5722efe6f30950d1d4a745dc9d7d4ffcd647ee6))
+
+
+### Bug fixes
+
+* list WORM-16 as a ludicrous machine ([#33](https://github.com/olebru/exuarch/issues/33)) ([c4bf272](https://github.com/olebru/exuarch/commit/c4bf272e6e3004508727a1ec28152400712b86b3))
+
 ## [1.4.0](https://github.com/olebru/exuarch/compare/v1.3.0...v1.4.0) (2026-10-02)
 
 
