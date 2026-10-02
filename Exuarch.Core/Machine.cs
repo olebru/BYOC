@@ -27,6 +27,9 @@ namespace Exuarch.Core
         private readonly DeviceRegistry registry;
         private readonly MemoryModule programMemory;
         private readonly RingBuffer<TickRecord> history = new RingBuffer<TickRecord>(HistoryLimit);
+        // The record of a tick that is not kept in the history. Running flat out reuses it, so a tick allocates nothing:
+        // in the browser, collecting a new record every tick paused the simulator often enough to make its speed surge.
+        private readonly TickRecord unrecorded = new TickRecord();
         public const int HistoryLimit = 500;
 
         public Machine(MachineDefinition definition, string microcode, string source, DeviceRegistry registry = null)
@@ -228,12 +231,18 @@ namespace Exuarch.Core
         // history), which makes running much faster. LastTick, breakpoints and CurrentInstructionAddress still work.
         public bool RecordHistory { get; set; } = true;
 
+        // Every tick looks its plan up here, so this part must not allocate; building a new plan, with its lambdas and
+        // their closures, is a method of its own.
         private TickPlan PlanFor(int status, int step)
         {
             int address = DecoderRom.RomAddress(status, step);
-            if (plans.TryGetValue(address, out var plan)) return plan;
+            return plans.TryGetValue(address, out var plan) ? plan : BuildPlan(status, step, address);
+        }
+
+        private TickPlan BuildPlan(int status, int step, int address)
+        {
             var microCode = DecoderRom.FetchInstruction(status, step);
-            plan = new TickPlan
+            var plan = new TickPlan
             {
                 MicroCode = microCode,
                 Devices = microCode.Select(m => devicesByID[m.DeviceID]).ToArray(),
@@ -263,16 +272,15 @@ namespace Exuarch.Core
             if (instructionRegister.Data == 0) interruptSampled = interrupts?.Requesting == true;
             int status = DecoderStatus, step = instructionRegister.Data;
             var plan = PlanFor(status, step);
-            var record = new TickRecord
-            {
-                Cycle = Cycles + 1,
-                Status = status,
-                MicroStep = step,
-                RomAddress = DecoderRom.RomAddress(status, step),
-                Instruction = plan.Instruction,
-                StepIndex = plan.StepIndex,
-            };
             bool detailed = RecordHistory;
+            var record = detailed ? new TickRecord() : unrecorded;
+            record.Cycle = Cycles + 1;
+            record.Status = status;
+            record.MicroStep = step;
+            record.RomAddress = DecoderRom.RomAddress(status, step);
+            record.Instruction = plan.Instruction;
+            record.StepIndex = plan.StepIndex;
+            record.FetchedFromAddress = null;
             var valuesBefore = detailed ? SnapshotValues() : null;
             var writesBefore = detailed ? SnapshotWrites() : null;
 
