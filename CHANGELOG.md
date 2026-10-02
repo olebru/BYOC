@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.2.0](https://github.com/olebru/exuarch/compare/v1.1.0...v1.2.0) (2026-10-02)
+
+
+### Features
+
+* **run:** put the Run view's panels in two columns that resize, fold away and take dragged panels ([d346e42](https://github.com/olebru/exuarch/commit/d346e420e94dff367bc5fe56cb06f545f2fdf7f8))
+* **run:** split the panels below into two groups of tabs side by side ([d346e42](https://github.com/olebru/exuarch/commit/d346e420e94dff367bc5fe56cb06f545f2fdf7f8))
+
+
+### Bug fixes
+
+* moving parts in the hardware design no longer marks a machine as edited ([d346e42](https://github.com/olebru/exuarch/commit/d346e420e94dff367bc5fe56cb06f545f2fdf7f8))
+* **run:** fit the LCD to its panel instead of scrolling it ([d346e42](https://github.com/olebru/exuarch/commit/d346e420e94dff367bc5fe56cb06f545f2fdf7f8))
+* **run:** show the drawing at 100% and only zoom out to fit ([d346e42](https://github.com/olebru/exuarch/commit/d346e420e94dff367bc5fe56cb06f545f2fdf7f8))
+
 ## [1.1.0](https://github.com/olebru/exuarch/compare/v1.0.0...v1.1.0) (2026-10-02)
 
 
