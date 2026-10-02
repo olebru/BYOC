@@ -35,6 +35,27 @@ public class WorkspaceTests
     }
 
     [Fact]
+    public void MovingPartsIsKeptButIsNotAnEdit()
+    {
+        var workspace = new Workspace();
+        var byoc = Opened("BYOC-16");
+        byoc.Machine.Devices.First(d => d.Id == "rega").Layout.X += 120;
+        byoc.Machine.Buses[0].Layout.Y += 40;
+        byoc.Machine.Decoder.Layout.X += 60;
+        workspace.Save(byoc, byoc.Programs[0].Name, byoc.Programs[0].Source);
+
+        Assert.False(workspace.IsEdited("BYOC-16"));
+        var kept = workspace.Load("BYOC-16")!.Value.Package.Machine;
+        Assert.Equal(byoc.Machine.Devices.First(d => d.Id == "rega").Layout.X, kept.Devices.First(d => d.Id == "rega").Layout.X);
+        Assert.Equal(byoc.Machine.Buses[0].Layout.Y, kept.Buses[0].Layout.Y);
+
+        // A real change on top of the moves is an edit.
+        byoc.Machine.Devices.First(d => d.Id == "rega").Name = "ACCUMULATOR";
+        workspace.Save(byoc, byoc.Programs[0].Name, byoc.Programs[0].Source);
+        Assert.True(workspace.IsEdited("BYOC-16"));
+    }
+
+    [Fact]
     public void AnEditedExampleProgramIsAChange()
     {
         var workspace = new Workspace();

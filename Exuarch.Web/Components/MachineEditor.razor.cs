@@ -44,7 +44,8 @@ namespace Exuarch.Web.Components
         private bool selectedDecoder;
         private string renameError;
         private bool showProblems;
-        private double zoom = 0.8;
+        // Actual size until the viewer zooms.
+        private double zoom = 1;
         private Drag drag;
 
         private enum DragKind { MoveDevice, MoveBus, NewDevice, WirePort, WireConnection, MoveDecoder, WireDecoder }

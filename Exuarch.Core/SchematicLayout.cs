@@ -217,6 +217,17 @@ namespace Exuarch.Core
             };
         }
 
+        // How wide the drawing itself is, from the left edge to just past its rightmost card: what has to fit, as
+        // opposed to the canvas, which is at least MinCanvasWidth wide so there is room to add devices.
+        public double ContentWidth
+        {
+            get
+            {
+                var right = Cards().Select(c => c.X + c.Width).DefaultIfEmpty(CardWidth).Max();
+                return right + 30;
+            }
+        }
+
         public double CanvasWidth
         {
             get

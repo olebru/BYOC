@@ -1,5 +1,8 @@
+@inject IJSRuntime JS
+
 @if (Display != null)
 {
+    <div class="lcd-fit" @ref="fit">
     <div class="lcd" style="--cols:@Display.Columns">
         <div class="lcd-head">
             <span class="lcd-name">@Display.ID()</span>
@@ -20,6 +23,7 @@
             }
         </div>
     </div>
+    </div>
 }
 
 @code
@@ -33,4 +37,13 @@
 
     [Parameter]
     public int Cycle { get; set; }
+
+    private ElementReference fit;
+
+    // The display is shown at its actual size, and when that does not fit, first without the padding around it and then
+    // zoomed out as far as it takes, rather than with a scroll bar.
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && Display != null) await JS.InvokeVoidAsync("exuarchFit.observe", fit);
+    }
 }

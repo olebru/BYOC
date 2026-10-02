@@ -3,7 +3,8 @@
     var definition = Machine.Definition;
     var timeline = TimelineInstruction;
     var current = ListingAt(Machine.CurrentInstructionAddress);
-<div class="run" tabindex="0" @ref="runElement" @onkeydown="OnKeyDown" @onkeyup="OnKeyUp" @onkeydown:preventDefault="capturedKeypad != null" @onfocusout="ReleaseKeys">
+<div class="run" tabindex="0" @ref="runElement" @onkeydown="OnKeyDown" @onkeyup="OnKeyUp" @onkeydown:preventDefault="capturedKeypad != null" @onfocusout="ReleaseKeys"
+     style="--left-width:@Px(LeftWidth); --right-width:@Px(RightWidth); --bottom-height:@Px(BottomHeight)">
 
     <!-- Controls -->
     <div class="controls">
@@ -21,7 +22,9 @@
         </label>
         <button class="ctl @(maxSpeed ? "on" : "")" title="Run as fast as the browser allows, ignoring the slider (M)" @onclick="() => maxSpeed = !maxSpeed">⚡ Max</button>
         <span class="sep"></span>
-        <button class="ctl @(Collapsed("side") ? "" : "on")" title="Show or hide the side panels: clock, screens, what is executing and the program" @onclick="@(() => TogglePanel("side"))">Side panels</button>
+        <button class="ctl @(Collapsed("left") ? "" : "on")" title="Show or fold away the left column" @onclick="@(() => TogglePanel("left"))">◧ Left</button>
+        <button class="ctl @(Collapsed("right") ? "" : "on")" title="Show or fold away the right column" @onclick="@(() => TogglePanel("right"))">Right ◨</button>
+        <button class="ctl" title="Put every panel back where it started, at its first size" @onclick="ResetLayout">Reset layout</button>
         <span class="grow"></span>
         @if (!string.IsNullOrEmpty(ProgramName))
         {
@@ -61,11 +64,12 @@
     </div>
 
     <div class="main">
+        @{ RenderColumn(__builder, "left"); }
         <!-- Live schematic -->
         <div class="schematic" @ref="schematicElement">
             <div class="zoom">
                 <button title="Zoom out" @onclick="() => Zoom(1 / 1.15)">−</button>
-                <button title="Fit to width" @onclick="Fit">@((int)Math.Round(zoom * 100))%</button>
+                <button title="Actual size, or as small as it takes to fit the width" @onclick="Fit">@((int)Math.Round(zoom * 100))%</button>
                 <button title="Zoom in" @onclick="() => Zoom(1.15)">＋</button>
             </div>
             <div class="schematic-sizer" style="width:@Px(Layout.CanvasWidth * zoom); height:@Px(Layout.CanvasHeight * zoom)">
@@ -171,211 +175,296 @@
             </div>
         </div>
 
-        <!-- Side panel -->
-        @if (!Collapsed("side"))
+        @{ RenderColumn(__builder, "right"); }
+    </div>
+
+    <!-- Bottom: the panels shown as tabs, in one group or two side by side -->
+    @{ var docks = Docks(); }
+    @if (docks["bottom"].Count > 0 || docks["bottom2"].Count > 0 || draggedPanel != null)
+    {
+    @if (!Collapsed("bottom")) { <div class="splitter splitter-h" data-resize="bottom" title="Drag to resize the panels below; double-click to reset"></div> }
+    <div class="bottom @(Collapsed("bottom") ? "collapsed" : "") @(BottomSplit ? "split" : "")" style="--bottom-split:@(runLayout.BottomSplitPercent.ToString(System.Globalization.CultureInfo.InvariantCulture))%">
+        @{ RenderBottomGroup(__builder, "bottom", docks["bottom"]); }
+        @if (BottomSplit)
         {
-        <div class="side">
-            <div class="panel clock-panel @(Collapsed("clock") ? "collapsed" : "")">
-                <div class="clock-head">
-                    <button class="panel-title panel-toggle" @onclick="@(() => TogglePanel("clock"))"><i class="chev"></i>Clock speed</button>
-                    <span class="muted clock-target">@(maxSpeed ? "target: max" : $"target {FormatHz(Hz)}") · peak @FormatHz(PeakHz)</span>
-                    <span class="clock-now">@(running || speedSamples.Count > 0 ? FormatHz(CurrentHz) : "—")</span>
-                </div>
-                @if (!Collapsed("clock"))
+            @if (!Collapsed("bottom")) { <div class="splitter splitter-v" data-resize="split" title="Drag to share the width between the two groups; double-click to reset"></div> }
+            RenderBottomGroup(__builder, "bottom2", docks["bottom2"]);
+        }
+    </div>
+    }
+</div>
+}
+
+@code
+{
+
+    // One group of tabs below and the panel on show in it. The first has the toggles that fold the panels below away
+    // and split them in two.
+    private void RenderBottomGroup(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder __builder, string dock, List<Panel> group)
+    {
+        var activeTab = ActiveTab(group, dock);
+        <div class="bottom-group bottom-group-@dock">
+            <div class="bottom-tabs">
+                @if (dock == "bottom")
                 {
-                <svg class="clock-chart" viewBox="0 0 @N(ChartWidth) @N(ChartHeight)" preserveAspectRatio="none">
-                    <line class="grid" x1="0" y1="@N(ChartHeight / 2)" x2="@N(ChartWidth)" y2="@N(ChartHeight / 2)" />
-                    @if (!maxSpeed)
-                    {
-                        <line class="target" x1="0" y1="@N(TargetY)" x2="@N(ChartWidth)" y2="@N(TargetY)" />
-                    }
-                    @if (speedSamples.Count > 0)
-                    {
-                        <polygon class="area" points="@SpeedPoints(true)" />
-                        <polyline class="line" points="@SpeedPoints(false)" />
-                    }
-                </svg>
-                <div class="clock-axis"><span>@FormatHz(ChartMax)</span><span>last @((int)Math.Round(ChartSpan)) s of running</span></div>
+                    <button class="panel-toggle bottom-toggle" title="@(Collapsed("bottom") ? "Show the panels below" : "Hide the panels below")" @onclick="@(() => TogglePanel("bottom"))"><i class="chev"></i></button>
+                    <button class="bottom-split-toggle @(BottomSplit ? "on" : "")" title="@(BottomSplit ? "Put the panels below back in one group" : "Split the panels below into two groups side by side")" @onclick="ToggleBottomSplit">◫</button>
+                }
+                @foreach (var panel in group)
+                {
+                    var id = panel.Id;
+                    <button class="btab @(!Collapsed("bottom") && activeTab?.Id == id ? "on" : "") @(dropBefore == (dock, id) ? "drop-before" : "")" @key="id" draggable="true" title="Click to show; drag to move"
+                            @onclick="@(() => ShowBottom(dock, id))" @ondragstart="() => StartPanelDrag(id)" @ondragend="EndPanelDrag"
+                            @ondragover:preventDefault @ondragenter="@(() => DragOver(dock, id))" @ondrop="@(() => DropPanel(dock, id))">@panel.Title@if (panel.Detail != null) { <span class="btab-detail">@panel.Detail</span> }</button>
+                }
+                <span class="tab-end @(dropBefore == (dock, null) ? "drop-before" : "")" @ondragover:preventDefault @ondragenter="@(() => DragOver(dock, null))" @ondrop="@(() => DropPanel(dock, null))">
+                    @if (draggedPanel != null) { <span class="muted">drop here for a tab</span> }
+                </span>
+                @if (activeTab?.Help != null) { <HelpLink Target="@activeTab.Help.Value.Target" Title="@activeTab.Help.Value.Title" /> }
+                @if (!Collapsed("bottom") && activeTab != null && HasTools(activeTab.Id))
+                {
+                    <span class="sep"></span>
+                    RenderTools(__builder, activeTab.Id);
                 }
             </div>
-            @foreach (var screen in Machine.Devices.OfType<IScreen>())
+            @if (!Collapsed("bottom") && activeTab != null)
             {
-                var screenKey = "device:" + screen.ID();
-                <div class="panel display-panel @(Collapsed(screenKey) ? "collapsed" : "")">
-                    <button class="panel-title panel-toggle" @onclick="@(() => TogglePanel(screenKey))"><i class="chev"></i>Screen <span class="muted">@screen.ID()</span></button>
-                    @if (!Collapsed(screenKey)) { <FramebufferView Screen="screen" /> }
+                <div class="bottom-body @(activeTab.Id is "program" or "memory" or "decoder" or "trace" ? "" : "padded")">
+                    @if (activeTab.Id == "clock") { <div class="clock-head bottom-clock">@{ RenderHeadExtra(__builder, "clock"); }</div> }
+                    @{ RenderBody(__builder, activeTab.Id); }
                 </div>
             }
-            @foreach (var display in Machine.Devices.OfType<CharacterDisplay>())
-            {
-                var write = Last?.Writes.FirstOrDefault(w => w.Device == display.ID());
-                var displayKey = "device:" + display.ID();
-                <div class="panel display-panel @(Collapsed(displayKey) ? "collapsed" : "")">
-                    <button class="panel-title panel-toggle" @onclick="@(() => TogglePanel(displayKey))"><i class="chev"></i>LCD <span class="muted">@display.ID()</span></button>
-                    @if (!Collapsed(displayKey)) { <CharacterDisplayView Display="display" LastWritten="@(write?.Address ?? -1)" Cycle="@(Last?.Cycle ?? 0)" /> }
-                </div>
-            }
-            @foreach (var keypad in Machine.Devices.OfType<Keypad>())
-            {
-                var keypadKey = "device:" + keypad.ID();
-                <div class="panel display-panel @(Collapsed(keypadKey) ? "collapsed" : "")">
-                    <button class="panel-title panel-toggle" @onclick="@(() => TogglePanel(keypadKey))"><i class="chev"></i>Keypad <span class="muted">@keypad.ID()</span></button>
-                    @if (!Collapsed(keypadKey)) { <KeypadView Keypad="keypad" Captured="@(capturedKeypad == keypad)" CaptureChanged="captured => Capture(captured ? keypad : null)" Changed="StateHasChanged" /> }
-                </div>
-            }
-            <div class="panel now @(Collapsed("now") ? "collapsed" : "")">
-                <button class="panel-title panel-toggle" @onclick="@(() => TogglePanel("now"))"><i class="chev"></i>Now executing
-                    @if (Collapsed("now") && current != null) { <span class="now-inline">@SourceText(current)</span> }
-                </button>
-                @if (Collapsed("now")) { }
-                else if (current != null)
-                {
-                    <div class="now-instr">
-                        <span class="addr">@Hex(current.Address)</span>
-                        @if (current.Label != null) { <span class="label">@current.Label:</span> }
-                        <span class="src">@SourceText(current)</span>
-                    </div>
-                    <div class="now-desc">@(InstructionNamed(current.Mnemonic)?.Description)</div>
-                }
-                else
-                {
-                    <div class="now-desc">No instruction fetched yet. Press Tick or Instruction.</div>
-                }
+        </div>
+    }
 
-                @if (!Collapsed("now") && timeline.Instruction != null)
-                {
-                    var variant = timeline.Instruction.StepsFor(timeline.Status);
-                    var next = Machine.NextStep;
-                    <div class="timeline-title">
-                        <strong>@timeline.Instruction.Mnemonic</strong> micro steps
-                        @if (timeline.Instruction.Steps.Any(s => s.When != null)) { <span class="muted">for the current flags</span> }
+    // A column of panels on one side of the drawing, with its resize handle on the drawing's side. Folded away, it is a
+    // slim rail that opens it again, and that a panel can be dropped on.
+    private void RenderColumn(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder __builder, string dock)
+    {
+        var panels = Column(dock);
+        if (Collapsed(dock))
+        {
+            <button class="rail rail-@dock @(dropBefore == (dock, null) ? "drop-before" : "")" title="Show the @dock column (@panels.Count panel@(panels.Count == 1 ? "" : "s"))"
+                    @onclick="@(() => TogglePanel(dock))" @ondragover:preventDefault @ondragenter="@(() => DragOver(dock, null))" @ondrop="@(() => DropPanel(dock, null))">
+                <span class="rail-label">@dock · @panels.Count</span>
+            </button>
+            return;
+        }
+        if (panels.Count == 0 && draggedPanel == null) return;
+        if (dock == "right")
+        {
+            <div class="splitter splitter-v" data-resize="right" title="Drag to resize the right column; double-click to reset"></div>
+        }
+        <div class="side side-@dock">
+            @foreach (var panel in panels)
+            {
+                var id = panel.Id;
+                <div class="panel @panel.Css @(Collapsed(id) ? "collapsed" : "") @(dropBefore == (dock, id) ? "drop-before" : "")" @key="id"
+                     @ondragover:preventDefault @ondragenter="@(() => DragOver(dock, id))" @ondrop="@(() => DropPanel(dock, id))">
+                    <div class="panel-head @(id == "clock" ? "clock-head" : "")">
+                        <span class="grip" draggable="true" title="Drag to move this panel" @ondragstart="() => StartPanelDrag(id)" @ondragend="EndPanelDrag">⋮⋮</span>
+                        <button class="panel-title panel-toggle" @onclick="@(() => TogglePanel(id))"><i class="chev"></i>@panel.Title @if (panel.Detail != null) { <span class="muted">@panel.Detail</span> }</button>
+                        @{ RenderHeadExtra(__builder, id); }
+                        @if (panel.Help != null) { <HelpLink Target="@panel.Help.Value.Target" Title="@panel.Help.Value.Title" /> }
                     </div>
-                    <ol class="timeline">
-                        @for (int i = 0; i < variant.Count; i++)
-                        {
-                            var step = variant[i];
-                            var index = timeline.Instruction.Steps.IndexOf(step);
-                            var ranIndex = timeline.RanIndex.HasValue ? variant.FindIndex(v => timeline.Instruction.Steps.IndexOf(v) == timeline.RanIndex) : -1;
-                            var isNext = next != null && next.Value.Instruction == timeline.Instruction && next.Value.Step == step;
-                            var state = index == timeline.RanIndex ? "ran" : isNext ? "next" : i < ranIndex ? "done" : "todo";
-                            <li class="tl tl-@state">
-                                <span class="tl-mark">@(state == "ran" ? "●" : state == "next" ? "▶" : state == "done" ? "✓" : (i + 1).ToString())</span>
-                                <span class="tl-signals">@foreach (var signal in step.Signals) { <span class="chip">@signal</span> }</span>
-                            </li>
-                        }
-                    </ol>
-                    @if (next != null && next.Value.Instruction != timeline.Instruction)
+                    @if (!Collapsed(id))
                     {
-                        <div class="up-next">next tick: <strong>@next.Value.Instruction.Mnemonic</strong> step @(next.Value.Offset + 1)</div>
+                        @if (HasTools(id)) { <div class="panel-tools">@{ RenderTools(__builder, id); }</div> }
+                        <div class="panel-body @(panel.Scrolls ? "scrolls" : "")">@{ RenderBody(__builder, id); }</div>
                     }
-                }
-
-                @if (!Collapsed("now") && Last != null)
-                {
-                    <div class="timeline-title">Last tick <span class="muted">cycle @Last.Cycle</span></div>
-                    <div class="last-tick">
-                        @foreach (var transfer in Last.Transfers)
-                        {
-                            <div class="flow" style="--bus:@BusColor(transfer.Bus)">
-                                @if (transfer.Driver == null)
-                                {
-                                    <span class="muted">@transfer.Bus floating</span>
-                                }
-                                else
-                                {
-                                    <span class="who">@transfer.Driver</span><span class="arrow">→</span>
-                                    <span class="busname">@transfer.Bus <strong>@Hex(transfer.Value)</strong></span><span class="arrow">→</span>
-                                    <span class="who">@(transfer.Readers.Count == 0 ? "nobody" : string.Join(", ", transfer.Readers))</span>
-                                }
-                            </div>
-                        }
-                        @foreach (var change in Last.Changes)
-                        {
-                            <div class="change">@change.Device <span class="muted">@Hex(change.Before) →</span> <strong>@Hex(change.After)</strong></div>
-                        }
-                        @foreach (var write in Last.Writes)
-                        {
-                            <div class="change">write @write.Device@(write.Bank >= 0 ? $" bank {write.Bank}" : "") [@Hex(write.Address)] = <strong>@Hex(write.Value)</strong></div>
-                        }
-                    </div>
-                }
+                </div>
+            }
+            <div class="dock-end @(dropBefore == (dock, null) ? "drop-before" : "")" @ondragover:preventDefault @ondragenter="@(() => DragOver(dock, null))" @ondrop="@(() => DropPanel(dock, null))">
+                @if (draggedPanel != null) { <span class="muted">drop here to put it last</span> }
             </div>
+        </div>
+        if (dock == "left")
+        {
+            <div class="splitter splitter-v" data-resize="left" title="Drag to resize the left column; double-click to reset"></div>
+        }
+    }
+    // A panel's own line next to its title: the clock's speeds, and the instruction running when Now executing is folded.
+    private void RenderHeadExtra(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder __builder, string id)
+    {
+        if (id == "clock")
+        {
+            <span class="muted clock-target">@(maxSpeed ? "target: max" : $"target {FormatHz(Hz)}") · peak @FormatHz(PeakHz)</span>
+            <span class="clock-now">@(running || speedSamples.Count > 0 ? FormatHz(CurrentHz) : "—")</span>
+        }
+        else if (id == "now" && Collapsed("now") && ListingAt(Machine.CurrentInstructionAddress) is { } current)
+        {
+            <span class="now-inline">@SourceText(current)</span>
+        }
+    }
 
-            <div class="panel program @(Collapsed("program") ? "collapsed" : "")">
-                <button class="panel-title panel-toggle" @onclick="@(() => TogglePanel("program"))"><i class="chev"></i>Program @if (!Collapsed("program")) { <span class="muted">click the gutter to set a breakpoint</span> }</button>
-                @if (!Collapsed("program"))
+    private bool HasTools(string id) => id is "memory" or "decoder";
+
+    // The controls that go with a panel, wherever it is: in the side panel's head, or the tab bar below.
+    private void RenderTools(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder __builder, string id)
+    {
+        if (id == "decoder")
+        {
+            <label class="bank"><input type="checkbox" @bind="wholeRom" /> whole ROM</label>
+            <span class="legend muted">@Machine.DecoderRom.OpCodesUsed of @DecoderRom.AddressSpace step addresses used · rows shown for status @Bits(DecoderStatus, 5) (INVCZ)</span>
+        }
+        else if (id == "memory")
+        {
+            @foreach (var device in MemoryDevices)
+            {
+                <button class="btab small @(memoryDevice == device.ID() ? "on" : "")" @onclick="() => memoryDevice = device.ID()">@device.ID()</button>
+            }
+            @if (Machine.Device(memoryDevice) is MMU mmuDevice)
+            {
+                <label class="bank">bank
+                    <input type="number" min="0" max="255" @bind="memoryBank" />
+                    <button class="btab small" @onclick="() => memoryBank = mmuDevice.SelectedBankNumber">selected (@mmuDevice.SelectedBankNumber)</button>
+                </label>
+            }
+            @if (MemoryModule is MemoryModule paged && PageCount(paged) > 1)
+            {
+                <span class="pager">
+                    <button class="btab small" disabled="@(Page(paged) == 0)" @onclick="() => memoryPage = Page(paged) - 1">‹</button>
+                    page @(Page(paged) + 1) / @PageCount(paged)
+                    <button class="btab small" disabled="@(Page(paged) == PageCount(paged) - 1)" @onclick="() => memoryPage = Page(paged) + 1">›</button>
+                    <button class="btab small" @onclick="() => GoToMar(paged)">go to MAR</button>
+                </span>
+            }
+            <span class="legend">
+                <span class="lg pc">PC</span><span class="lg mar">MAR</span><span class="lg current">instruction</span><span class="lg written">written</span>
+            </span>
+        }
+    }
+
+    private void RenderBody(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder __builder, string id)
+    {
+        var current = ListingAt(Machine.CurrentInstructionAddress);
+        var timeline = TimelineInstruction;
+        if (id == "clock")
+        {
+            <svg class="clock-chart" viewBox="0 0 @N(ChartWidth) @N(ChartHeight)" preserveAspectRatio="none">
+                <line class="grid" x1="0" y1="@N(ChartHeight / 2)" x2="@N(ChartWidth)" y2="@N(ChartHeight / 2)" />
+                @if (!maxSpeed)
                 {
-                <div class="listing" style="--d:@Digits; --lw:@ListingLabelChars">
-                    @foreach (var line in Machine.Assembler.Listing)
+                    <line class="target" x1="0" y1="@N(TargetY)" x2="@N(ChartWidth)" y2="@N(TargetY)" />
+                }
+                @if (speedSamples.Count > 0)
+                {
+                    <polygon class="area" points="@SpeedPoints(true)" />
+                    <polyline class="line" points="@SpeedPoints(false)" />
+                }
+            </svg>
+            <div class="clock-axis"><span>@FormatHz(ChartMax)</span><span>last @((int)Math.Round(ChartSpan)) s of running</span></div>
+        }
+        else if (id.StartsWith("device:") && Machine.Device(id.Substring(7)) is IScreen screen)
+        {
+            <FramebufferView Screen="screen" />
+        }
+        else if (id.StartsWith("device:") && Machine.Device(id.Substring(7)) is CharacterDisplay display)
+        {
+            var write = Last?.Writes.FirstOrDefault(w => w.Device == display.ID());
+            <CharacterDisplayView Display="display" LastWritten="@(write?.Address ?? -1)" Cycle="@(Last?.Cycle ?? 0)" />
+        }
+        else if (id.StartsWith("device:") && Machine.Device(id.Substring(7)) is Keypad keypad)
+        {
+            <KeypadView Keypad="keypad" Captured="@(capturedKeypad == keypad)" CaptureChanged="captured => Capture(captured ? keypad : null)" Changed="StateHasChanged" />
+        }
+        else if (id == "now")
+        {
+            @if (current != null)
+            {
+                <div class="now-instr">
+                    <span class="addr">@Hex(current.Address)</span>
+                    @if (current.Label != null) { <span class="label">@current.Label:</span> }
+                    <span class="src">@SourceText(current)</span>
+                </div>
+                <div class="now-desc">@(InstructionNamed(current.Mnemonic)?.Description)</div>
+            }
+            else
+            {
+                <div class="now-desc">No instruction fetched yet. Press Tick or Instruction.</div>
+            }
+
+            @if (timeline.Instruction != null)
+            {
+                var variant = timeline.Instruction.StepsFor(timeline.Status);
+                var next = Machine.NextStep;
+                <div class="timeline-title">
+                    <strong>@timeline.Instruction.Mnemonic</strong> micro steps
+                    @if (timeline.Instruction.Steps.Any(s => s.When != null)) { <span class="muted">for the current flags</span> }
+                </div>
+                <ol class="timeline">
+                    @for (int i = 0; i < variant.Count; i++)
                     {
-                        var isCurrent = line.IsInstruction && line.Address == Machine.CurrentInstructionAddress;
-                        <div id="listing-@(isCurrent ? line.Address.ToString() : "")" class="lst @(isCurrent ? "current" : "") @(line.IsInstruction ? "" : "data")" title="@CellsTitle(line)">
-                            @if (line.IsInstruction)
+                        var step = variant[i];
+                        var index = timeline.Instruction.Steps.IndexOf(step);
+                        var ranIndex = timeline.RanIndex.HasValue ? variant.FindIndex(v => timeline.Instruction.Steps.IndexOf(v) == timeline.RanIndex) : -1;
+                        var isNext = next != null && next.Value.Instruction == timeline.Instruction && next.Value.Step == step;
+                        var state = index == timeline.RanIndex ? "ran" : isNext ? "next" : i < ranIndex ? "done" : "todo";
+                        <li class="tl tl-@state">
+                            <span class="tl-mark">@(state == "ran" ? "●" : state == "next" ? "▶" : state == "done" ? "✓" : (i + 1).ToString())</span>
+                            <span class="tl-signals">@foreach (var signal in step.Signals) { <span class="chip">@signal</span> }</span>
+                        </li>
+                    }
+                </ol>
+                @if (next != null && next.Value.Instruction != timeline.Instruction)
+                {
+                    <div class="up-next">next tick: <strong>@next.Value.Instruction.Mnemonic</strong> step @(next.Value.Offset + 1)</div>
+                }
+            }
+
+            @if (Last != null)
+            {
+                <div class="timeline-title">Last tick <span class="muted">cycle @Last.Cycle</span></div>
+                <div class="last-tick">
+                    @foreach (var transfer in Last.Transfers)
+                    {
+                        <div class="flow" style="--bus:@BusColor(transfer.Bus)">
+                            @if (transfer.Driver == null)
                             {
-                                <span class="bp @(breakpoints.Contains(line.Address) ? "on" : "")" @onclick="() => ToggleBreakpoint(line.Address)" title="Toggle breakpoint"></span>
+                                <span class="muted">@transfer.Bus floating</span>
                             }
                             else
                             {
-                                <span class="bp none"></span>
+                                <span class="who">@transfer.Driver</span><span class="arrow">→</span>
+                                <span class="busname">@transfer.Bus <strong>@Hex(transfer.Value)</strong></span><span class="arrow">→</span>
+                                <span class="who">@(transfer.Readers.Count == 0 ? "nobody" : string.Join(", ", transfer.Readers))</span>
                             }
-                            <span class="addr">@Hex(line.Address)</span>
-                            <span class="label">@(line.Label == null ? "" : line.Label + ":")</span>
-                            <span class="src">@(line.IsInstruction ? SourceText(line) : line.Mnemonic == null ? "" : $"{line.Mnemonic} {string.Join(", ", line.Operands)}")</span>
                         </div>
                     }
+                    @foreach (var change in Last.Changes)
+                    {
+                        <div class="change">@change.Device <span class="muted">@Hex(change.Before) →</span> <strong>@Hex(change.After)</strong></div>
+                    }
+                    @foreach (var write in Last.Writes)
+                    {
+                        <div class="change">write @write.Device@(write.Bank >= 0 ? $" bank {write.Bank}" : "") [@Hex(write.Address)] = <strong>@Hex(write.Value)</strong></div>
+                    }
                 </div>
+            }
+        }
+        else if (id == "program")
+        {
+            <div class="listing" style="--d:@Digits; --lw:@ListingLabelChars">
+                @foreach (var line in Machine.Assembler.Listing)
+                {
+                    var isCurrent = line.IsInstruction && line.Address == Machine.CurrentInstructionAddress;
+                    <div id="listing-@(isCurrent ? line.Address.ToString() : "")" class="lst @(isCurrent ? "current" : "") @(line.IsInstruction ? "" : "data")" title="@CellsTitle(line)">
+                        @if (line.IsInstruction)
+                        {
+                            <span class="bp @(breakpoints.Contains(line.Address) ? "on" : "")" @onclick="() => ToggleBreakpoint(line.Address)" title="Toggle breakpoint"></span>
+                        }
+                        else
+                        {
+                            <span class="bp none"></span>
+                        }
+                        <span class="addr">@Hex(line.Address)</span>
+                        <span class="label">@(line.Label == null ? "" : line.Label + ":")</span>
+                        <span class="src">@(line.IsInstruction ? SourceText(line) : line.Mnemonic == null ? "" : $"{line.Mnemonic} {string.Join(", ", line.Operands)}")</span>
+                    </div>
                 }
             </div>
-        </div>
         }
-    </div>
-
-    <!-- Bottom: memory and trace -->
-    <div class="bottom @(Collapsed("bottom") ? "collapsed" : "")">
-        <div class="bottom-tabs">
-            <button class="panel-toggle bottom-toggle" title="@(Collapsed("bottom") ? "Show the memory, decoder ROM and trace" : "Hide the memory, decoder ROM and trace")" @onclick="@(() => TogglePanel("bottom"))"><i class="chev"></i></button>
-            <button class="btab @(!Collapsed("bottom") && bottomTab == "Memory" ? "on" : "")" @onclick="@(() => ShowBottom("Memory"))">Memory</button>
-            <button class="btab @(!Collapsed("bottom") && bottomTab == "Decoder" ? "on" : "")" @onclick="@(() => ShowBottom("Decoder"))">Decoder ROM</button>
-            <button class="btab @(!Collapsed("bottom") && bottomTab == "Trace" ? "on" : "")" @onclick="@(() => ShowBottom("Trace"))">Trace</button>
-            @if (bottomTab == "Memory") { <HelpLink Target="memory-and-banks" Title="Memory and banks" /> }
-            else if (bottomTab == "Decoder") { <HelpLink Target="flags-and-conditions" Title="The decoder ROM, flags and conditions" /> }
-            else { <HelpLink Target="buses-and-ticks" Title="Buses and the two-phase tick" /> }
-            @if (!Collapsed("bottom") && bottomTab == "Decoder")
-            {
-                <span class="sep"></span>
-                <label class="bank"><input type="checkbox" @bind="wholeRom" /> whole ROM</label>
-                <span class="legend muted">@Machine.DecoderRom.OpCodesUsed of @DecoderRom.AddressSpace step addresses used · rows shown for status @Bits(DecoderStatus, 5) (INVCZ)</span>
-            }
-            @if (!Collapsed("bottom") && bottomTab == "Memory")
-            {
-                <span class="sep"></span>
-                @foreach (var device in MemoryDevices)
-                {
-                    <button class="btab small @(memoryDevice == device.ID() ? "on" : "")" @onclick="() => memoryDevice = device.ID()">@device.ID()</button>
-                }
-                @if (Machine.Device(memoryDevice) is MMU mmuDevice)
-                {
-                    <label class="bank">bank
-                        <input type="number" min="0" max="255" @bind="memoryBank" />
-                        <button class="btab small" @onclick="() => memoryBank = mmuDevice.SelectedBankNumber">selected (@mmuDevice.SelectedBankNumber)</button>
-                    </label>
-                }
-                @if (MemoryModule is MemoryModule paged && PageCount(paged) > 1)
-                {
-                    <span class="pager">
-                        <button class="btab small" disabled="@(Page(paged) == 0)" @onclick="() => memoryPage = Page(paged) - 1">‹</button>
-                        page @(Page(paged) + 1) / @PageCount(paged)
-                        <button class="btab small" disabled="@(Page(paged) == PageCount(paged) - 1)" @onclick="() => memoryPage = Page(paged) + 1">›</button>
-                        <button class="btab small" @onclick="() => GoToMar(paged)">go to MAR</button>
-                    </span>
-                }
-                <span class="legend">
-                    <span class="lg pc">PC</span><span class="lg mar">MAR</span><span class="lg current">instruction</span><span class="lg written">written</span>
-                </span>
-            }
-        </div>
-        @if (Collapsed("bottom")) { }
-        else if (bottomTab == "Memory" && MemoryModule != null)
+        else if (id == "memory" && MemoryModule != null)
         {
             var module = MemoryModule;
             var pageStart = Page(module) * PageSize;
@@ -404,7 +493,7 @@
                 }
             </div>
         }
-        else if (bottomTab == "Decoder")
+        else if (id == "decoder")
         {
             var groups = ControlLines;
             <div class="decoder">
@@ -464,7 +553,7 @@
                 </div>
             </div>
         }
-        else if (bottomTab == "Trace")
+        else if (id == "trace")
         {
             <div class="trace">
                 <div class="tr head"><span>cycle</span><span>micro step</span><span>bus</span><span>changes</span><span>signals</span></div>
@@ -480,6 +569,5 @@
                 }
             </div>
         }
-    </div>
-</div>
+    }
 }
