@@ -340,6 +340,99 @@ a {
     color: var(--bad);
 }
 
+/* ---- The splash while the app loads (index.html): a 16 bit register counting in binary, and how far the download is ---- */
+.boot {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: var(--paper);
+    color: var(--ink);
+}
+
+.boot-chip {
+    width: 44px;
+    height: 44px;
+    fill: none;
+    stroke: var(--ink);
+    stroke-width: 1.2;
+}
+
+.boot-name {
+    font-family: var(--font-mono);
+    font-size: 1.6rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+}
+
+.boot-tag {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+}
+
+/* Bit k lights for the second half of a period of 2^(k+1) counts, which is counting in binary. */
+.boot-bits {
+    display: flex;
+    gap: 5px;
+    margin: 18px 0 6px;
+}
+
+    .boot-bits i {
+        width: 11px;
+        height: 11px;
+        border-radius: 50%;
+        background: var(--line);
+        animation: boot-bit var(--d) steps(1, end) infinite;
+    }
+
+        .boot-bits i:nth-child(4n):not(:last-child) {
+            margin-right: 7px;
+        }
+
+@keyframes boot-bit {
+    50% {
+        background: var(--signal);
+        box-shadow: 0 0 6px var(--signal);
+    }
+}
+
+.boot-bar {
+    width: 220px;
+    height: 3px;
+    background: var(--line);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+    .boot-bar > div {
+        width: var(--blazor-load-percentage, 0%);
+        height: 100%;
+        background: var(--signal);
+        transition: width 0.2s;
+    }
+
+.boot-status {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--ink-3);
+}
+
+    .boot-status::after {
+        content: " " var(--blazor-load-percentage-text, "");
+    }
+
+@media (prefers-reduced-motion: reduce) {
+    .boot-bits i {
+        animation: none;
+    }
+}
+
 #blazor-error-ui {
     background: var(--warn-soft);
     bottom: 0;

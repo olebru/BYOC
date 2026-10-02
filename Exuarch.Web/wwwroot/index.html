@@ -44,7 +44,27 @@
 </head>
 
 <body>
-    <div id="app">Loading...</div>
+    <!-- Shown until the app has started: a 16 bit register counting in binary while the simulator downloads. The
+         bar and the percentage come from the CSS variables Blazor sets as it loads; Blazor replaces all of it. -->
+    <div id="app">
+        <div class="boot" role="status" aria-live="polite">
+            <svg class="boot-chip" viewBox="0 0 20 20" aria-hidden="true">
+                <rect x="4" y="4" width="12" height="12" rx="1.5" />
+                <circle cx="7" cy="7" r="1" />
+                <path d="M7 1v3M10 1v3M13 1v3M7 16v3M10 16v3M13 16v3M1 7h3M1 10h3M1 13h3M16 7h3M16 10h3M16 13h3" />
+            </svg>
+            <div class="boot-name">ExµArch</div>
+            <div class="boot-tag">explore microarchitectures</div>
+            <div class="boot-bits" aria-hidden="true">
+                <i style="--d:7864320ms"></i><i style="--d:3932160ms"></i><i style="--d:1966080ms"></i><i style="--d:983040ms"></i>
+                <i style="--d:491520ms"></i><i style="--d:245760ms"></i><i style="--d:122880ms"></i><i style="--d:61440ms"></i>
+                <i style="--d:30720ms"></i><i style="--d:15360ms"></i><i style="--d:7680ms"></i><i style="--d:3840ms"></i>
+                <i style="--d:1920ms"></i><i style="--d:960ms"></i><i style="--d:480ms"></i><i style="--d:240ms"></i>
+            </div>
+            <div class="boot-bar"><div></div></div>
+            <div class="boot-status">Loading the simulator</div>
+        </div>
+    </div>
 
     <div id="blazor-error-ui">
         An unhandled error has occurred.

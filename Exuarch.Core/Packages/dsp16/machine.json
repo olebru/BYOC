@@ -107,7 +107,7 @@
       "name": "MULTIPLIER",
       "bus": "main",
       "parameters": {
-        "shift": 8
+        "shift": 12
       }
     },
     {
@@ -1229,7 +1229,7 @@
         },
         {
           "mnemonic": "MUL",
-          "description": "Rd = Rs x Rt in 8.8 fixed point, where 256 is 1.0: the 32 bit product shifted right by 8 and clamped to 16 bits; flags unchanged",
+          "description": "Rd = Rs x Rt in 4.12 fixed point, where 4096 is 1.0: the 32 bit product shifted right by 12 and clamped to 16 bits; flags unchanged",
           "operands": 3,
           "operandTypes": [
             "register",
