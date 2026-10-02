@@ -44,6 +44,30 @@ public class CiscTests
         foreach (var text in new[] { "`150`", "`Copied by MOV_PP`", "`0 1 1 2 3 5 8 13 21 34 55`", "49,831 ticks", "40 cells deep" }) Assert.Contains(text, Cisc.Readme);
     }
 
+    // Code is data: the letters come from an operand the program keeps rewriting, and it halts on an instruction it
+    // copied over its own first one.
+    [Fact]
+    public void CodeIsDataRewritesItsOwnInstructions()
+    {
+        var source = Cisc.Program("Code is data").Source;
+        var before = new Machine(Cisc.Machine, source).Device<RamModule>("mem");
+        var run = Run(source);
+        var c = run.Machine;
+        var mem = c.Device<RamModule>("mem");
+        var labels = c.Assembler.labelLUT;
+        Assert.Equal("ABCDEFGHIJKLMNOPQRSTUVWXYZ", Lcd(c));
+        // OUT_I's operand started as 'A' and went up once per letter.
+        Assert.Equal('A', before.ValueAt(labels["letter"] + 1));
+        Assert.Equal('A' + 26, mem.ValueAt(labels["letter"] + 1));
+        // The first cell held CLT and now holds the HLT copied there, and the machine stopped on it.
+        Assert.NotEqual(before.ValueAt(labels["stop"]), before.ValueAt(labels["start"]));
+        Assert.Equal(mem.ValueAt(labels["stop"]), mem.ValueAt(labels["start"]));
+        Assert.Equal(labels["start"], c.CurrentInstructionAddress);
+        Assert.Equal(CodeIsDataTicks, run.Ticks);
+        foreach (var text in new[] { "`ABCDEFGHIJKLMNOPQRSTUVWXYZ`", $"{CodeIsDataTicks:N0} ticks", "HARVARD-16" }) Assert.Contains(text, Cisc.Readme);
+    }
+    private const long CodeIsDataTicks = 838;
+
     [Theory]
     [InlineData("MOV_RI R1, 7\nMOV_RR R0, R1", 0, 7)]
     [InlineData("MOV_RA R0, cell\nHLT\ncell: .DATA 42", 0, 42)]
