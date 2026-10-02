@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.6.1](https://github.com/olebru/exuarch/compare/v1.6.0...v1.6.1) (2026-10-02)
+
+
+### Bug fixes
+
+* **run:** allocate nothing per tick when running flat out ([4d68781](https://github.com/olebru/exuarch/commit/4d6878159c8b6e6bd7cae8a55d4e4d56bebd5849))
+
+
+### Performance
+
+* compile the app ahead of time to WebAssembly, about four times as fast ([4d68781](https://github.com/olebru/exuarch/commit/4d6878159c8b6e6bd7cae8a55d4e4d56bebd5849))
+* **run:** draw less often at max speed, so more of the time goes to the machine ([4d68781](https://github.com/olebru/exuarch/commit/4d6878159c8b6e6bd7cae8a55d4e4d56bebd5849))
+
 ## [1.6.0](https://github.com/olebru/exuarch/compare/v1.5.0...v1.6.0) (2026-10-02)
 
 
