@@ -1,0 +1,12 @@
+{
+  "name": "DSP-16",
+  "description": "RISC-16 with a hardware multiplier, the heart of a digital signal processor: MUL R0, R1, R2 multiplies two 8.8 fixed point numbers in one instruction, which is what it takes to draw the Mandelbrot set in colour.",
+  "level": "advanced",
+  "readme": "README.md",
+  "machine": "machine.json",
+  "programs": [
+    { "name": "Mandelbrot, 80 x 60", "description": "The whole set in 8 x 8 pixel blocks: minutes at full speed", "file": "mandelbrot-80.asm" },
+    { "name": "Mandelbrot, 160 x 120", "description": "The same picture in 4 x 4 pixel blocks: four times the points", "file": "mandelbrot-160.asm" },
+    { "name": "Mandelbrot, 640 x 480", "description": "Every pixel of the screen its own point: hours at full speed", "file": "mandelbrot-640.asm" }
+  ]
+}
