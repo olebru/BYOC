@@ -24,7 +24,7 @@ public class PackageTests
     [Fact]
     public void BuiltInPackagesLoadWithTheDefaultFirst()
     {
-        Assert.Equal(new[] { "TINY-16", "BYOC-16", "COPRO-16", "FLIP-16", "GPU-16", "HARVARD-16", "IRQ-16", "MOVE-16", "RISC-16", "STACK-16", "TURBO-16" }, BuiltInPackages.All.Select(p => p.Name));
+        Assert.Equal(new[] { "TINY-16", "BYOC-16", "CISC-16", "COPRO-16", "FLIP-16", "GPU-16", "HARVARD-16", "IRQ-16", "MOVE-16", "RISC-16", "STACK-16", "TURBO-16" }, BuiltInPackages.All.Select(p => p.Name));
         Assert.Same(BuiltInPackages.All[0], BuiltInPackages.Default);
         Assert.Equal("TINY-16", BuiltInPackages.Default.Name);
         foreach (var package in BuiltInPackages.All)
@@ -41,7 +41,7 @@ public class PackageTests
         var byLevel = BuiltInPackages.Levels.ToDictionary(l => l, l => BuiltInPackages.All.Where(p => BuiltInPackages.Level(p.Name) == l).Select(p => p.Name).ToList());
         Assert.Equal(BuiltInPackages.All.Count, byLevel.Values.Sum(names => names.Count));
         Assert.Equal(new[] { "TINY-16", "BYOC-16", "STACK-16" }, byLevel["simple"]);
-        Assert.Equal(new[] { "COPRO-16", "HARVARD-16", "IRQ-16", "MOVE-16", "RISC-16" }, byLevel["advanced"]);
+        Assert.Equal(new[] { "CISC-16", "COPRO-16", "HARVARD-16", "IRQ-16", "MOVE-16", "RISC-16" }, byLevel["advanced"]);
         Assert.Equal(new[] { "FLIP-16", "GPU-16", "TURBO-16" }, byLevel["ludicrous"]);
         Assert.Null(BuiltInPackages.Level("My machine"));
         Assert.Null(BuiltInPackages.Level(null));

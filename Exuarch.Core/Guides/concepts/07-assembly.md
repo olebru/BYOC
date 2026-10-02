@@ -21,7 +21,7 @@ Any spaces or tabs separate the columns. A line can be only a label, only a comm
 
 ## Literals
 
-A number is written in decimal (`42`) or hexadecimal (`0x2A`). A character in single quotes (`'A'`) is its Latin-1 code, 65. An older form with a leading `#` (`#42`, `#'A'`) means the same thing, and formatting drops the `#`.
+A number is written in decimal (`42`) or hexadecimal (`0x2A`). A minus straight before it makes it negative, stored as the 16 bit two's complement: `-1` is 65535, and the lowest is `-32768`. A character in single quotes (`'A'`) is its Latin-1 code, 65. An older form with a leading `#` (`#42`, `#'A'`) means the same thing, and formatting drops the `#`.
 
 Every value must fit in a 16 bit cell, 0 to 65535. A larger number is an error.
 

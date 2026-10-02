@@ -151,10 +151,13 @@ namespace Exuarch.Core
                         : ErrorToken(text, start, i, error);
                     continue;
                 }
-                // Literals: 15, 0x2A or 'A'. A leading # is allowed and means the same.
-                if (c == '#' || c == '\'' || char.IsDigit(c))
+                // Literals: 15, 0x2A or 'A'. A leading # is allowed and means the same. A - straight before a number makes
+                // it negative, stored as the 16 bit two's complement: -1 is 0xFFFF.
+                if (c == '#' || c == '\'' || char.IsDigit(c) || (c == '-' && i + 1 < text.Length && char.IsDigit(text[i + 1])))
                 {
                     if (c == '#') i++;
+                    bool negative = c == '-';
+                    if (negative) i++;
                     int literalStart = i;
                     if (i < text.Length && text[i] == '\'')
                     {
@@ -166,9 +169,18 @@ namespace Exuarch.Core
                     }
                     while (i < text.Length && (char.IsLetterOrDigit(text[i]) || text[i] == '_')) i++;
                     var literal = text.Substring(literalStart, i - literalStart);
-                    yield return TryParseNumber(literal, out var number)
-                        ? Token(TokenKind.Number, text, start, i, new[] { number })
-                        : ErrorToken(text, start, i, $"'{text.Substring(start, i - start)}' is not a number, write 123, 0x7B or 'A'");
+                    if (!TryParseNumber(literal, out var number))
+                    {
+                        yield return ErrorToken(text, start, i, $"'{text.Substring(start, i - start)}' is not a number, write 123, 0x7B, -5 or 'A'");
+                    }
+                    else if (negative && number > 32768)
+                    {
+                        yield return ErrorToken(text, start, i, $"'{text.Substring(start, i - start)}' does not fit in 16 bits, the lowest is -32768");
+                    }
+                    else
+                    {
+                        yield return Token(TokenKind.Number, text, start, i, new[] { negative ? -number & Bus.Mask : number });
+                    }
                     continue;
                 }
                 if (IsIdentifierStart(c))
