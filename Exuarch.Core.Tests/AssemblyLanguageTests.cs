@@ -228,4 +228,15 @@ public class AssemblyLanguageTests
         var inferred = new InstructionDefinition { Mnemonic = "X", OperandTypes = new System.Collections.Generic.List<OperandType> { OperandType.Value, OperandType.Value } };
         Assert.Equal(2, inferred.OperandCount);
     }
+
+    [Fact]
+    public void NegativeNumbersAreTwosComplement()
+    {
+        var result = Language().Analyze("        .DATA -1, -2, -32768, -0x10, 7");
+        Assert.True(result.Success, string.Join(" | ", result.Diagnostics));
+        Assert.Equal(new[] { 0xFFFF, 0xFFFE, 0x8000, 0xFFF0, 7 }, result.Cells);
+        Assert.Contains(Language().Analyze("        .DATA -40000").Diagnostics, d => d.Message.Contains("the lowest is -32768"));
+        // A minus that is not straight before a number is still an error, so "- 1" does not quietly mean -1.
+        Assert.False(Language().Analyze("        .DATA - 1").Success);
+    }
 }

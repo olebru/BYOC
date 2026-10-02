@@ -1,0 +1,6739 @@
+{
+  "name": "CISC-16",
+  "buses": [
+    {
+      "id": "main",
+      "layout": { "x": 0, "y": 222 }
+    }
+  ],
+  "devices": [
+    {
+      "id": "pc",
+      "type": "register",
+      "name": "PC",
+      "bus": "main",
+      "layout": { "x": 30, "y": 40 }
+    },
+    {
+      "id": "ir",
+      "type": "instructionRegister",
+      "name": "IR",
+      "bus": "main",
+      "layout": { "x": 1500, "y": 278 }
+    },
+    {
+      "id": "mem",
+      "type": "ram",
+      "name": "MEMORY",
+      "bus": "main",
+      "parameters": { "size": 4096 },
+      "layout": { "x": 240, "y": 40 }
+    },
+    {
+      "id": "rf",
+      "type": "registerFile",
+      "name": "R0-R7",
+      "bus": "main",
+      "parameters": { "count": 8 },
+      "layout": { "x": 30, "y": 278 }
+    },
+    {
+      "id": "sp",
+      "type": "register",
+      "name": "SP",
+      "bus": "main",
+      "layout": { "x": 450, "y": 40 }
+    },
+    {
+      "id": "d",
+      "type": "register",
+      "name": "DESTINATION",
+      "bus": "main",
+      "layout": { "x": 240, "y": 278 }
+    },
+    {
+      "id": "ea",
+      "type": "register",
+      "name": "EFFECTIVE ADDRESS",
+      "bus": "main",
+      "layout": { "x": 660, "y": 40 }
+    },
+    {
+      "id": "t",
+      "type": "register",
+      "name": "TEMP",
+      "bus": "main",
+      "layout": { "x": 450, "y": 278 }
+    },
+    {
+      "id": "x",
+      "type": "register",
+      "name": "ALU A",
+      "bus": "main",
+      "layout": { "x": 1080, "y": 40 }
+    },
+    {
+      "id": "y",
+      "type": "register",
+      "name": "ALU B",
+      "bus": "main",
+      "layout": { "x": 660, "y": 278 }
+    },
+    {
+      "id": "alu",
+      "type": "alu",
+      "name": "ALU",
+      "bus": "main",
+      "connections": { "a": "x", "b": "y", "status": "flags" },
+      "layout": { "x": 870, "y": 40 }
+    },
+    {
+      "id": "flags",
+      "type": "statusRegister",
+      "name": "FLAGS",
+      "bus": "main",
+      "layout": { "x": 870, "y": 278 }
+    },
+    {
+      "id": "ax",
+      "type": "register",
+      "name": "AGU A",
+      "bus": "main",
+      "layout": { "x": 1500, "y": 40 }
+    },
+    {
+      "id": "ay",
+      "type": "register",
+      "name": "AGU B",
+      "bus": "main",
+      "layout": { "x": 1080, "y": 278 }
+    },
+    {
+      "id": "agu",
+      "type": "alu",
+      "name": "ADDRESS UNIT",
+      "bus": "main",
+      "connections": { "a": "ax", "b": "ay", "status": "agf" },
+      "layout": { "x": 1290, "y": 40 }
+    },
+    {
+      "id": "agf",
+      "type": "statusRegister",
+      "name": "AGU FLAGS",
+      "bus": "main",
+      "layout": { "x": 1290, "y": 278 }
+    },
+    {
+      "id": "lcd",
+      "type": "display",
+      "name": "LCD",
+      "bus": "main",
+      "parameters": { "columns": 32, "rows": 4 },
+      "layout": { "x": 1710, "y": 40 }
+    },
+    {
+      "id": "clk",
+      "type": "clock",
+      "name": "CLOCK",
+      "layout": { "x": 1920, "y": 40 }
+    }
+  ],
+  "decoder": {
+    "status": "flags",
+    "instructionRegister": "ir",
+    "microcode": {
+      "name": "CISC-16 microcode",
+      "fetch": {
+        "mnemonic": "FETCH",
+        "description": "Load the opcode at the program counter and step past it",
+        "steps": [
+          {
+            "signals": ["pc.output", "mem.loadmar"]
+          },
+          {
+            "signals": ["mem.output", "ir.load", "pc.inc"]
+          }
+        ]
+      },
+      "instructions": [
+        {
+          "mnemonic": "NOP",
+          "description": "Do nothing",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": ["ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "HLT",
+          "description": "Stop the clock",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": ["clk.disable"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "MOV_RI",
+          "description": "Rn = value; flags unchanged",
+          "operands": 2,
+          "operandTypes": ["register", "value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select", "d.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "t.load"]
+            },
+            {
+              "signals": ["d.output", "rf.select"]
+            },
+            {
+              "signals": ["t.output", "rf.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "MOV_RR",
+          "description": "Rn = Rn; flags unchanged",
+          "operands": 2,
+          "operandTypes": ["register", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select", "d.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "t.load"]
+            },
+            {
+              "signals": ["d.output", "rf.select"]
+            },
+            {
+              "signals": ["t.output", "rf.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "MOV_RA",
+          "description": "Rn = [address]; flags unchanged",
+          "operands": 2,
+          "operandTypes": ["register", "address"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select", "d.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "t.load"]
+            },
+            {
+              "signals": ["d.output", "rf.select"]
+            },
+            {
+              "signals": ["t.output", "rf.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "MOV_RN",
+          "description": "Rn = [Rn]; flags unchanged",
+          "operands": 2,
+          "operandTypes": ["register", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select", "d.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "t.load"]
+            },
+            {
+              "signals": ["d.output", "rf.select"]
+            },
+            {
+              "signals": ["t.output", "rf.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "MOV_RX",
+          "description": "Rn = [Rn \u002B d]; flags unchanged",
+          "operands": 3,
+          "operandTypes": ["register", "register", "value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select", "d.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ax.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ay.load"]
+            },
+            {
+              "signals": ["agu.add", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "t.load"]
+            },
+            {
+              "signals": ["d.output", "rf.select"]
+            },
+            {
+              "signals": ["t.output", "rf.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "MOV_RP",
+          "description": "Rn = [Rn]\u002B; flags unchanged",
+          "operands": 2,
+          "operandTypes": ["register", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select", "d.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "mem.loadmar", "rf.inc"]
+            },
+            {
+              "signals": ["mem.output", "t.load"]
+            },
+            {
+              "signals": ["d.output", "rf.select"]
+            },
+            {
+              "signals": ["t.output", "rf.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "MOV_AI",
+          "description": "[address] = value; flags unchanged",
+          "operands": 2,
+          "operandTypes": ["address", "value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ea.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "t.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["t.output", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "MOV_AR",
+          "description": "[address] = Rn; flags unchanged",
+          "operands": 2,
+          "operandTypes": ["address", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ea.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "t.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["t.output", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "MOV_AA",
+          "description": "[address] = [address]; flags unchanged",
+          "operands": 2,
+          "operandTypes": ["address", "address"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ea.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "t.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["t.output", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "MOV_AN",
+          "description": "[address] = [Rn]; flags unchanged",
+          "operands": 2,
+          "operandTypes": ["address", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ea.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "t.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["t.output", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "MOV_AX",
+          "description": "[address] = [Rn \u002B d]; flags unchanged",
+          "operands": 3,
+          "operandTypes": ["address", "register", "value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ea.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ax.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ay.load"]
+            },
+            {
+              "signals": ["agu.add", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "t.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["t.output", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "MOV_AP",
+          "description": "[address] = [Rn]\u002B; flags unchanged",
+          "operands": 2,
+          "operandTypes": ["address", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ea.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "mem.loadmar", "rf.inc"]
+            },
+            {
+              "signals": ["mem.output", "t.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["t.output", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "MOV_NI",
+          "description": "[Rn] = value; flags unchanged",
+          "operands": 2,
+          "operandTypes": ["register", "value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ea.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "t.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["t.output", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "MOV_NR",
+          "description": "[Rn] = Rn; flags unchanged",
+          "operands": 2,
+          "operandTypes": ["register", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ea.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "t.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["t.output", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "MOV_NA",
+          "description": "[Rn] = [address]; flags unchanged",
+          "operands": 2,
+          "operandTypes": ["register", "address"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ea.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "t.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["t.output", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "MOV_NN",
+          "description": "[Rn] = [Rn]; flags unchanged",
+          "operands": 2,
+          "operandTypes": ["register", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ea.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "t.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["t.output", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "MOV_NX",
+          "description": "[Rn] = [Rn \u002B d]; flags unchanged",
+          "operands": 3,
+          "operandTypes": ["register", "register", "value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ea.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ax.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ay.load"]
+            },
+            {
+              "signals": ["agu.add", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "t.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["t.output", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "MOV_NP",
+          "description": "[Rn] = [Rn]\u002B; flags unchanged",
+          "operands": 2,
+          "operandTypes": ["register", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ea.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "mem.loadmar", "rf.inc"]
+            },
+            {
+              "signals": ["mem.output", "t.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["t.output", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "MOV_XI",
+          "description": "[Rn \u002B d] = value; flags unchanged",
+          "operands": 3,
+          "operandTypes": ["register", "value", "value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ax.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ay.load"]
+            },
+            {
+              "signals": ["agu.add", "ea.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "t.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["t.output", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "MOV_XR",
+          "description": "[Rn \u002B d] = Rn; flags unchanged",
+          "operands": 3,
+          "operandTypes": ["register", "value", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ax.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ay.load"]
+            },
+            {
+              "signals": ["agu.add", "ea.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "t.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["t.output", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "MOV_XA",
+          "description": "[Rn \u002B d] = [address]; flags unchanged",
+          "operands": 3,
+          "operandTypes": ["register", "value", "address"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ax.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ay.load"]
+            },
+            {
+              "signals": ["agu.add", "ea.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "t.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["t.output", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "MOV_XN",
+          "description": "[Rn \u002B d] = [Rn]; flags unchanged",
+          "operands": 3,
+          "operandTypes": ["register", "value", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ax.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ay.load"]
+            },
+            {
+              "signals": ["agu.add", "ea.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "t.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["t.output", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "MOV_XX",
+          "description": "[Rn \u002B d] = [Rn \u002B d]; flags unchanged",
+          "operands": 4,
+          "operandTypes": ["register", "value", "register", "value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ax.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ay.load"]
+            },
+            {
+              "signals": ["agu.add", "ea.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ax.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ay.load"]
+            },
+            {
+              "signals": ["agu.add", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "t.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["t.output", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "MOV_XP",
+          "description": "[Rn \u002B d] = [Rn]\u002B; flags unchanged",
+          "operands": 3,
+          "operandTypes": ["register", "value", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ax.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ay.load"]
+            },
+            {
+              "signals": ["agu.add", "ea.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "mem.loadmar", "rf.inc"]
+            },
+            {
+              "signals": ["mem.output", "t.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["t.output", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "MOV_PI",
+          "description": "[Rn]\u002B = value; flags unchanged",
+          "operands": 2,
+          "operandTypes": ["register", "value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ea.load", "rf.inc"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "t.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["t.output", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "MOV_PR",
+          "description": "[Rn]\u002B = Rn; flags unchanged",
+          "operands": 2,
+          "operandTypes": ["register", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ea.load", "rf.inc"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "t.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["t.output", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "MOV_PA",
+          "description": "[Rn]\u002B = [address]; flags unchanged",
+          "operands": 2,
+          "operandTypes": ["register", "address"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ea.load", "rf.inc"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "t.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["t.output", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "MOV_PN",
+          "description": "[Rn]\u002B = [Rn]; flags unchanged",
+          "operands": 2,
+          "operandTypes": ["register", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ea.load", "rf.inc"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "t.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["t.output", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "MOV_PX",
+          "description": "[Rn]\u002B = [Rn \u002B d]; flags unchanged",
+          "operands": 3,
+          "operandTypes": ["register", "register", "value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ea.load", "rf.inc"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ax.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ay.load"]
+            },
+            {
+              "signals": ["agu.add", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "t.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["t.output", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "MOV_PP",
+          "description": "[Rn]\u002B = [Rn]\u002B; flags unchanged",
+          "operands": 2,
+          "operandTypes": ["register", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ea.load", "rf.inc"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "mem.loadmar", "rf.inc"]
+            },
+            {
+              "signals": ["mem.output", "t.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["t.output", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "ADD_RI",
+          "description": "Rn = Rn \u002B value; sets the flags",
+          "operands": 2,
+          "operandTypes": ["register", "value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select", "d.load"]
+            },
+            {
+              "signals": ["rf.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "y.load"]
+            },
+            {
+              "signals": ["d.output", "rf.select"]
+            },
+            {
+              "signals": ["alu.add", "rf.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "ADD_RR",
+          "description": "Rn = Rn \u002B Rn; sets the flags",
+          "operands": 2,
+          "operandTypes": ["register", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select", "d.load"]
+            },
+            {
+              "signals": ["rf.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "y.load"]
+            },
+            {
+              "signals": ["d.output", "rf.select"]
+            },
+            {
+              "signals": ["alu.add", "rf.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "ADD_RA",
+          "description": "Rn = Rn \u002B [address]; sets the flags",
+          "operands": 2,
+          "operandTypes": ["register", "address"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select", "d.load"]
+            },
+            {
+              "signals": ["rf.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["d.output", "rf.select"]
+            },
+            {
+              "signals": ["alu.add", "rf.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "ADD_RN",
+          "description": "Rn = Rn \u002B [Rn]; sets the flags",
+          "operands": 2,
+          "operandTypes": ["register", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select", "d.load"]
+            },
+            {
+              "signals": ["rf.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["d.output", "rf.select"]
+            },
+            {
+              "signals": ["alu.add", "rf.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "ADD_RX",
+          "description": "Rn = Rn \u002B [Rn \u002B d]; sets the flags",
+          "operands": 3,
+          "operandTypes": ["register", "register", "value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select", "d.load"]
+            },
+            {
+              "signals": ["rf.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ax.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ay.load"]
+            },
+            {
+              "signals": ["agu.add", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["d.output", "rf.select"]
+            },
+            {
+              "signals": ["alu.add", "rf.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "ADD_RP",
+          "description": "Rn = Rn \u002B [Rn]\u002B; sets the flags",
+          "operands": 2,
+          "operandTypes": ["register", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select", "d.load"]
+            },
+            {
+              "signals": ["rf.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "mem.loadmar", "rf.inc"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["d.output", "rf.select"]
+            },
+            {
+              "signals": ["alu.add", "rf.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "ADD_AI",
+          "description": "[address] = [address] \u002B value; sets the flags",
+          "operands": 2,
+          "operandTypes": ["address", "value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.add", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "ADD_AR",
+          "description": "[address] = [address] \u002B Rn; sets the flags",
+          "operands": 2,
+          "operandTypes": ["address", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.add", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "ADD_AA",
+          "description": "[address] = [address] \u002B [address]; sets the flags",
+          "operands": 2,
+          "operandTypes": ["address", "address"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.add", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "ADD_AN",
+          "description": "[address] = [address] \u002B [Rn]; sets the flags",
+          "operands": 2,
+          "operandTypes": ["address", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.add", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "ADD_AX",
+          "description": "[address] = [address] \u002B [Rn \u002B d]; sets the flags",
+          "operands": 3,
+          "operandTypes": ["address", "register", "value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ax.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ay.load"]
+            },
+            {
+              "signals": ["agu.add", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.add", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "ADD_AP",
+          "description": "[address] = [address] \u002B [Rn]\u002B; sets the flags",
+          "operands": 2,
+          "operandTypes": ["address", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "mem.loadmar", "rf.inc"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.add", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "ADD_NI",
+          "description": "[Rn] = [Rn] \u002B value; sets the flags",
+          "operands": 2,
+          "operandTypes": ["register", "value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.add", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "ADD_NR",
+          "description": "[Rn] = [Rn] \u002B Rn; sets the flags",
+          "operands": 2,
+          "operandTypes": ["register", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.add", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "ADD_NA",
+          "description": "[Rn] = [Rn] \u002B [address]; sets the flags",
+          "operands": 2,
+          "operandTypes": ["register", "address"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.add", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "ADD_NN",
+          "description": "[Rn] = [Rn] \u002B [Rn]; sets the flags",
+          "operands": 2,
+          "operandTypes": ["register", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.add", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "ADD_NX",
+          "description": "[Rn] = [Rn] \u002B [Rn \u002B d]; sets the flags",
+          "operands": 3,
+          "operandTypes": ["register", "register", "value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ax.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ay.load"]
+            },
+            {
+              "signals": ["agu.add", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.add", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "ADD_NP",
+          "description": "[Rn] = [Rn] \u002B [Rn]\u002B; sets the flags",
+          "operands": 2,
+          "operandTypes": ["register", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "mem.loadmar", "rf.inc"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.add", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "ADD_XI",
+          "description": "[Rn \u002B d] = [Rn \u002B d] \u002B value; sets the flags",
+          "operands": 3,
+          "operandTypes": ["register", "value", "value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ax.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ay.load"]
+            },
+            {
+              "signals": ["agu.add", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.add", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "ADD_XR",
+          "description": "[Rn \u002B d] = [Rn \u002B d] \u002B Rn; sets the flags",
+          "operands": 3,
+          "operandTypes": ["register", "value", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ax.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ay.load"]
+            },
+            {
+              "signals": ["agu.add", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.add", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "ADD_XA",
+          "description": "[Rn \u002B d] = [Rn \u002B d] \u002B [address]; sets the flags",
+          "operands": 3,
+          "operandTypes": ["register", "value", "address"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ax.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ay.load"]
+            },
+            {
+              "signals": ["agu.add", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.add", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "ADD_XN",
+          "description": "[Rn \u002B d] = [Rn \u002B d] \u002B [Rn]; sets the flags",
+          "operands": 3,
+          "operandTypes": ["register", "value", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ax.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ay.load"]
+            },
+            {
+              "signals": ["agu.add", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.add", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "ADD_XX",
+          "description": "[Rn \u002B d] = [Rn \u002B d] \u002B [Rn \u002B d]; sets the flags",
+          "operands": 4,
+          "operandTypes": ["register", "value", "register", "value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ax.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ay.load"]
+            },
+            {
+              "signals": ["agu.add", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ax.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ay.load"]
+            },
+            {
+              "signals": ["agu.add", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.add", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "ADD_XP",
+          "description": "[Rn \u002B d] = [Rn \u002B d] \u002B [Rn]\u002B; sets the flags",
+          "operands": 3,
+          "operandTypes": ["register", "value", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ax.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ay.load"]
+            },
+            {
+              "signals": ["agu.add", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "mem.loadmar", "rf.inc"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.add", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "ADD_PI",
+          "description": "[Rn]\u002B = [Rn]\u002B \u002B value; sets the flags",
+          "operands": 2,
+          "operandTypes": ["register", "value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ea.load", "rf.inc"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.add", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "ADD_PR",
+          "description": "[Rn]\u002B = [Rn]\u002B \u002B Rn; sets the flags",
+          "operands": 2,
+          "operandTypes": ["register", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ea.load", "rf.inc"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.add", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "ADD_PA",
+          "description": "[Rn]\u002B = [Rn]\u002B \u002B [address]; sets the flags",
+          "operands": 2,
+          "operandTypes": ["register", "address"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ea.load", "rf.inc"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.add", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "ADD_PN",
+          "description": "[Rn]\u002B = [Rn]\u002B \u002B [Rn]; sets the flags",
+          "operands": 2,
+          "operandTypes": ["register", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ea.load", "rf.inc"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.add", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "ADD_PX",
+          "description": "[Rn]\u002B = [Rn]\u002B \u002B [Rn \u002B d]; sets the flags",
+          "operands": 3,
+          "operandTypes": ["register", "register", "value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ea.load", "rf.inc"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ax.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ay.load"]
+            },
+            {
+              "signals": ["agu.add", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.add", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "ADD_PP",
+          "description": "[Rn]\u002B = [Rn]\u002B \u002B [Rn]\u002B; sets the flags",
+          "operands": 2,
+          "operandTypes": ["register", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ea.load", "rf.inc"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "mem.loadmar", "rf.inc"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.add", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "SUB_RI",
+          "description": "Rn = Rn - value; sets the flags",
+          "operands": 2,
+          "operandTypes": ["register", "value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select", "d.load"]
+            },
+            {
+              "signals": ["rf.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "y.load"]
+            },
+            {
+              "signals": ["d.output", "rf.select"]
+            },
+            {
+              "signals": ["alu.sub", "rf.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "SUB_RR",
+          "description": "Rn = Rn - Rn; sets the flags",
+          "operands": 2,
+          "operandTypes": ["register", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select", "d.load"]
+            },
+            {
+              "signals": ["rf.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "y.load"]
+            },
+            {
+              "signals": ["d.output", "rf.select"]
+            },
+            {
+              "signals": ["alu.sub", "rf.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "SUB_RA",
+          "description": "Rn = Rn - [address]; sets the flags",
+          "operands": 2,
+          "operandTypes": ["register", "address"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select", "d.load"]
+            },
+            {
+              "signals": ["rf.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["d.output", "rf.select"]
+            },
+            {
+              "signals": ["alu.sub", "rf.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "SUB_RN",
+          "description": "Rn = Rn - [Rn]; sets the flags",
+          "operands": 2,
+          "operandTypes": ["register", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select", "d.load"]
+            },
+            {
+              "signals": ["rf.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["d.output", "rf.select"]
+            },
+            {
+              "signals": ["alu.sub", "rf.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "SUB_RX",
+          "description": "Rn = Rn - [Rn \u002B d]; sets the flags",
+          "operands": 3,
+          "operandTypes": ["register", "register", "value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select", "d.load"]
+            },
+            {
+              "signals": ["rf.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ax.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ay.load"]
+            },
+            {
+              "signals": ["agu.add", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["d.output", "rf.select"]
+            },
+            {
+              "signals": ["alu.sub", "rf.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "SUB_RP",
+          "description": "Rn = Rn - [Rn]\u002B; sets the flags",
+          "operands": 2,
+          "operandTypes": ["register", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select", "d.load"]
+            },
+            {
+              "signals": ["rf.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "mem.loadmar", "rf.inc"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["d.output", "rf.select"]
+            },
+            {
+              "signals": ["alu.sub", "rf.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "SUB_AI",
+          "description": "[address] = [address] - value; sets the flags",
+          "operands": 2,
+          "operandTypes": ["address", "value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.sub", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "SUB_AR",
+          "description": "[address] = [address] - Rn; sets the flags",
+          "operands": 2,
+          "operandTypes": ["address", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.sub", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "SUB_AA",
+          "description": "[address] = [address] - [address]; sets the flags",
+          "operands": 2,
+          "operandTypes": ["address", "address"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.sub", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "SUB_AN",
+          "description": "[address] = [address] - [Rn]; sets the flags",
+          "operands": 2,
+          "operandTypes": ["address", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.sub", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "SUB_AX",
+          "description": "[address] = [address] - [Rn \u002B d]; sets the flags",
+          "operands": 3,
+          "operandTypes": ["address", "register", "value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ax.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ay.load"]
+            },
+            {
+              "signals": ["agu.add", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.sub", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "SUB_AP",
+          "description": "[address] = [address] - [Rn]\u002B; sets the flags",
+          "operands": 2,
+          "operandTypes": ["address", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "mem.loadmar", "rf.inc"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.sub", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "SUB_NI",
+          "description": "[Rn] = [Rn] - value; sets the flags",
+          "operands": 2,
+          "operandTypes": ["register", "value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.sub", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "SUB_NR",
+          "description": "[Rn] = [Rn] - Rn; sets the flags",
+          "operands": 2,
+          "operandTypes": ["register", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.sub", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "SUB_NA",
+          "description": "[Rn] = [Rn] - [address]; sets the flags",
+          "operands": 2,
+          "operandTypes": ["register", "address"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.sub", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "SUB_NN",
+          "description": "[Rn] = [Rn] - [Rn]; sets the flags",
+          "operands": 2,
+          "operandTypes": ["register", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.sub", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "SUB_NX",
+          "description": "[Rn] = [Rn] - [Rn \u002B d]; sets the flags",
+          "operands": 3,
+          "operandTypes": ["register", "register", "value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ax.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ay.load"]
+            },
+            {
+              "signals": ["agu.add", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.sub", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "SUB_NP",
+          "description": "[Rn] = [Rn] - [Rn]\u002B; sets the flags",
+          "operands": 2,
+          "operandTypes": ["register", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "mem.loadmar", "rf.inc"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.sub", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "SUB_XI",
+          "description": "[Rn \u002B d] = [Rn \u002B d] - value; sets the flags",
+          "operands": 3,
+          "operandTypes": ["register", "value", "value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ax.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ay.load"]
+            },
+            {
+              "signals": ["agu.add", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.sub", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "SUB_XR",
+          "description": "[Rn \u002B d] = [Rn \u002B d] - Rn; sets the flags",
+          "operands": 3,
+          "operandTypes": ["register", "value", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ax.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ay.load"]
+            },
+            {
+              "signals": ["agu.add", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.sub", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "SUB_XA",
+          "description": "[Rn \u002B d] = [Rn \u002B d] - [address]; sets the flags",
+          "operands": 3,
+          "operandTypes": ["register", "value", "address"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ax.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ay.load"]
+            },
+            {
+              "signals": ["agu.add", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.sub", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "SUB_XN",
+          "description": "[Rn \u002B d] = [Rn \u002B d] - [Rn]; sets the flags",
+          "operands": 3,
+          "operandTypes": ["register", "value", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ax.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ay.load"]
+            },
+            {
+              "signals": ["agu.add", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.sub", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "SUB_XX",
+          "description": "[Rn \u002B d] = [Rn \u002B d] - [Rn \u002B d]; sets the flags",
+          "operands": 4,
+          "operandTypes": ["register", "value", "register", "value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ax.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ay.load"]
+            },
+            {
+              "signals": ["agu.add", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ax.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ay.load"]
+            },
+            {
+              "signals": ["agu.add", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.sub", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "SUB_XP",
+          "description": "[Rn \u002B d] = [Rn \u002B d] - [Rn]\u002B; sets the flags",
+          "operands": 3,
+          "operandTypes": ["register", "value", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ax.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ay.load"]
+            },
+            {
+              "signals": ["agu.add", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "mem.loadmar", "rf.inc"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.sub", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "SUB_PI",
+          "description": "[Rn]\u002B = [Rn]\u002B - value; sets the flags",
+          "operands": 2,
+          "operandTypes": ["register", "value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ea.load", "rf.inc"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.sub", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "SUB_PR",
+          "description": "[Rn]\u002B = [Rn]\u002B - Rn; sets the flags",
+          "operands": 2,
+          "operandTypes": ["register", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ea.load", "rf.inc"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.sub", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "SUB_PA",
+          "description": "[Rn]\u002B = [Rn]\u002B - [address]; sets the flags",
+          "operands": 2,
+          "operandTypes": ["register", "address"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ea.load", "rf.inc"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.sub", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "SUB_PN",
+          "description": "[Rn]\u002B = [Rn]\u002B - [Rn]; sets the flags",
+          "operands": 2,
+          "operandTypes": ["register", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ea.load", "rf.inc"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.sub", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "SUB_PX",
+          "description": "[Rn]\u002B = [Rn]\u002B - [Rn \u002B d]; sets the flags",
+          "operands": 3,
+          "operandTypes": ["register", "register", "value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ea.load", "rf.inc"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ax.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ay.load"]
+            },
+            {
+              "signals": ["agu.add", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.sub", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "SUB_PP",
+          "description": "[Rn]\u002B = [Rn]\u002B - [Rn]\u002B; sets the flags",
+          "operands": 2,
+          "operandTypes": ["register", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ea.load", "rf.inc"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "mem.loadmar", "rf.inc"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.sub", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "AND_RI",
+          "description": "Rn = Rn AND value; sets the flags",
+          "operands": 2,
+          "operandTypes": ["register", "value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select", "d.load"]
+            },
+            {
+              "signals": ["rf.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "y.load"]
+            },
+            {
+              "signals": ["d.output", "rf.select"]
+            },
+            {
+              "signals": ["alu.and", "rf.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "AND_RR",
+          "description": "Rn = Rn AND Rn; sets the flags",
+          "operands": 2,
+          "operandTypes": ["register", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select", "d.load"]
+            },
+            {
+              "signals": ["rf.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "y.load"]
+            },
+            {
+              "signals": ["d.output", "rf.select"]
+            },
+            {
+              "signals": ["alu.and", "rf.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "AND_RA",
+          "description": "Rn = Rn AND [address]; sets the flags",
+          "operands": 2,
+          "operandTypes": ["register", "address"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select", "d.load"]
+            },
+            {
+              "signals": ["rf.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["d.output", "rf.select"]
+            },
+            {
+              "signals": ["alu.and", "rf.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "AND_RN",
+          "description": "Rn = Rn AND [Rn]; sets the flags",
+          "operands": 2,
+          "operandTypes": ["register", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select", "d.load"]
+            },
+            {
+              "signals": ["rf.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["d.output", "rf.select"]
+            },
+            {
+              "signals": ["alu.and", "rf.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "AND_RX",
+          "description": "Rn = Rn AND [Rn \u002B d]; sets the flags",
+          "operands": 3,
+          "operandTypes": ["register", "register", "value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select", "d.load"]
+            },
+            {
+              "signals": ["rf.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ax.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ay.load"]
+            },
+            {
+              "signals": ["agu.add", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["d.output", "rf.select"]
+            },
+            {
+              "signals": ["alu.and", "rf.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "AND_RP",
+          "description": "Rn = Rn AND [Rn]\u002B; sets the flags",
+          "operands": 2,
+          "operandTypes": ["register", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select", "d.load"]
+            },
+            {
+              "signals": ["rf.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "mem.loadmar", "rf.inc"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["d.output", "rf.select"]
+            },
+            {
+              "signals": ["alu.and", "rf.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "AND_AI",
+          "description": "[address] = [address] AND value; sets the flags",
+          "operands": 2,
+          "operandTypes": ["address", "value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.and", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "AND_AR",
+          "description": "[address] = [address] AND Rn; sets the flags",
+          "operands": 2,
+          "operandTypes": ["address", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.and", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "AND_AA",
+          "description": "[address] = [address] AND [address]; sets the flags",
+          "operands": 2,
+          "operandTypes": ["address", "address"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.and", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "AND_AN",
+          "description": "[address] = [address] AND [Rn]; sets the flags",
+          "operands": 2,
+          "operandTypes": ["address", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.and", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "AND_AX",
+          "description": "[address] = [address] AND [Rn \u002B d]; sets the flags",
+          "operands": 3,
+          "operandTypes": ["address", "register", "value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ax.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ay.load"]
+            },
+            {
+              "signals": ["agu.add", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.and", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "AND_AP",
+          "description": "[address] = [address] AND [Rn]\u002B; sets the flags",
+          "operands": 2,
+          "operandTypes": ["address", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "mem.loadmar", "rf.inc"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.and", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "AND_NI",
+          "description": "[Rn] = [Rn] AND value; sets the flags",
+          "operands": 2,
+          "operandTypes": ["register", "value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.and", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "AND_NR",
+          "description": "[Rn] = [Rn] AND Rn; sets the flags",
+          "operands": 2,
+          "operandTypes": ["register", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.and", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "AND_NA",
+          "description": "[Rn] = [Rn] AND [address]; sets the flags",
+          "operands": 2,
+          "operandTypes": ["register", "address"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.and", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "AND_NN",
+          "description": "[Rn] = [Rn] AND [Rn]; sets the flags",
+          "operands": 2,
+          "operandTypes": ["register", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.and", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "AND_NX",
+          "description": "[Rn] = [Rn] AND [Rn \u002B d]; sets the flags",
+          "operands": 3,
+          "operandTypes": ["register", "register", "value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ax.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ay.load"]
+            },
+            {
+              "signals": ["agu.add", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.and", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "AND_NP",
+          "description": "[Rn] = [Rn] AND [Rn]\u002B; sets the flags",
+          "operands": 2,
+          "operandTypes": ["register", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "mem.loadmar", "rf.inc"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.and", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "AND_XI",
+          "description": "[Rn \u002B d] = [Rn \u002B d] AND value; sets the flags",
+          "operands": 3,
+          "operandTypes": ["register", "value", "value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ax.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ay.load"]
+            },
+            {
+              "signals": ["agu.add", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.and", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "AND_XR",
+          "description": "[Rn \u002B d] = [Rn \u002B d] AND Rn; sets the flags",
+          "operands": 3,
+          "operandTypes": ["register", "value", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ax.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ay.load"]
+            },
+            {
+              "signals": ["agu.add", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.and", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "AND_XA",
+          "description": "[Rn \u002B d] = [Rn \u002B d] AND [address]; sets the flags",
+          "operands": 3,
+          "operandTypes": ["register", "value", "address"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ax.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ay.load"]
+            },
+            {
+              "signals": ["agu.add", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.and", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "AND_XN",
+          "description": "[Rn \u002B d] = [Rn \u002B d] AND [Rn]; sets the flags",
+          "operands": 3,
+          "operandTypes": ["register", "value", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ax.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ay.load"]
+            },
+            {
+              "signals": ["agu.add", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.and", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "AND_XX",
+          "description": "[Rn \u002B d] = [Rn \u002B d] AND [Rn \u002B d]; sets the flags",
+          "operands": 4,
+          "operandTypes": ["register", "value", "register", "value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ax.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ay.load"]
+            },
+            {
+              "signals": ["agu.add", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ax.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ay.load"]
+            },
+            {
+              "signals": ["agu.add", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.and", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "AND_XP",
+          "description": "[Rn \u002B d] = [Rn \u002B d] AND [Rn]\u002B; sets the flags",
+          "operands": 3,
+          "operandTypes": ["register", "value", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ax.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ay.load"]
+            },
+            {
+              "signals": ["agu.add", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "mem.loadmar", "rf.inc"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.and", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "AND_PI",
+          "description": "[Rn]\u002B = [Rn]\u002B AND value; sets the flags",
+          "operands": 2,
+          "operandTypes": ["register", "value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ea.load", "rf.inc"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.and", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "AND_PR",
+          "description": "[Rn]\u002B = [Rn]\u002B AND Rn; sets the flags",
+          "operands": 2,
+          "operandTypes": ["register", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ea.load", "rf.inc"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.and", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "AND_PA",
+          "description": "[Rn]\u002B = [Rn]\u002B AND [address]; sets the flags",
+          "operands": 2,
+          "operandTypes": ["register", "address"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ea.load", "rf.inc"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.and", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "AND_PN",
+          "description": "[Rn]\u002B = [Rn]\u002B AND [Rn]; sets the flags",
+          "operands": 2,
+          "operandTypes": ["register", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ea.load", "rf.inc"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.and", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "AND_PX",
+          "description": "[Rn]\u002B = [Rn]\u002B AND [Rn \u002B d]; sets the flags",
+          "operands": 3,
+          "operandTypes": ["register", "register", "value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ea.load", "rf.inc"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ax.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ay.load"]
+            },
+            {
+              "signals": ["agu.add", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.and", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "AND_PP",
+          "description": "[Rn]\u002B = [Rn]\u002B AND [Rn]\u002B; sets the flags",
+          "operands": 2,
+          "operandTypes": ["register", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ea.load", "rf.inc"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "mem.loadmar", "rf.inc"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["alu.and", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "CMP_RI",
+          "description": "Set the flags from Rn - value",
+          "operands": 2,
+          "operandTypes": ["register", "value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select", "d.load"]
+            },
+            {
+              "signals": ["rf.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "y.load"]
+            },
+            {
+              "signals": ["alu.cmp", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "CMP_RR",
+          "description": "Set the flags from Rn - Rn",
+          "operands": 2,
+          "operandTypes": ["register", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select", "d.load"]
+            },
+            {
+              "signals": ["rf.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "y.load"]
+            },
+            {
+              "signals": ["alu.cmp", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "CMP_RA",
+          "description": "Set the flags from Rn - [address]",
+          "operands": 2,
+          "operandTypes": ["register", "address"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select", "d.load"]
+            },
+            {
+              "signals": ["rf.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["alu.cmp", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "CMP_RN",
+          "description": "Set the flags from Rn - [Rn]",
+          "operands": 2,
+          "operandTypes": ["register", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select", "d.load"]
+            },
+            {
+              "signals": ["rf.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["alu.cmp", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "CMP_RX",
+          "description": "Set the flags from Rn - [Rn \u002B d]",
+          "operands": 3,
+          "operandTypes": ["register", "register", "value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select", "d.load"]
+            },
+            {
+              "signals": ["rf.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ax.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ay.load"]
+            },
+            {
+              "signals": ["agu.add", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["alu.cmp", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "CMP_RP",
+          "description": "Set the flags from Rn - [Rn]\u002B",
+          "operands": 2,
+          "operandTypes": ["register", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select", "d.load"]
+            },
+            {
+              "signals": ["rf.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "mem.loadmar", "rf.inc"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["alu.cmp", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "CMP_AI",
+          "description": "Set the flags from [address] - value",
+          "operands": 2,
+          "operandTypes": ["address", "value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "y.load"]
+            },
+            {
+              "signals": ["alu.cmp", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "CMP_AR",
+          "description": "Set the flags from [address] - Rn",
+          "operands": 2,
+          "operandTypes": ["address", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "y.load"]
+            },
+            {
+              "signals": ["alu.cmp", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "CMP_AA",
+          "description": "Set the flags from [address] - [address]",
+          "operands": 2,
+          "operandTypes": ["address", "address"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["alu.cmp", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "CMP_AN",
+          "description": "Set the flags from [address] - [Rn]",
+          "operands": 2,
+          "operandTypes": ["address", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["alu.cmp", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "CMP_AX",
+          "description": "Set the flags from [address] - [Rn \u002B d]",
+          "operands": 3,
+          "operandTypes": ["address", "register", "value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ax.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ay.load"]
+            },
+            {
+              "signals": ["agu.add", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["alu.cmp", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "CMP_AP",
+          "description": "Set the flags from [address] - [Rn]\u002B",
+          "operands": 2,
+          "operandTypes": ["address", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "mem.loadmar", "rf.inc"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["alu.cmp", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "CMP_NI",
+          "description": "Set the flags from [Rn] - value",
+          "operands": 2,
+          "operandTypes": ["register", "value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "y.load"]
+            },
+            {
+              "signals": ["alu.cmp", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "CMP_NR",
+          "description": "Set the flags from [Rn] - Rn",
+          "operands": 2,
+          "operandTypes": ["register", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "y.load"]
+            },
+            {
+              "signals": ["alu.cmp", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "CMP_NA",
+          "description": "Set the flags from [Rn] - [address]",
+          "operands": 2,
+          "operandTypes": ["register", "address"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["alu.cmp", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "CMP_NN",
+          "description": "Set the flags from [Rn] - [Rn]",
+          "operands": 2,
+          "operandTypes": ["register", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["alu.cmp", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "CMP_NX",
+          "description": "Set the flags from [Rn] - [Rn \u002B d]",
+          "operands": 3,
+          "operandTypes": ["register", "register", "value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ax.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ay.load"]
+            },
+            {
+              "signals": ["agu.add", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["alu.cmp", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "CMP_NP",
+          "description": "Set the flags from [Rn] - [Rn]\u002B",
+          "operands": 2,
+          "operandTypes": ["register", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "mem.loadmar", "rf.inc"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["alu.cmp", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "CMP_XI",
+          "description": "Set the flags from [Rn \u002B d] - value",
+          "operands": 3,
+          "operandTypes": ["register", "value", "value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ax.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ay.load"]
+            },
+            {
+              "signals": ["agu.add", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "y.load"]
+            },
+            {
+              "signals": ["alu.cmp", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "CMP_XR",
+          "description": "Set the flags from [Rn \u002B d] - Rn",
+          "operands": 3,
+          "operandTypes": ["register", "value", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ax.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ay.load"]
+            },
+            {
+              "signals": ["agu.add", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "y.load"]
+            },
+            {
+              "signals": ["alu.cmp", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "CMP_XA",
+          "description": "Set the flags from [Rn \u002B d] - [address]",
+          "operands": 3,
+          "operandTypes": ["register", "value", "address"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ax.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ay.load"]
+            },
+            {
+              "signals": ["agu.add", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["alu.cmp", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "CMP_XN",
+          "description": "Set the flags from [Rn \u002B d] - [Rn]",
+          "operands": 3,
+          "operandTypes": ["register", "value", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ax.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ay.load"]
+            },
+            {
+              "signals": ["agu.add", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["alu.cmp", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "CMP_XX",
+          "description": "Set the flags from [Rn \u002B d] - [Rn \u002B d]",
+          "operands": 4,
+          "operandTypes": ["register", "value", "register", "value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ax.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ay.load"]
+            },
+            {
+              "signals": ["agu.add", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ax.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ay.load"]
+            },
+            {
+              "signals": ["agu.add", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["alu.cmp", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "CMP_XP",
+          "description": "Set the flags from [Rn \u002B d] - [Rn]\u002B",
+          "operands": 3,
+          "operandTypes": ["register", "value", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ax.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ay.load"]
+            },
+            {
+              "signals": ["agu.add", "ea.load"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "mem.loadmar", "rf.inc"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["alu.cmp", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "CMP_PI",
+          "description": "Set the flags from [Rn]\u002B - value",
+          "operands": 2,
+          "operandTypes": ["register", "value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ea.load", "rf.inc"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "y.load"]
+            },
+            {
+              "signals": ["alu.cmp", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "CMP_PR",
+          "description": "Set the flags from [Rn]\u002B - Rn",
+          "operands": 2,
+          "operandTypes": ["register", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ea.load", "rf.inc"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "y.load"]
+            },
+            {
+              "signals": ["alu.cmp", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "CMP_PA",
+          "description": "Set the flags from [Rn]\u002B - [address]",
+          "operands": 2,
+          "operandTypes": ["register", "address"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ea.load", "rf.inc"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["alu.cmp", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "CMP_PN",
+          "description": "Set the flags from [Rn]\u002B - [Rn]",
+          "operands": 2,
+          "operandTypes": ["register", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ea.load", "rf.inc"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["alu.cmp", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "CMP_PX",
+          "description": "Set the flags from [Rn]\u002B - [Rn \u002B d]",
+          "operands": 3,
+          "operandTypes": ["register", "register", "value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ea.load", "rf.inc"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ax.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ay.load"]
+            },
+            {
+              "signals": ["agu.add", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["alu.cmp", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "CMP_PP",
+          "description": "Set the flags from [Rn]\u002B - [Rn]\u002B",
+          "operands": 2,
+          "operandTypes": ["register", "register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ea.load", "rf.inc"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "x.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "mem.loadmar", "rf.inc"]
+            },
+            {
+              "signals": ["mem.output", "y.load"]
+            },
+            {
+              "signals": ["alu.cmp", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "PUSH_I",
+          "description": "Push value",
+          "operands": 1,
+          "operandTypes": ["value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "t.load", "sp.dec"]
+            },
+            {
+              "signals": ["sp.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["t.output", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "PUSH_R",
+          "description": "Push Rn",
+          "operands": 1,
+          "operandTypes": ["register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "t.load", "sp.dec"]
+            },
+            {
+              "signals": ["sp.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["t.output", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "PUSH_A",
+          "description": "Push [address]",
+          "operands": 1,
+          "operandTypes": ["address"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "t.load", "sp.dec"]
+            },
+            {
+              "signals": ["sp.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["t.output", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "PUSH_N",
+          "description": "Push [Rn]",
+          "operands": 1,
+          "operandTypes": ["register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "t.load", "sp.dec"]
+            },
+            {
+              "signals": ["sp.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["t.output", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "PUSH_X",
+          "description": "Push [Rn \u002B d]",
+          "operands": 2,
+          "operandTypes": ["register", "value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ax.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ay.load"]
+            },
+            {
+              "signals": ["agu.add", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "t.load", "sp.dec"]
+            },
+            {
+              "signals": ["sp.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["t.output", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "PUSH_P",
+          "description": "Push [Rn]\u002B",
+          "operands": 1,
+          "operandTypes": ["register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "mem.loadmar", "rf.inc"]
+            },
+            {
+              "signals": ["mem.output", "t.load", "sp.dec"]
+            },
+            {
+              "signals": ["sp.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["t.output", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "POP_R",
+          "description": "Pop into Rn",
+          "operands": 1,
+          "operandTypes": ["register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select", "d.load"]
+            },
+            {
+              "signals": ["sp.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "t.load", "sp.inc"]
+            },
+            {
+              "signals": ["d.output", "rf.select"]
+            },
+            {
+              "signals": ["t.output", "rf.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "POP_A",
+          "description": "Pop into [address]",
+          "operands": 1,
+          "operandTypes": ["address"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ea.load"]
+            },
+            {
+              "signals": ["sp.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "t.load", "sp.inc"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["t.output", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "POP_N",
+          "description": "Pop into [Rn]",
+          "operands": 1,
+          "operandTypes": ["register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ea.load"]
+            },
+            {
+              "signals": ["sp.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "t.load", "sp.inc"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["t.output", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "POP_X",
+          "description": "Pop into [Rn \u002B d]",
+          "operands": 2,
+          "operandTypes": ["register", "value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ax.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ay.load"]
+            },
+            {
+              "signals": ["agu.add", "ea.load"]
+            },
+            {
+              "signals": ["sp.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "t.load", "sp.inc"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["t.output", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "POP_P",
+          "description": "Pop into [Rn]\u002B",
+          "operands": 1,
+          "operandTypes": ["register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ea.load", "rf.inc"]
+            },
+            {
+              "signals": ["sp.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "t.load", "sp.inc"]
+            },
+            {
+              "signals": ["ea.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["t.output", "mem.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "OUT_I",
+          "description": "Print the low 8 bits of value on the LCD",
+          "operands": 1,
+          "operandTypes": ["value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "lcd.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "OUT_R",
+          "description": "Print the low 8 bits of Rn on the LCD",
+          "operands": 1,
+          "operandTypes": ["register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "lcd.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "OUT_A",
+          "description": "Print the low 8 bits of [address] on the LCD",
+          "operands": 1,
+          "operandTypes": ["address"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "lcd.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "OUT_N",
+          "description": "Print the low 8 bits of [Rn] on the LCD",
+          "operands": 1,
+          "operandTypes": ["register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "lcd.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "OUT_X",
+          "description": "Print the low 8 bits of [Rn \u002B d] on the LCD",
+          "operands": 2,
+          "operandTypes": ["register", "value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ax.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ay.load"]
+            },
+            {
+              "signals": ["agu.add", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "lcd.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "OUT_P",
+          "description": "Print the low 8 bits of [Rn]\u002B on the LCD",
+          "operands": 1,
+          "operandTypes": ["register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "mem.loadmar", "rf.inc"]
+            },
+            {
+              "signals": ["mem.output", "lcd.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "CLT",
+          "description": "Clear the LCD",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": ["lcd.clear", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "LEA",
+          "description": "Rd = the address of a label",
+          "operands": 2,
+          "operandTypes": ["register", "address"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "LEAX",
+          "description": "Rd = Rb \u002B d, an address worked out by the address unit; flags unchanged",
+          "operands": 3,
+          "operandTypes": ["register", "register", "value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "d.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "ax.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ay.load"]
+            },
+            {
+              "signals": ["d.output", "rf.select"]
+            },
+            {
+              "signals": ["agu.add", "rf.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "JMP",
+          "description": "Jump to the address",
+          "operands": 1,
+          "operandTypes": ["address"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "JEQ",
+          "description": "Jump if equal",
+          "operands": 1,
+          "operandTypes": ["address"],
+          "steps": [
+            {
+              "when": { "Z": true },
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "when": { "Z": true },
+              "signals": ["mem.output", "pc.load", "ir.reset"]
+            },
+            {
+              "when": { "Z": false },
+              "signals": ["pc.inc", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "JNE",
+          "description": "Jump if not equal",
+          "operands": 1,
+          "operandTypes": ["address"],
+          "steps": [
+            {
+              "when": { "Z": false },
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "when": { "Z": false },
+              "signals": ["mem.output", "pc.load", "ir.reset"]
+            },
+            {
+              "when": { "Z": true },
+              "signals": ["pc.inc", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "JCS",
+          "description": "Jump if lower, unsigned, after CMP",
+          "operands": 1,
+          "operandTypes": ["address"],
+          "steps": [
+            {
+              "when": { "C": true },
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "when": { "C": true },
+              "signals": ["mem.output", "pc.load", "ir.reset"]
+            },
+            {
+              "when": { "C": false },
+              "signals": ["pc.inc", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "JCC",
+          "description": "Jump if not lower, unsigned",
+          "operands": 1,
+          "operandTypes": ["address"],
+          "steps": [
+            {
+              "when": { "C": false },
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "when": { "C": false },
+              "signals": ["mem.output", "pc.load", "ir.reset"]
+            },
+            {
+              "when": { "C": true },
+              "signals": ["pc.inc", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "JMI",
+          "description": "Jump if minus",
+          "operands": 1,
+          "operandTypes": ["address"],
+          "steps": [
+            {
+              "when": { "N": true },
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "when": { "N": true },
+              "signals": ["mem.output", "pc.load", "ir.reset"]
+            },
+            {
+              "when": { "N": false },
+              "signals": ["pc.inc", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "JPL",
+          "description": "Jump if plus",
+          "operands": 1,
+          "operandTypes": ["address"],
+          "steps": [
+            {
+              "when": { "N": false },
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "when": { "N": false },
+              "signals": ["mem.output", "pc.load", "ir.reset"]
+            },
+            {
+              "when": { "N": true },
+              "signals": ["pc.inc", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "CALL",
+          "description": "Push the return address and jump to the subroutine",
+          "operands": 1,
+          "operandTypes": ["address"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar", "pc.inc"]
+            },
+            {
+              "signals": ["mem.output", "t.load", "sp.dec"]
+            },
+            {
+              "signals": ["sp.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["pc.output", "mem.load"]
+            },
+            {
+              "signals": ["t.output", "pc.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "RET",
+          "description": "Pop the return address into the program counter",
+          "operands": 0,
+          "steps": [
+            {
+              "signals": ["sp.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.load", "sp.inc", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "ENTER",
+          "description": "Start a stack frame: push Rf, Rf = sp, then make room for n locals",
+          "operands": 2,
+          "operandTypes": ["register", "value"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "t.load", "sp.dec"]
+            },
+            {
+              "signals": ["sp.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["t.output", "mem.load"]
+            },
+            {
+              "signals": ["sp.output", "rf.load", "ax.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ay.load"]
+            },
+            {
+              "signals": ["agu.sub", "sp.load", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "LEAVE",
+          "description": "End a stack frame: sp = Rf, then pop Rf",
+          "operands": 1,
+          "operandTypes": ["register"],
+          "steps": [
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "rf.select"]
+            },
+            {
+              "signals": ["rf.output", "sp.load"]
+            },
+            {
+              "signals": ["sp.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "rf.load", "sp.inc", "ir.reset"]
+            }
+          ]
+        },
+        {
+          "mnemonic": "FREE",
+          "description": "Drop n values from the stack, the arguments of a call that has returned",
+          "operands": 1,
+          "operandTypes": ["value"],
+          "steps": [
+            {
+              "signals": ["sp.output", "ax.load"]
+            },
+            {
+              "signals": ["pc.output", "mem.loadmar"]
+            },
+            {
+              "signals": ["mem.output", "pc.inc", "ay.load"]
+            },
+            {
+              "signals": ["agu.add", "sp.load", "ir.reset"]
+            }
+          ]
+        }
+      ]
+    },
+    "layout": { "x": 2130, "y": 40 }
+  },
+  "halt": "clk",
+  "programMemory": "mem"
+}

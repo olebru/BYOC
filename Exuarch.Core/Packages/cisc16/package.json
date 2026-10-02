@@ -1,0 +1,12 @@
+{
+  "name": "CISC-16",
+  "description": "RISC-16's opposite: every arithmetic instruction can reach memory, through six addressing modes written into the mnemonic (ADD_RX R0, R6, -1 is R0 = R0 + [R6 - 1]), one instruction copies memory to memory, and ENTER and LEAVE build stack frames for recursion.",
+  "level": "advanced",
+  "readme": "README.md",
+  "machine": "machine.json",
+  "programs": [
+    { "name": "Sum a table", "description": "Immediate, absolute and post-increment operands: ADD_RP R0, R1 adds the next cell and steps on", "file": "sum.asm" },
+    { "name": "Copy a string", "description": "MOV_PP R2, R1 copies a character memory to memory and steps both pointers: a loop body in one instruction", "file": "copy.asm" },
+    { "name": "Recursive Fibonacci", "description": "fib(n) calls itself twice; ENTER, LEAVE and an indexed local keep every call's values in its own stack frame", "file": "fibonacci.asm" }
+  ]
+}
