@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ExµArch · a computer architecture playground</title>
+    <meta name="description" content="Design a machine from devices and buses, write its microcode and instruction set, and watch programs run on it one clock tick at a time. In the browser, on a computer." />
+    <base href="/" />
+    <!-- What phones see instead of the app, which needs a big screen, a keyboard and a mouse; index.html sends them
+         here before it loads anything heavy. "Open it here anyway" goes to the app and keeps that choice. -->
+    <script>
+        try { document.documentElement.dataset.theme = localStorage.getItem('exuarch.theme') === 'light' ? 'light' : 'dark'; }
+        catch (e) { document.documentElement.dataset.theme = 'dark'; }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link href="css/app.css" rel="stylesheet" />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="favicon.ico" sizes="16x16 32x32 48x48" />
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
+    <meta name="theme-color" content="#17181c" />
+    <style>
+        body {
+            margin: 0;
+            line-height: 1.55;
+        }
+
+        .bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            background: var(--bar);
+            color: var(--bar-ink);
+            border-bottom: 1px solid var(--bar-line);
+        }
+
+            .bar svg {
+                width: 20px;
+                height: 20px;
+                fill: none;
+                stroke: currentColor;
+                stroke-width: 1.4;
+            }
+
+            .bar .name {
+                font-family: var(--font-mono);
+                font-weight: 600;
+                letter-spacing: 0.04em;
+            }
+
+            .bar .spec {
+                margin-left: auto;
+                font-family: var(--font-mono);
+                font-size: 0.66rem;
+                letter-spacing: 0.08em;
+                text-transform: uppercase;
+                opacity: 0.6;
+            }
+
+        main {
+            max-width: 640px;
+            margin: 0 auto;
+            padding: 28px 16px 40px;
+        }
+
+        .kicker {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--signal);
+            margin: 0 0 8px;
+        }
+
+        h1 {
+            font-size: 1.75rem;
+            line-height: 1.2;
+            font-weight: 600;
+            margin: 0 0 14px;
+        }
+
+        h2 {
+            font-family: var(--font-mono);
+            font-size: 0.74rem;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--ink-3);
+            margin: 34px 0 10px;
+        }
+
+        .lead {
+            font-size: 1.05rem;
+            color: var(--ink-2);
+            margin: 0 0 22px;
+        }
+
+        /* The one thing this page asks: come back on a computer. */
+        .computer {
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-left: 3px solid var(--signal);
+            border-radius: var(--radius);
+            padding: 16px;
+            box-shadow: var(--shadow);
+        }
+
+            .computer p {
+                margin: 0 0 12px;
+            }
+
+            .computer .address {
+                font-family: var(--font-mono);
+                font-size: 1.05rem;
+                font-weight: 600;
+                color: var(--ink);
+                user-select: all;
+            }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .send {
+            font: inherit;
+            font-weight: 600;
+            border: none;
+            border-radius: var(--radius);
+            padding: 10px 16px;
+            background: var(--signal);
+            color: #ffffff;
+            cursor: pointer;
+        }
+
+        .done {
+            font-size: 0.85rem;
+            color: var(--ok);
+        }
+
+        figure {
+            margin: 26px 0 0;
+        }
+
+            figure img {
+                display: block;
+                width: 100%;
+                height: auto;
+                border: 1px solid var(--line);
+                border-radius: var(--radius);
+            }
+
+            figure figcaption {
+                font-size: 0.82rem;
+                color: var(--ink-3);
+                margin-top: 6px;
+            }
+
+        ul {
+            padding-left: 1.1rem;
+            margin: 0;
+        }
+
+            ul li {
+                margin-bottom: 8px;
+            }
+
+        .anyway {
+            margin-top: 34px;
+            padding-top: 16px;
+            border-top: 1px solid var(--line);
+            font-size: 0.85rem;
+            color: var(--ink-3);
+        }
+
+        footer {
+            max-width: 640px;
+            margin: 0 auto;
+            padding: 0 16px 28px;
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            color: var(--ink-3);
+        }
+    </style>
+    <script src="js/analytics.js"></script>
+    <script defer src="https://cloud.umami.is/script.js" data-website-id="18f7d2ab-6b93-45fd-a5ba-6f77d29ac063" data-domains="www.exuarch.com,exuarch.com" data-do-not-track="true"></script>
+</head>
+
+<body>
+    <header class="bar">
+        <svg viewBox="0 0 20 20" aria-hidden="true">
+            <rect x="4" y="4" width="12" height="12" rx="1.5" />
+            <circle cx="7" cy="7" r="1" />
+            <path d="M7 1v3M10 1v3M13 1v3M7 16v3M10 16v3M13 16v3M1 7h3M1 10h3M1 13h3M16 7h3M16 10h3M16 13h3" />
+        </svg>
+        <span class="name">ExµArch</span>
+        <span class="spec">16-bit · two phase clock</span>
+    </header>
+
+    <main>
+        <p class="kicker">Explore microarchitectures</p>
+        <h1>Build a computer, from the wires up, and watch it think.</h1>
+        <p class="lead">ExµArch is a computer architecture playground in the browser. Design a machine from registers, memory and buses, write the microcode that drives it and the instruction set that microcode defines, then run programs on it one clock tick at a time.</p>
+
+        <div class="computer">
+            <p><strong>It is made for a computer.</strong> ExµArch is a workbench: a schematic, editors and a run view side by side, worked with a keyboard and a mouse. On a phone screen there is no room for it. Open it on a laptop or desktop at</p>
+            <p class="address">www.exuarch.com</p>
+            <div class="actions">
+                <button class="send" id="send" type="button" data-umami-event="phone: send the link">Send yourself the link</button>
+                <span class="done" id="done" hidden>Link copied</span>
+            </div>
+        </div>
+
+        <figure>
+            <img src="img/run-view.jpg" width="1200" height="640" alt="The Run view: the machine's schematic in the middle, the clock, the running instruction and the program on the left, its screen and LCD on the right, and memory below." />
+            <figcaption>COPRO-16 drawing rectangles: every device, bus and memory cell, live, tick by tick.</figcaption>
+        </figure>
+
+        <h2>What you can do</h2>
+        <ul>
+            <li><strong>Design the hardware.</strong> Place registers, an ALU, memory, displays, a keypad, timers, interrupts, a blitter and a triangle rasterizer on buses, and wire them together.</li>
+            <li><strong>Write the microcode.</strong> Each instruction is a few steps of control lines, such as <code>pc.output</code> and <code>mem.loadmar</code>, and steps can depend on the flags.</li>
+            <li><strong>Program it.</strong> Write assembly for the instruction set you just made.</li>
+            <li><strong>Run it.</strong> Step one tick at a time or run at full speed, with the buses, every device, memory and a trace on screen.</li>
+        </ul>
+
+        <h2>Twelve machines to start from</h2>
+        <p>From TINY-16 with one register, through a classic accumulator CPU, a stack machine, a RISC, a CISC with six addressing modes and a Harvard machine, to a CPU with interrupts and a small 3D GPU drawing a spinning cube.</p>
+
+        <h2>No black boxes</h2>
+        <p>The tutorials start at ground zero, with an empty decoder ROM and a counter, and build a working computer one step at a time. Everything the machine does is a value on a bus or a control line you can see, and the handbook says plainly where the simulator is simpler than real electronics.</p>
+
+        <h2>Nothing to install</h2>
+        <p>No account and no download: it is free, it runs entirely in your computer's browser, and your machines and programs stay in it.</p>
+
+        <p class="anyway">Want a look anyway? <a href="/?full" data-umami-event="phone: open anyway">Open ExµArch here</a>. It is a large download and hard to use on a small screen.</p>
+    </main>
+
+    <footer>ExµArch · <a href="https://www.exuarch.com">www.exuarch.com</a></footer>
+
+    <script>
+        // Sends the address with the phone's own share sheet (to mail, a chat or another device), or copies it where
+        // there is none.
+        (function () {
+            var url = 'https://www.exuarch.com';
+            var send = document.getElementById('send');
+            var done = document.getElementById('done');
+            function copied() { done.hidden = false; }
+            send.addEventListener('click', function () {
+                if (navigator.share) {
+                    navigator.share({ title: 'ExµArch', text: 'ExµArch, a computer architecture playground: open it on a computer.', url: url })
+                        .catch(function () { /* closed without sharing */ });
+                } else if (navigator.clipboard) {
+                    navigator.clipboard.writeText(url).then(copied, function () { /* not allowed; the address is on the page */ });
+                }
+            });
+        })();
+    </script>
+</body>
+
+</html>
