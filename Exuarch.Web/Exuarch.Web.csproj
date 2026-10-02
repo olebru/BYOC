@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <ServiceWorkerAssetsManifest>service-worker-assets.js</ServiceWorkerAssetsManifest>
-    <!-- The deploy workflow sets the version of every published build; 0.0.0 marks one built anywhere else. -->
+    <!-- The workflows set the version of every published build, a release's or a preview's; 0.0.0 marks one built anywhere else. -->
     <Version>0.0.0</Version>
   </PropertyGroup>
 

@@ -1,29 +1,46 @@
-name: Build, test and deploy
+name: Deploy a release
 
-# main deploys to production. Every pull request against main gets its own preview environment, and the Azure
-# Static Web Apps action comments its URL on the pull request; closing the pull request removes the preview.
+# Production (www.exuarch.com) is only ever deployed from a release tag: called by the release workflow when
+# release-please tags a release, when a v* tag is pushed by hand, or run by hand for a tag that already exists.
 on:
+  workflow_call:
+    inputs:
+      tag:
+        description: The release tag to deploy, such as v1.2.3
+        required: true
+        type: string
   push:
-    branches: [main]
-  pull_request:
-    types: [opened, synchronize, reopened, closed]
-    branches: [main]
+    tags: ['v*']
   workflow_dispatch:
+    inputs:
+      tag:
+        description: The release tag to deploy, such as v1.2.3
+        required: true
+        type: string
 
 permissions:
   contents: read
-  pull-requests: write
 
 concurrency:
-  group: deploy-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  group: deploy-production
+  cancel-in-progress: false
 
 jobs:
-  build_and_deploy:
-    if: github.event_name != 'pull_request' || github.event.action != 'closed'
+  deploy:
     runs-on: ubuntu-latest
+    env:
+      TAG: ${{ inputs.tag || github.ref_name }}
     steps:
+      - name: Check that it is a release tag
+        run: |
+          case "$TAG" in
+            v[0-9]*) ;;
+            *) echo "::error::'$TAG' is not a release tag such as v1.2.3"; exit 1 ;;
+          esac
+
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.TAG }}
 
       - uses: actions/setup-dotnet@v6
         with:
@@ -32,36 +49,14 @@ jobs:
       - name: Test
         run: dotnet test Exuarch.Core.Tests
 
-      # Every published build gets a version from the run number; a pull request's preview says which pull request.
-      - name: Version
-        run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            echo "VERSION=1.0.${{ github.run_number }}-pr.${{ github.event.pull_request.number }}" >> "$GITHUB_ENV"
-          else
-            echo "VERSION=1.0.${{ github.run_number }}" >> "$GITHUB_ENV"
-          fi
-
+      # The build carries the release's version, shown in the app's footer.
       - name: Publish
-        run: dotnet publish Exuarch.Web -c Release -o publish -p:Version="$VERSION"
+        run: dotnet publish Exuarch.Web -c Release -o publish -p:Version="${TAG#v}"
 
-      # The app is built above, so the action only uploads the static files. On a pull request it deploys to
-      # that pull request's preview environment instead of production.
       - name: Deploy
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: upload
           app_location: publish/wwwroot
           skip_app_build: true
-
-  close_preview:
-    if: github.event_name == 'pull_request' && github.event.action == 'closed'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Remove the preview environment
-        uses: Azure/static-web-apps-deploy@v1
-        with:
-          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
-          action: close
-          app_location: ""

@@ -37,9 +37,13 @@ dotnet test Exuarch.Core.Tests       # the tests
 - `Exuarch.Web`: the Blazor WebAssembly app.
 - `Exuarch.Core.Tests`: the tests, including checks that every handbook link leads somewhere, that each tutorial's machine is built and runs as the text says, and that every example program assembles and runs.
 
-## Deployment
+## Commits, releases and deployment
 
-Every push to `main` is built, tested and deployed to Azure Static Web Apps, which serves [www.exuarch.com](https://www.exuarch.com), by `.github/workflows/deploy.yml`. Each pull request gets a preview site of its own, linked from the pull request and removed when it closes.
+Commits follow [Conventional Commits](https://www.conventionalcommits.org): `feat: add a pipelined machine`, `fix(run): keep the clock panel still`, `docs: …`, `refactor: …`, `test: …`, `ci: …`, `chore: …`, with `!` or a `BREAKING CHANGE:` footer for a breaking change. Pull requests are squash merged with their title as the commit message, so the title is what counts, and a check on every pull request makes sure it is conventional.
+
+[release-please](https://github.com/googleapis/release-please) (`.github/workflows/release.yml`) reads those commits on `main` and keeps a release pull request open with the next version and the new entries in `CHANGELOG.md`: a `feat` raises the minor version, a `fix` the patch, a breaking change the major. Merging the release pull request tags the release, `v1.2.3`, and creates the GitHub release.
+
+Production, [www.exuarch.com](https://www.exuarch.com) on Azure Static Web Apps, is only deployed from a release tag (`.github/workflows/deploy.yml`): straight after release-please tags one, when a `v*` tag is pushed, or by hand for an existing tag. The app's footer shows the release it runs. Each pull request still gets a preview site of its own (`.github/workflows/pr.yml`), linked from the pull request and removed when it closes.
 
 ## History
 
