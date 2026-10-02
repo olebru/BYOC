@@ -1,0 +1,13 @@
+{
+  "name": "WORM-16",
+  "description": "A machine with no jumps. The program is a queue crawling round a ring memory: the head runs instructions and eats them, and each one decides its fate, whether it is copied to the tail to run again next lap, dies, or divides. Loops are instructions that stay alive, and code waits its turn inside an egg.",
+  "level": "advanced",
+  "readme": "README.md",
+  "machine": "machine.json",
+  "programs": [
+    { "name": "Count down and go", "description": "A loop with no jump: GATE opens every lap while A >= '0', OUT_P and SUB_P live while it is open, and HATCH lets the end out", "file": "countdown.asm" },
+    { "name": "Cell division", "description": "OUTC_2 is copied twice every lap, so the stars double: the worm grows", "file": "division.asm" },
+    { "name": "Fibonacci", "description": "A and B move along the sequence with ADDB and SWAP, OUT2 prints each in decimal, and UPTO, a gate that counts up, stops it at 89, the last with two digits", "file": "fibonacci.asm" },
+    { "name": "Two phases", "description": "A second loop rides along inside an egg until the first is done, then hatches and takes over", "file": "phases.asm" }
+  ]
+}

@@ -160,6 +160,32 @@ namespace Exuarch.Core
         public TickRecord LastTick { get; private set; }
         // Program memory address of the opcode last fetched into the micro step register.
         public int? CurrentInstructionAddress { get; private set; }
+
+        // The instruction at an address as program memory holds it now: the assembled line while memory still holds what
+        // the assembler put there, and otherwise what the cells decode to, with the operands as numbers. A program that
+        // rewrites its own instructions or moves through memory runs code the assembler never saw. Null when the cell is
+        // not an opcode.
+        public ListingLine InstructionAt(int address)
+        {
+            var assembled = Assembler.Listing.FirstOrDefault(l => l.IsInstruction && l.Address == address);
+            if (programMemory == null) return assembled;
+            int Cell(int offset) => programMemory.ValueAt((address + offset) % programMemory.Size);
+            if (assembled != null && assembled.Cells.Select((value, i) => Cell(i) == value).All(same => same)) return assembled;
+            var block = DecoderRom.Blocks.FirstOrDefault(b => b.Base == Cell(0));
+            if (block.Instruction == null) return null;
+            int operands = block.Instruction.Operands ?? 0;
+            var cells = Enumerable.Range(0, operands + 1).Select(Cell).ToArray();
+            return new ListingLine
+            {
+                Address = address,
+                Label = assembled?.Label,
+                Mnemonic = block.Instruction.Mnemonic,
+                Operands = cells.Skip(1).Select(value => value.ToString("X4")).ToArray(),
+                Cells = cells,
+                IsInstruction = true,
+                LineNumber = assembled?.LineNumber ?? 0,
+            };
+        }
         public int Status { get { return statusRegister.Data; } }
         // What the decoder combines into the ROM address: the four flags in bits 0 to 3 and the sampled interrupt
         // request in bit 4 (FlagCondition.InterruptBit).
@@ -213,7 +239,10 @@ namespace Exuarch.Core
                 Devices = microCode.Select(m => devicesByID[m.DeviceID]).ToArray(),
                 Functions = microCode.Select(m => m.Function).ToArray(),
                 Signals = microCode.Select(m => $"{m.DeviceID}.{m.Function}").ToArray(),
-                LoadsInstruction = microCode.Any(m => m.DeviceID == Definition.Decoder.InstructionRegister && m.Function == "load"),
+                // An instruction is fetched when the micro step register loads an opcode that program memory puts out.
+                // Loading it from anywhere else is a jump inside the microcode, such as WORM-16's HATCH loop.
+                LoadsInstruction = microCode.Any(m => m.DeviceID == Definition.Decoder.InstructionRegister && m.Function == "load")
+                    && microCode.Any(m => m.DeviceID == Definition.ProgramMemory && m.Function == "output"),
             };
             plan.ReadersByBus = Buses.Keys.ToDictionary(id => id, id => ReadersOf(id, plan.Signals));
             var located = DecoderRom.Locate(status, step);
