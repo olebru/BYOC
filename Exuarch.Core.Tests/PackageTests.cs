@@ -24,7 +24,7 @@ public class PackageTests
     [Fact]
     public void BuiltInPackagesLoadWithTheDefaultFirst()
     {
-        Assert.Equal(new[] { "TINY-16", "BYOC-16", "CISC-16", "COPRO-16", "FLIP-16", "GPU-16", "HARVARD-16", "IRQ-16", "MOVE-16", "RISC-16", "STACK-16", "TURBO-16", "WORM-16" }, BuiltInPackages.All.Select(p => p.Name));
+        Assert.Equal(new[] { "TINY-16", "BYOC-16", "CISC-16", "COPRO-16", "DSP-16", "FLIP-16", "GPU-16", "HARVARD-16", "IRQ-16", "MOVE-16", "RISC-16", "STACK-16", "TURBO-16", "WORM-16" }, BuiltInPackages.All.Select(p => p.Name));
         Assert.Same(BuiltInPackages.All[0], BuiltInPackages.Default);
         Assert.Equal("TINY-16", BuiltInPackages.Default.Name);
         foreach (var package in BuiltInPackages.All)
@@ -41,7 +41,7 @@ public class PackageTests
         var byLevel = BuiltInPackages.Levels.ToDictionary(l => l, l => BuiltInPackages.All.Where(p => BuiltInPackages.Level(p.Name) == l).Select(p => p.Name).ToList());
         Assert.Equal(BuiltInPackages.All.Count, byLevel.Values.Sum(names => names.Count));
         Assert.Equal(new[] { "TINY-16", "BYOC-16", "STACK-16" }, byLevel["simple"]);
-        Assert.Equal(new[] { "CISC-16", "COPRO-16", "HARVARD-16", "IRQ-16", "MOVE-16", "RISC-16" }, byLevel["advanced"]);
+        Assert.Equal(new[] { "CISC-16", "COPRO-16", "DSP-16", "HARVARD-16", "IRQ-16", "MOVE-16", "RISC-16" }, byLevel["advanced"]);
         Assert.Equal(new[] { "FLIP-16", "GPU-16", "TURBO-16", "WORM-16" }, byLevel["ludicrous"]);
         Assert.Null(BuiltInPackages.Level("My machine"));
         Assert.Null(BuiltInPackages.Level(null));
@@ -49,6 +49,8 @@ public class PackageTests
 
     // These loop for ever on purpose: the long running demo and the interactive programs.
     private static readonly string[] LoopingPrograms = { "Sketch with the arrow keys", "Paddle game", "Three things at once", "A spinning cube" };
+    // These halt, but take far longer than a test can wait; DspTests checks what they draw.
+    private static readonly string[] SlowPrograms = { "Mandelbrot, 80 x 60", "Mandelbrot, 160 x 120", "Mandelbrot, 640 x 480" };
 
     [Fact]
     public void EveryProgramInEveryPackageAssemblesWithoutWarningsAndHalts()
@@ -61,11 +63,11 @@ public class PackageTests
                 var result = language.Analyze(program.Source);
                 Assert.True(result.Success && result.Diagnostics.Count == 0, $"{package.Name} / {program.Name}: {string.Join(" | ", result.Diagnostics)}");
                 Assert.Equal(program.Source, language.FormatDocument(program.Source));
-                if (LoopingPrograms.Contains(program.Name))
+                if (LoopingPrograms.Contains(program.Name) || SlowPrograms.Contains(program.Name))
                 {
                     var looping = new Machine(package.Machine, program.Source) { RecordHistory = false };
                     for (int i = 0; i < 10000; i++) looping.SingleStep();
-                    Assert.False(looping.IsHalted);
+                    Assert.False(looping.IsHalted, $"{package.Name} / {program.Name} stopped within 10000 ticks");
                     Assert.Empty(looping.MicrocodeWarnings);
                     continue;
                 }
