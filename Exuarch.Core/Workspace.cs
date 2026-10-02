@@ -70,10 +70,12 @@ namespace Exuarch.Core
             return Packages.FirstOrDefault(p => p.Package.Name == name);
         }
 
-        // A built in package the user has changed.
+        // A built in package the user has changed. Where its parts are drawn is kept, but moving them around is not a
+        // change to the machine, so it does not count.
         public bool IsEdited(string name)
         {
-            return IsBuiltIn(name) && Find(name) != null;
+            var saved = Find(name);
+            return IsBuiltIn(name) && saved != null && !IsAsShipped(saved, ignoreLayout: true);
         }
 
         // The user's own packages, in the order they were first saved.
@@ -113,17 +115,27 @@ namespace Exuarch.Core
             Packages.RemoveAll(p => p.Package.Name == name);
         }
 
-        private static bool IsAsShipped(SavedPackage saved)
+        private static bool IsAsShipped(SavedPackage saved, bool ignoreLayout = false)
         {
             var shipped = BuiltInPackages.Get(saved.Package.Name);
-            shipped.Machine.EnsureLayout();
             var mine = saved.Package.Clone();
-            mine.Machine.EnsureLayout();
+            foreach (var machine in new[] { shipped.Machine, mine.Machine })
+            {
+                if (ignoreLayout) WithoutLayout(machine);
+                else machine.EnsureLayout();
+            }
             if (mine.ToJson() != shipped.ToJson()) return false;
             var first = shipped.Programs.FirstOrDefault();
             if (saved.ProgramSource == null) return true;
             var open = shipped.Programs.FirstOrDefault(p => p.Name == saved.ProgramName);
             return open != null ? open.Source == saved.ProgramSource : first != null && saved.ProgramSource == first.Source;
+        }
+
+        private static void WithoutLayout(MachineDefinition machine)
+        {
+            foreach (var bus in machine.Buses) bus.Layout = null;
+            foreach (var device in machine.Devices) device.Layout = null;
+            if (machine.Decoder != null) machine.Decoder.Layout = null;
         }
 
         // A name no package, built in or saved, uses yet: the name itself, or with a number after it.

@@ -1,5 +1,11 @@
+/* Holds the display at its own width, zoomed out when the room is narrower. */
+.lcd-fit {
+    overflow: hidden;
+}
+
 /* A character LCD module: dark bezel, amber on dark glass. */
 .lcd {
+    width: max-content;
     background: var(--line-ink);
     border: 1px solid var(--ink);
     border-radius: var(--radius);
@@ -32,7 +38,6 @@
     border: 1px solid var(--ink);
     border-radius: var(--radius-sm);
     padding: 6px 8px;
-    overflow-x: auto;
 }
 
 .lcd-row {

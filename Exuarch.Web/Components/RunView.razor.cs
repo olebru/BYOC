@@ -37,7 +37,9 @@ namespace Exuarch.Web.Components
         private const double SampleSeconds = 0.25;
         private const double SpeedWindowSeconds = 60;
         private readonly HashSet<int> breakpoints = new HashSet<int>();
-        private string bottomTab = "Memory";
+        private string bottomTab = "memory";
+        // The tab on show in the second group below, when the panels below are split.
+        private string bottomTab2;
         private string memoryDevice;
         private int memoryBank;
         private int? lastScrolledAddress;
@@ -47,8 +49,8 @@ namespace Exuarch.Web.Components
         private ElementReference runElement;
         private bool stopRequested;
         private bool wholeRom;
-        // Panels the viewer has folded away, kept in the browser: "side", "lines", "clock", "now", "program",
-        // "bottom" and "device:<id>" for a screen, LCD or keypad.
+        // Panels the viewer has folded away, kept in the browser: "left", "right", "lines", "bottom", and any panel by its id:
+        // "clock", "now", "program", "memory", "decoder", "trace" and "device:<id>" for a screen, LCD or keypad.
         private readonly HashSet<string> collapsed = new HashSet<string>();
         private bool panelsLoaded;
         private const string PanelsKey = "exuarch.runPanels";
@@ -77,6 +79,7 @@ namespace Exuarch.Web.Components
             if (!panelsLoaded)
             {
                 panelsLoaded = true;
+                await LoadLayout();
                 var saved = await JS.InvokeAsync<string>("exuarchStore.get", PanelsKey);
                 if (!string.IsNullOrEmpty(saved))
                 {
@@ -90,6 +93,9 @@ namespace Exuarch.Web.Components
             {
                 guardedElement = runElement.Id;
                 await JS.InvokeVoidAsync("exuarchKeys.runView", runElement);
+                selfReference ??= DotNetObjectReference.Create(this);
+                await JS.InvokeVoidAsync("exuarchRunLayout.attach", runElement, selfReference);
+                await JS.InvokeVoidAsync("exuarchRunLayout.observe", schematicElement, selfReference);
             }
             if (fitPending && Machine != null)
             {
@@ -107,6 +113,7 @@ namespace Exuarch.Web.Components
         public void Dispose()
         {
             stopRequested = true;
+            selfReference?.Dispose();
         }
 
         private bool Collapsed(string panel) => collapsed.Contains(panel);
@@ -114,29 +121,51 @@ namespace Exuarch.Web.Components
         private async Task TogglePanel(string panel)
         {
             if (!collapsed.Remove(panel)) collapsed.Add(panel);
-            // The schematic changes width with the side column, and the listing needs scrolling to the current line again.
-            if (panel == "side") fitPending = true;
+            // The listing needs scrolling to the current line again; a change of width is left to SchematicResized.
             lastScrolledAddress = null;
             await JS.InvokeAsync<bool>("exuarchStore.set", PanelsKey, string.Join(",", collapsed.OrderBy(p => p)));
         }
 
         // A bottom tab opens the bottom panel if it was folded away.
-        private async Task ShowBottom(string tab)
+        private async Task ShowBottom(string dock, string tab)
         {
-            bottomTab = tab;
+            if (dock == "bottom2") bottomTab2 = tab; else bottomTab = tab;
             if (Collapsed("bottom")) await TogglePanel("bottom");
         }
 
-        // Scales the schematic so the whole machine fits the panel width.
+        // The drawing is shown at its actual size, 100%, and only zoomed out as far as it takes to fit a machine that is
+        // wider than its panel; it is never zoomed in by itself. This holds whenever the panel changes width, through the
+        // window or the side column's handle, until the viewer zooms by hand. Clicking the percentage goes back to it.
+        private bool autoZoom = true;
+        private double schematicWidth;
+
+        private double FitZoom(double width) => Math.Clamp(Math.Floor((width - 24) / Layout.ContentWidth * 100) / 100, 0.4, 1.0);
+
         private async Task Fit()
         {
+            autoZoom = true;
             var rect = await JS.InvokeAsync<ElementRect>("exuarchEditor.rect", schematicElement);
             if (rect.Width <= 0) return;
-            zoom = Math.Clamp(Math.Floor((rect.Width - 24) / Layout.CanvasWidth * 100) / 100, 0.4, 1.2);
+            schematicWidth = rect.Width;
+            zoom = FitZoom(rect.Width);
             StateHasChanged();
         }
+
+        [JSInvokable]
+        public void SchematicResized(double width)
+        {
+            if (width <= 0 || Math.Abs(width - schematicWidth) < 1) return;
+            schematicWidth = width;
+            if (!autoZoom) return;
+            var fitted = FitZoom(width);
+            if (fitted == zoom) return;
+            zoom = fitted;
+            StateHasChanged();
+        }
+
         private void Zoom(double factor)
         {
+            autoZoom = false;
             zoom = Math.Clamp(Math.Round(zoom * factor, 2), 0.4, 1.6);
         }
 
