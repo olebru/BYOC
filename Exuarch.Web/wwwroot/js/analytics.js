@@ -1,5 +1,6 @@
 // Anonymous usage statistics through Umami (cloud.umami.is). Umami sets no cookies and stores nothing in the browser;
-// it counts unique visitors with a hash that changes every day, and keeps only the country of an address. The script
+// it tells visitors apart by a hash of the address and the browser's user agent with a salt it rotates (monthly by
+// default), and keeps only the country of an address. Nothing here sends an id of our own. The script
 // only reports from www.exuarch.com (see data-domains in index.html), so local and preview builds send nothing, and
 // it honours the browser's Do Not Track setting. When it is blocked or offline, every call here does nothing.
 //
