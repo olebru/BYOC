@@ -57,10 +57,10 @@ The built in machines each take a different direction. Load one from **Machines*
 - [MOVE-16](exuarch:package/MOVE-16): no instruction set, only moves between ports.
 - [COPRO-16](exuarch:package/COPRO-16): a CPU that hands work to a blitter on its own bus.
 - [IRQ-16](exuarch:package/IRQ-16): interrupts from a timer, the keypad and the blitter.
-- [WORM-16](exuarch:package/WORM-16): a new kind of machine with no jumps, whose program crawls round a ring memory and decides, instruction by instruction, what lives on.
 
-**Ludicrous**: a 3D graphics pipeline, and how far it can be pushed.
+**Ludicrous**: a 3D graphics pipeline and how far it can be pushed, and a machine that has never existed before.
 
 - [GPU-16](exuarch:package/GPU-16): a small 3D pipeline, with shaded triangles, a depth buffer and a spinning cube.
 - [FLIP-16](exuarch:package/FLIP-16): GPU-16 with a double buffered screen, so each frame appears whole.
 - [TURBO-16](exuarch:package/TURBO-16): FLIP-16 rebuilt for speed, the same cube in under a fifth of the ticks.
+- [WORM-16](exuarch:package/WORM-16): a new kind of machine with no jumps, whose program crawls round a ring memory and decides, instruction by instruction, what lives on.
