@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.4.0](https://github.com/olebru/exuarch/compare/v1.3.0...v1.4.0) (2026-10-02)
+
+
+### Features
+
+* add WORM-16, a machine with no jumps whose program crawls round a ring ([55f99ff](https://github.com/olebru/exuarch/commit/55f99ff80ffd426c5ce7eb7783627adede525dc1))
+* **cisc:** add a program that rewrites its own instructions ([#31](https://github.com/olebru/exuarch/issues/31)) ([754c511](https://github.com/olebru/exuarch/commit/754c5114ada0d60086c842786a449147c445a981))
+
+
+### Bug fixes
+
+* **run:** show the instruction memory holds now in Now executing, not only what was assembled ([55f99ff](https://github.com/olebru/exuarch/commit/55f99ff80ffd426c5ce7eb7783627adede525dc1))
+
+
+### Documentation
+
+* describe how Umami tells visits apart ([#29](https://github.com/olebru/exuarch/issues/29)) ([a63d0d2](https://github.com/olebru/exuarch/commit/a63d0d2f924511c35adba6935d228d45e30ac4b5))
+
 ## [1.3.0](https://github.com/olebru/exuarch/compare/v1.2.0...v1.3.0) (2026-10-02)
 
 
