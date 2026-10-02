@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.7.0](https://github.com/olebru/exuarch/compare/v1.6.2...v1.7.0) (2026-10-02)
+
+
+### Features
+
+* add a real time clock that interrupts every interval of real milliseconds ([2202fbf](https://github.com/olebru/exuarch/commit/2202fbfd84a6af73f5b8b1955ae1501e1531ece9))
+* **run:** let the speed slider reach 500 kHz, on a log scale ([2202fbf](https://github.com/olebru/exuarch/commit/2202fbfd84a6af73f5b8b1955ae1501e1531ece9))
+
+
+### Bug fixes
+
+* **handbook:** list the devices tidily and keep words in tables whole ([2202fbf](https://github.com/olebru/exuarch/commit/2202fbfd84a6af73f5b8b1955ae1501e1531ece9))
+
 ## [1.6.2](https://github.com/olebru/exuarch/compare/v1.6.1...v1.6.2) (2026-10-02)
 
 
