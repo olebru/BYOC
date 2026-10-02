@@ -1,0 +1,26 @@
+# Keeps the dependencies on their latest releases. The workflows pin every action to a commit, and Dependabot moves
+# the pins forward; its pull requests have conventional titles, so they pass the title check, and ci and build do not
+# show in the changelog.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: ci
+      include: scope
+    groups:
+      actions:
+        patterns: ['*']
+
+  - package-ecosystem: nuget
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: build
+      include: scope
+    groups:
+      nuget:
+        patterns: ['*']
