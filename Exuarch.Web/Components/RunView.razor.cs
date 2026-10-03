@@ -263,9 +263,10 @@ namespace Exuarch.Web.Components
             long startCycles = Machine.Cycles;
             bool startedAtMax = maxSpeed;
             var frame = new Stopwatch();
-            // At max speed a frame runs ticks for budget milliseconds and then draws. Drawing and handing the browser
-            // its turn take the same time however long the frame ran, so the budget grows to keep them to about a
-            // tenth of the time: the screen updates less often, but the machine runs faster.
+            // At max speed a frame runs ticks for MaxSpeedFrameMilliseconds and then hands the browser its turn, so
+            // clicks and keys are answered soon. The whole view is drawn only every budget milliseconds: drawing it
+            // takes the same time however long the frames ran, so the budget grows to keep it to about a tenth of the
+            // time: the view updates less often, but the machine runs faster.
             var between = new Stopwatch();
             double budget = MaxSpeedFrameMilliseconds;
             // A double buffered screen shows a finished frame when it swaps. At max speed the run stops there to show
@@ -290,8 +291,7 @@ namespace Exuarch.Web.Components
                 if (maxSpeed)
                 {
                     long swaps = Swaps();
-                    double until = Math.Max(1, budget - sinceView.Elapsed.TotalMilliseconds);
-                    while (keepGoing && !swapped && frame.Elapsed.TotalMilliseconds < until)
+                    while (keepGoing && !swapped && frame.Elapsed.TotalMilliseconds < MaxSpeedFrameMilliseconds)
                     {
                         for (int i = 0; i < 256 && keepGoing; i++) keepGoing = Tick();
                         swapped = doubles.Length > 0 && Swaps() != swaps;
@@ -320,20 +320,26 @@ namespace Exuarch.Web.Components
                     sampleAt = now;
                     sampleCycles = Machine.Cycles;
                 }
-                viewDrawn = !keepGoing || !swapped || sinceView.Elapsed.TotalMilliseconds >= budget;
+                viewDrawn = !keepGoing || !maxSpeed || sinceView.Elapsed.TotalMilliseconds >= budget;
                 if (viewDrawn)
                 {
                     between.Restart();
                     StateHasChanged();
                     sinceView.Restart();
                 }
-                else
+                else if (swapped)
                 {
-                    await FramebufferView.ShowChanges();
+                    FramebufferView.ShowChanges();
                 }
                 if (!keepGoing) break;
-                int delay = maxSpeed ? 1 : Math.Max(1, Math.Min(16, (int)(1000 / Math.Max(1, Hz)) - (int)frame.ElapsedMilliseconds));
-                await Task.Delay(delay);
+                if (maxSpeed)
+                {
+                    await ScreenInterop.NextTurn();
+                }
+                else
+                {
+                    await Task.Delay(Math.Max(1, Math.Min(16, (int)(1000 / Math.Max(1, Hz)) - (int)frame.ElapsedMilliseconds)));
+                }
             }
             if (ReferenceEquals(machine, Machine))
             {
@@ -346,10 +352,11 @@ namespace Exuarch.Web.Components
             }
             StateHasChanged();
         }
-        private const int MaxSpeedFrameMilliseconds = 30;
-        // The longest a max speed frame runs before it draws, which is also how long Pause can take to answer.
+        // How long a max speed frame runs before the browser has its turn, which is also how long a click can wait.
+        private const int MaxSpeedFrameMilliseconds = 25;
+        // The longest the whole view goes undrawn at max speed.
         private const int MaxSpeedLongestFrameMilliseconds = 250;
-        // Ticks run for this many times as long as drawing and the browser's turn took, about a tenth for the drawing.
+        // The view is drawn after this many times as long as drawing it took, about a tenth of the time.
         private const double OverheadShare = 9;
         // At or below this speed every tick is recorded, so the trace is complete.
         private const int FullRecordingHz = 200;

@@ -1,3 +1,4 @@
+@using System.Runtime.InteropServices
 @using Exuarch.Core
 @inject IJSRuntime JS
 @implements IDisposable
@@ -40,18 +41,22 @@
     protected override void OnInitialized() { onPage.Add(this); }
     public void Dispose() { onPage.Remove(this); }
 
-    public static async Task ShowChanges()
+    public static void ShowChanges()
     {
-        foreach (var view in onPage.ToList()) await view.SendChanges();
+        foreach (var view in onPage) view.SendChanges();
     }
 
-    private async Task SendChanges()
+    private void SendChanges()
     {
         if (Screen == null || !ReferenceEquals(drawn, Screen)) return;
-        if (Screen.TakeDirtyRegion() is var (x, y, width, height))
-        {
-            await JS.InvokeVoidAsync("exuarchScreen.draw", canvasId, x, y, width, height, Screen.WordBytes(x, y, width, height), Screen.IsDepth);
-        }
+        if (Screen.TakeDirtyRegion() is var (x, y, width, height)) Draw(x, y, width, height);
+    }
+
+    // Hands the canvas the rows the region spans, straight from the screen's words.
+    private void Draw(int x, int y, int width, int height)
+    {
+        var rows = MemoryMarshal.AsBytes(Screen.Words.AsSpan(y * Framebuffer.Width, height * Framebuffer.Width));
+        ScreenInterop.Draw(canvasId, x, y, width, height, rows, Screen.IsDepth);
     }
 
     // Sends only what changed since the last render; a new screen, or a new canvas, gets the whole picture.
@@ -68,9 +73,9 @@
         {
             drawn = Screen;
             Screen.TakeDirtyRegion();
-            await JS.InvokeVoidAsync("exuarchScreen.draw", canvasId, 0, 0, Framebuffer.Width, Framebuffer.Height, Screen.WordBytes(0, 0, Framebuffer.Width, Framebuffer.Height), Screen.IsDepth);
+            Draw(0, 0, Framebuffer.Width, Framebuffer.Height);
             return;
         }
-        await SendChanges();
+        SendChanges();
     }
 }
