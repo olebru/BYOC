@@ -105,7 +105,8 @@ window.exuarchAsm = {
                     const value = markdown.replace(/\]\((exuarch:[^)]+)\)/g, function (match, href) {
                         return '](command:exuarch.open?' + encodeURIComponent(JSON.stringify([href])) + ')';
                     });
-                    return { contents: [{ value: value, isTrusted: true }] };
+                    // Trusted only to run exuarch.open: the text can come from an imported machine's instruction descriptions.
+                    return { contents: [{ value: value, isTrusted: { enabledCommands: ['exuarch.open'] } }] };
                 },
             });
             monaco.languages.registerDocumentFormattingEditProvider(id, {
