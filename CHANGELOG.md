@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.8.1](https://github.com/olebru/exuarch/compare/v1.8.0...v1.8.1) (2026-10-03)
+
+
+### Bug fixes
+
+* **run:** draw screens straight from .NET memory without allocating per frame ([adedb70](https://github.com/olebru/exuarch/commit/adedb70d7dba4f3f7d7a4a0443452834233f7483))
+* **run:** give the browser its turn every 25 ms at max speed ([adedb70](https://github.com/olebru/exuarch/commit/adedb70d7dba4f3f7d7a4a0443452834233f7483))
+
 ## [1.8.0](https://github.com/olebru/exuarch/compare/v1.7.0...v1.8.0) (2026-10-02)
 
 
