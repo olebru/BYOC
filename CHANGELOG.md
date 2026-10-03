@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.0](https://github.com/olebru/exuarch/compare/v1.11.1...v1.12.0) (2026-10-03)
+
+
+### Features
+
+* **irq16:** falling blocks, a game on the timer and the blitter ([#56](https://github.com/olebru/exuarch/issues/56)) ([5d3f0bf](https://github.com/olebru/exuarch/commit/5d3f0bff9e6642a93bc4b5cbf6be2b6adb545a24))
+
 ## [1.11.1](https://github.com/olebru/exuarch/compare/v1.11.0...v1.11.1) (2026-10-03)
 
 
