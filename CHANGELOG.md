@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.10.0](https://github.com/olebru/exuarch/compare/v1.9.0...v1.10.0) (2026-10-03)
+
+
+### Features
+
+* **run:** show how far Run to halt has got, and let Pause stop it ([#50](https://github.com/olebru/exuarch/issues/50)) ([e1c559f](https://github.com/olebru/exuarch/commit/e1c559faec67daeafb5a6cd048a711dfc4b97c22))
+
 ## [1.9.0](https://github.com/olebru/exuarch/compare/v1.8.1...v1.9.0) (2026-10-03)
 
 
