@@ -12,8 +12,8 @@ namespace Exuarch.Core
         // True when the words are depths, to be drawn in grey, rather than RGB565 colours.
         bool IsDepth { get; }
         (int X, int Y, int Width, int Height)? TakeDirtyRegion();
-        // The 16 bit words of a region, two little endian bytes each, row by row: the browser turns them into pixels.
-        byte[] WordBytes(int x, int y, int width, int height);
+        // The whole picture's 16 bit words, row by row, top left first: the browser turns them into pixels.
+        ushort[] Words { get; }
     }
 
     // A 640 x 480 colour display. Each pixel is a 16 bit RGB565 word: 5 bits red, 6 bits green, 5 bits blue.
@@ -41,7 +41,7 @@ namespace Exuarch.Core
         private bool loadX, loadY, plot, skip, clear;
         public virtual string Kind { get { return "RGB565"; } }
         public bool IsDepth { get { return false; } }
-        public byte[] WordBytes(int x, int y, int width, int height) { return ToRgb565Bytes(x, y, width, height); }
+        public ushort[] Words { get { return Shown; } }
         private int dirtyLeft = Width, dirtyTop = Height, dirtyRight = -1, dirtyBottom = -1;
 
         public Framebuffer(string DeviceName, string DeviceID, Bus bus)

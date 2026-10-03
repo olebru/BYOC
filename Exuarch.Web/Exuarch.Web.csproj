@@ -9,6 +9,8 @@
          simulator runs about four times as fast, for about 3 MB more to download. It takes the wasm-tools workload
          (dotnet workload install wasm-tools); Debug builds, and so dotnet run, do without. -->
     <RunAOTCompilation Condition="'$(Configuration)' == 'Release'">true</RunAOTCompilation>
+    <!-- The code generated for [JSImport] calls is unsafe. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>

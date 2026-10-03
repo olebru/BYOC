@@ -100,17 +100,8 @@ namespace Exuarch.Core
             return region;
         }
 
-        // The raw depths of a region; the Run view draws them in grey, near white and far black. Copied row by row,
-        // which is cheap where .NET is interpreted: the browser does the per pixel work.
-        public byte[] WordBytes(int x, int y, int width, int height)
-        {
-            var bytes = new byte[width * height * 2];
-            for (int row = 0; row < height; row++)
-            {
-                Buffer.BlockCopy(Depths, ((y + row) * Width + x) * 2, bytes, row * width * 2, width * 2);
-            }
-            return bytes;
-        }
+        // The raw depths; the Run view draws them in grey, near white and far black.
+        public ushort[] Words { get { return Depths; } }
 
         public string DisplayName() { return deviceName; }
         public void Enable(string function)
