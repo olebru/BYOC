@@ -33,6 +33,10 @@
                 <span class="loaded-program">@ProgramName</span>
             </span>
         }
+        @if (runningToHalt)
+        {
+            <span class="halt-progress" title="Running to halt: ticks run so far, and the clock speed over the last second">to halt · <strong>@haltTicks.ToString("N0")</strong> of @RunToHaltTicks.ToString("N0") ticks · @(haltHz > 0 ? FormatHz(haltHz) : "…")</span>
+        }
         <span class="cycle">cycle <strong>@Machine.Cycles</strong></span>
         <span class="state state-@State">@State</span>
     </div>
