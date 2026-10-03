@@ -9,7 +9,8 @@ using Markdig.Syntax.Inlines;
 namespace Exuarch.Web.Components
 {
     // Turns a package README into HTML that is safe to show, whoever wrote the package: raw HTML is not allowed,
-    // and links may only go to the web (http, https, mailto), to an anchor, or into the app (exuarch:).
+    // links may only go to the web (http, https, mailto), to an anchor, or into the app (exuarch:), and images become
+    // links to them, so opening a README never fetches anything from a server its author picked.
     public static class ReadmeMarkdown
     {
         private static readonly MarkdownPipeline Pipeline = new MarkdownPipelineBuilder()
@@ -22,9 +23,14 @@ namespace Exuarch.Web.Components
         public static string ToHtml(string markdown)
         {
             var document = Markdown.Parse(markdown ?? "", Pipeline);
-            foreach (var link in document.Descendants<LinkInline>())
+            foreach (var link in document.Descendants<LinkInline>().ToList())
             {
                 if (!Allowed(link.Url)) link.Url = "#";
+                if (link.IsImage)
+                {
+                    link.IsImage = false;
+                    if (link.FirstChild == null) link.AppendChild(new LiteralInline("image"));
+                }
             }
             foreach (var link in document.Descendants<AutolinkInline>())
             {
