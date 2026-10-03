@@ -24,6 +24,13 @@ The [fetch routine](exuarch:instruction/FETCH) has two versions. With I=0 it fet
 2. Capture the keyboard on the keypad panel and press keys: each press is one interrupt.
 3. Open the [fetch routine](exuarch:instruction/FETCH) in the microcode editor and use the flag preview to switch between I=0 and I=1.
 4. Try the timer: change the `TPERI 20000` in the program and see the clock speed up or slow down.
+5. Play [Falling blocks](<exuarch:program/Falling blocks>). Set the clock slider to 250 kHz, run it, capture the keyboard on the keypad panel and press space. Left and right move, up turns, down falls faster and space drops.
+
+## Falling blocks
+
+A whole game on the same interrupts. The timer beats every 4000 ticks, 62.5 times a second at 250 kHz, and the handler counts down when the piece next falls and when a held arrow repeats; the main loop reads the keys and moves the piece. The blitter draws each square of the well, a 19 by 19 rectangle, and its interrupt says when it is free for the next.
+
+The game counts time in ticks, so it is timed for one clock speed: at 250 kHz the pieces start at 0.8 seconds a row, and at ⚡ Max they fall as fast as the simulator runs. The well lives in memory at 3500, row by row, next to a copy of what the screen shows, so that after full rows go only the squares that changed are drawn again.
 
 ## Read more
 
