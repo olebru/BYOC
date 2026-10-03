@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.0](https://github.com/olebru/exuarch/compare/v1.10.0...v1.11.0) (2026-10-03)
+
+
+### Features
+
+* **run:** run to halt until it halts, showing progress every million ticks ([#52](https://github.com/olebru/exuarch/issues/52)) ([f5ef7dc](https://github.com/olebru/exuarch/commit/f5ef7dc00ca6a13f4c48b2393b7002ae1223da09))
+
 ## [1.10.0](https://github.com/olebru/exuarch/compare/v1.9.0...v1.10.0) (2026-10-03)
 
 
