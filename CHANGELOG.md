@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.11.1](https://github.com/olebru/exuarch/compare/v1.11.0...v1.11.1) (2026-10-03)
+
+
+### Bug fixes
+
+* add a Content Security Policy, sent as a header for every page ([4377af6](https://github.com/olebru/exuarch/commit/4377af6a2f19a735055932d844bbe8f4a0a6c80e))
+* let the assembly editor's hover run only the command that opens the handbook ([4377af6](https://github.com/olebru/exuarch/commit/4377af6a2f19a735055932d844bbe8f4a0a6c80e))
+* let the offline service worker install on Azure ([4377af6](https://github.com/olebru/exuarch/commit/4377af6a2f19a735055932d844bbe8f4a0a6c80e))
+* show images in package notes as links, so opening a note fetches nothing ([4377af6](https://github.com/olebru/exuarch/commit/4377af6a2f19a735055932d844bbe8f4a0a6c80e))
+
+
+### Documentation
+
+* a handbook page on running other people's machines ([4377af6](https://github.com/olebru/exuarch/commit/4377af6a2f19a735055932d844bbe8f4a0a6c80e))
+
 ## [1.11.0](https://github.com/olebru/exuarch/compare/v1.10.0...v1.11.0) (2026-10-03)
 
 
