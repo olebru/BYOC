@@ -5,6 +5,7 @@
   "readme": "README.md",
   "machine": "machine.json",
   "programs": [
-    { "name": "Three things at once", "description": "The main loop only counts; a clock, a key counter and the checkerboard all run from interrupts", "file": "interrupts.asm" }
+    { "name": "Three things at once", "description": "The main loop only counts; a clock, a key counter and the checkerboard all run from interrupts", "file": "interrupts.asm" },
+    { "name": "Falling blocks", "description": "The classic game of seven falling pieces: the timer sets the pace and the blitter draws the squares. Timed for a 250 kHz clock; capture the keyboard on the keypad to play", "file": "blocks.asm" }
   ]
 }
