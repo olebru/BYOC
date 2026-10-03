@@ -9,10 +9,7 @@
     <base href="/" />
     <!-- What phones see instead of the app, which needs a big screen, a keyboard and a mouse; index.html sends them
          here before it loads anything heavy. "Open it here anyway" goes to the app and keeps that choice. -->
-    <script>
-        try { document.documentElement.dataset.theme = localStorage.getItem('exuarch.theme') === 'light' ? 'light' : 'dark'; }
-        catch (e) { document.documentElement.dataset.theme = 'dark'; }
-    </script>
+    <script src="js/phone.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -243,24 +240,6 @@
 
     <footer>ExµArch · <a href="https://www.exuarch.com">www.exuarch.com</a></footer>
 
-    <script>
-        // Sends the address with the phone's own share sheet (to mail, a chat or another device), or copies it where
-        // there is none.
-        (function () {
-            var url = 'https://www.exuarch.com';
-            var send = document.getElementById('send');
-            var done = document.getElementById('done');
-            function copied() { done.hidden = false; }
-            send.addEventListener('click', function () {
-                if (navigator.share) {
-                    navigator.share({ title: 'ExµArch', text: 'ExµArch, a computer architecture playground: open it on a computer.', url: url })
-                        .catch(function () { /* closed without sharing */ });
-                } else if (navigator.clipboard) {
-                    navigator.clipboard.writeText(url).then(copied, function () { /* not allowed; the address is on the page */ });
-                }
-            });
-        })();
-    </script>
 </body>
 
 </html>
