@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.9.0](https://github.com/olebru/exuarch/compare/v1.8.1...v1.9.0) (2026-10-03)
+
+
+### Features
+
+* **run:** a longer clock slider that goes up to 1 MHz ([2a91e86](https://github.com/olebru/exuarch/commit/2a91e864170223fcef6392e34825e1cbab363987))
+
+
+### Bug fixes
+
+* list DSP-16 as a ludicrous machine ([2a91e86](https://github.com/olebru/exuarch/commit/2a91e864170223fcef6392e34825e1cbab363987))
+
 ## [1.8.1](https://github.com/olebru/exuarch/compare/v1.8.0...v1.8.1) (2026-10-03)
 
 
