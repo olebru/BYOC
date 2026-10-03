@@ -52,16 +52,16 @@ The built in machines each take a different direction. Load one from **Machines*
 **Advanced**: more buses, other ways to build a CPU, and devices that work on their own.
 
 - [RISC-16](exuarch:package/RISC-16): a load/store machine with a register file and three register instructions: `ADD R0, R1, R2`.
-- [DSP-16](exuarch:package/DSP-16): RISC-16 with a hardware multiplier, drawing the Mandelbrot set in colour.
 - [CISC-16](exuarch:package/CISC-16): RISC-16's opposite, six addressing modes on every instruction, memory to memory moves, and stack frames for recursion.
 - [HARVARD-16](exuarch:package/HARVARD-16): three buses, with separate program and data memory.
 - [MOVE-16](exuarch:package/MOVE-16): no instruction set, only moves between ports.
 - [COPRO-16](exuarch:package/COPRO-16): a CPU that hands work to a blitter on its own bus.
 - [IRQ-16](exuarch:package/IRQ-16): interrupts from a timer, the keypad and the blitter.
 
-**Ludicrous**: a 3D graphics pipeline and how far it can be pushed, and a machine that has never existed before.
+**Ludicrous**: a 3D graphics pipeline and how far it can be pushed, the Mandelbrot set in colour, and a machine that has never existed before.
 
 - [GPU-16](exuarch:package/GPU-16): a small 3D pipeline, with shaded triangles, a depth buffer and a spinning cube.
 - [FLIP-16](exuarch:package/FLIP-16): GPU-16 with a double buffered screen, so each frame appears whole.
 - [TURBO-16](exuarch:package/TURBO-16): FLIP-16 rebuilt for speed, the same cube in under a fifth of the ticks.
+- [DSP-16](exuarch:package/DSP-16): RISC-16 with a hardware multiplier, drawing the Mandelbrot set in colour.
 - [WORM-16](exuarch:package/WORM-16): a new kind of machine with no jumps, whose program crawls round a ring memory and decides, instruction by instruction, what lives on.
