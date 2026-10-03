@@ -98,8 +98,12 @@
     flex: 1;
 }
 
+/* The slider takes up to 380px when the row has room, so speeds are easy to pick out, and gives way to the
+   buttons on a narrow window. */
 .speed {
     display: flex;
+    flex: 0 1 380px;
+    min-width: 200px;
     align-items: center;
     gap: 8px;
     margin: 0;
@@ -108,7 +112,8 @@
 }
 
     .speed input {
-        width: 140px;
+        flex: 1;
+        min-width: 0;
         accent-color: var(--ink);
     }
 
